@@ -1,0 +1,60 @@
+/* Preenche a circunferência. Desenhado a 390px; todas as classes começam por .pre- */
+
+.pre [hidden] { display: none !important; }
+.pre button { font-family: inherit; }
+
+.pre-modos .chip { min-height: 2.75rem; padding: 0.45rem 0.95rem; }
+
+/* ângulo */
+.pre-angulo { margin: 1rem 0 0.4rem; padding: 0.7rem 0.9rem; border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--creme); text-align: center; }
+.pre-angulo__rotulo { margin: 0; color: var(--tinta-suave); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.pre-angulo__valor { margin: 0.1rem 0 0; font-size: 1.5rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pre-angulo__igual { margin: 0 0.15em; color: var(--tinta-suave); }
+
+/* campos */
+.pre-campos { display: grid; gap: 0.5rem; margin: 0.8rem 0 0; }
+.pre-linha { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: center; gap: 0.1rem 0.6rem; }
+.pre-rotulo { font-family: var(--serif); font-size: 1.2rem; font-style: italic; text-align: right; }
+.pre-campo { min-height: 2.9rem; font-size: 1.1rem; }
+.pre-campo--certo { border-color: var(--certo); background: var(--certo-fundo); }
+.pre-campo--errado { border-color: var(--erro); background: var(--erro-fundo); }
+.pre-campo[readonly] { color: var(--tinta); }
+.pre-fb { grid-column: 2; min-width: 0; }
+.pre-fb:empty { display: none; }
+.pre-dica { grid-column: 2; margin: 0; }
+.pre-fb__msg { margin: 0.15rem 0 0; padding: 0.35rem 0.6rem; border-radius: 0.35rem; font-size: 0.92rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pre-fb__icone { display: inline-block; min-width: 1em; font-weight: 700; }
+.pre-fb__tex { display: inline-block; max-width: 100%; vertical-align: middle; overflow-x: auto; overflow-y: hidden; color: var(--tinta); }
+.pre-fb--certo { background: var(--certo-fundo); color: var(--certo); }
+.pre-fb--errado { background: var(--erro-fundo); color: var(--erro); }
+.pre-fb--aviso { background: var(--dourado-fundo); color: var(--tinta); }
+.pre-fb--aviso .pre-fb__icone { color: var(--dourado-texto); }
+
+/* teclado no ecrã */
+.pre-teclado { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; margin: 1rem 0 0; }
+.pre-tecla {
+  min-width: 2.75rem; min-height: 2.75rem; padding: 0.3rem 0.4rem; border: 1px solid #cdbfae; border-radius: 0.4rem;
+  background: var(--creme); color: var(--castanho); font-size: 1.25rem; line-height: 1; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.pre-tecla:hover { border-color: var(--castanho); background: var(--dourado-fundo); }
+.pre-tecla:active { background: var(--dourado-claro); }
+.pre-tecla--larga { font-size: 0.95rem; font-weight: 600; }
+
+/* ações, pista, contadores */
+.pre-acoes { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0 0; }
+.pre-acoes .botao { flex: 1 1 8rem; min-height: 2.9rem; }
+.pre-pista:empty { display: none; }
+.pre-pista__texto {
+  margin: 0.8rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid var(--dourado);
+  border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); font-size: 0.95rem; overflow-wrap: anywhere;
+}
+.pre-contadores { margin: 0.9rem 0 0; color: var(--tinta-suave); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+
+@media (min-width: 40em) {
+  .pre-angulo__valor { font-size: 1.75rem; }
+  .pre-teclado { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .pre-tecla--larga { grid-column: auto; }
+  .pre-acoes .botao { flex: 0 1 auto; min-width: 9rem; }
+  .pre-linha { grid-template-columns: 3.5rem minmax(0, 1fr); }
+}

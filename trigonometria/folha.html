@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Folha de consulta · Trigonometria · Mat100limites</title>
+  <meta name="description" content="Folha de consulta de Trigonometria, Matemática A, 12.º ano, pronta a imprimir em A4.">
+  <link rel="icon" href="../assets/mat100_logo.png">
+  <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --tinta: #2a1c13;
+      --tinta-suave: #6b5a4e;
+      --creme: #fbf7f1;
+      --linha: #e6dbcf;
+      --grade: #d9cbb8;
+      --castanho: #5a3e2b;
+      --castanho-escuro: #241710;
+      --dourado: #c79a3f;
+      --dourado-texto: #8a6520;
+      --dourado-fundo: #f6ecd6;
+      --erro: #a3321f;
+      --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    @page { size: A4; margin: 12mm; }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--creme);
+      color: var(--tinta);
+      font-family: var(--sans);
+      font-size: 10pt;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    a { color: var(--castanho); }
+    :focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    /* ---------- barra do ecrã (não se imprime) ---------- */
+    .barra {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      max-width: 210mm; margin: 0 auto; padding: 0.75rem 1rem;
+    }
+    .barra a, .barra button {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 2.75rem; padding: 0.5rem 1.2rem; border-radius: 0.35rem;
+      font-family: var(--sans); font-size: 1rem; font-weight: 600; line-height: 1.25;
+      text-decoration: none; cursor: pointer;
+    }
+    .barra a { border: 1px solid #cdbfae; background: #fff; color: var(--castanho); }
+    .barra a:hover { border-color: var(--castanho); background: var(--dourado-fundo); }
+    .barra button {
+      border: 1px solid #a87f2b; color: var(--castanho-escuro);
+      background: linear-gradient(180deg, #e6c479 0%, #c79a3f 100%);
+      box-shadow: 0 1px 2px rgba(36, 23, 16, 0.25);
+    }
+    .barra button:hover { background: linear-gradient(180deg, #efd49a 0%, #d2a748 100%); }
+
+    /* ---------- a folha ---------- */
+    .folha {
+      max-width: 210mm; margin: 0 auto 2rem; padding: 12mm;
+      background: #fff; border: 1px solid var(--linha); box-shadow: 0 1px 3px rgba(36, 23, 16, 0.08);
+    }
+    .folha .katex { font-size: 1em; }
+
+    .cab {
+      display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.2rem 1rem;
+      margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 1.5pt solid var(--dourado);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .cab h1 { margin: 0; font-family: var(--serif); font-size: 17pt; font-weight: 400; letter-spacing: -0.01em; line-height: 1.15; color: var(--castanho); }
+    .cab p { margin: 0; color: var(--dourado-texto); font-family: var(--serif); font-size: 10pt; letter-spacing: 0.04em; }
+
+    h2 {
+      margin: 0 0 1.6mm; font-family: var(--serif); font-size: 12pt; font-weight: 400; line-height: 1.2;
+      color: var(--castanho);
+    }
+    h3 {
+      margin: 0 0 1.2mm; padding-bottom: 0.6mm; border-bottom: 0.6pt solid var(--dourado);
+      font-family: var(--serif); font-size: 10pt; font-weight: 400; line-height: 1.2; color: var(--castanho);
+      break-after: avoid; page-break-after: avoid;
+    }
+
+    .bloco { margin: 0 0 5mm; }
+    .bloco--junto { break-inside: avoid; page-break-inside: avoid; }
+
+    .duas { display: grid; grid-template-columns: 1fr; gap: 4mm; }
+    @media (min-width: 40em) { .duas { grid-template-columns: 1fr 1fr; gap: 5mm; } }
+
+    .tabela-rolante { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 0.9mm 1.4mm; border: 0.5pt solid var(--grade); text-align: center; vertical-align: middle; }
+    thead th {
+      background: var(--dourado-fundo); font-weight: 600; font-size: 9pt; line-height: 1.2;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    tbody th { font-weight: 600; white-space: nowrap; }
+    td.nd { color: var(--tinta-suave); font-size: 8.5pt; }
+    td.vazio { background: #faf6ef; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tab-valores th, .tab-valores td { min-width: 0; }
+    .tab-reducao td, .tab-reducao th { white-space: nowrap; }
+    .tab-reducao td.id { text-align: left; }
+
+    .nota { margin: 1.6mm 0 0; color: var(--tinta-suave); font-size: 8.5pt; line-height: 1.3; }
+
+    /* cartões: lista «frente → verso» em duas colunas */
+    .cartoes { column-count: 1; column-gap: 8mm; }
+    @media (min-width: 40em) { .cartoes { column-count: 2; } }
+    .grupo { margin: 0 0 3.5mm; }
+    .grupo ul { margin: 0; padding: 0; list-style: none; }
+    .grupo li { margin: 0 0 1.2mm; break-inside: avoid; page-break-inside: avoid; line-height: 1.35; }
+    .grupo .fr { color: var(--castanho); font-weight: 600; }
+    .grupo .seta { color: var(--dourado-texto); padding: 0 0.3em; }
+
+    .aviso { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 0.4rem; background: #f8e4df; color: var(--erro); }
+
+    /* ---------- ecrã estreito ---------- */
+    @media (max-width: 40em) {
+      .folha { padding: 1rem; border-left: 0; border-right: 0; box-shadow: none; }
+      body { font-size: 10.5pt; }
+    }
+
+    /* ---------- impressão ---------- */
+    @media print {
+      html, body { background: #fff; }
+      body { font-size: 9pt; line-height: 1.3; }
+      .nao-imprimir { display: none !important; }
+      .folha { max-width: none; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; }
+      .duas { grid-template-columns: 1fr 1fr; gap: 5mm; }
+      .tabela-rolante { overflow: visible; }
+      .cartoes { column-count: 2; }
+      th, td { padding: 0.8mm 1.2mm; }
+      .bloco { margin-bottom: 4mm; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+  <script defer src="../assets/katex/katex.min.js"></script>
+  <script defer src="../assets/katex/auto-render.min.js"></script>
+  <script type="module">
+    import { renderizar, tex } from '../assets/motor/katex.js';
+    import { GRUPOS } from '../assets/motor/grupos.js';
+    import * as M from '../assets/motor/matematica.js';
+
+    async function json(nome) {
+      const r = await fetch(`./dados/${nome}.json`);
+      if (!r.ok) throw new Error(`${nome}.json: ${r.status}`);
+      return r.json();
+    }
+
+    const el = (id) => document.getElementById(id);
+
+    // ---------- 1. valores notáveis, em duas tabelas ----------
+    function tabelaValores(angulos) {
+      const linhas = angulos.map((a) => {
+        const [p, q] = M.grausEmFracPi(a.graus);
+        const celula = (v) => (v ? `<td>${tex(v.tex)}</td>` : '<td class="nd">n.d.</td>');
+        return `<tr><th scope="row">${a.graus}°</th><td>${tex(M.fracPiTex(p, q))}</td>${celula(a.sin)}${celula(a.cos)}${celula(a.tan)}</tr>`;
+      });
+      return `<div class="tabela-rolante"><table class="tab-valores">
+        <thead><tr><th scope="col">Graus</th><th scope="col">Radianos</th><th scope="col">sin</th><th scope="col">cos</th><th scope="col">tan</th></tr></thead>
+        <tbody>${linhas.join('')}</tbody></table></div>`;
+    }
+
+    function montarValores(valores) {
+      const todos = valores.angulos;
+      const meio = Math.ceil(todos.length / 2);
+      el('valores-tabelas').innerHTML = tabelaValores(todos.slice(0, meio)) + tabelaValores(todos.slice(meio));
+    }
+
+    // ---------- 2. redução ao 1.º quadrante ----------
+    function montarReducao(reducao) {
+      const identidade = (rel, f) => {
+        const l = rel.linhas.find((x) => x.f === f);
+        if (!l) return '<td class="vazio"></td>';
+        const sinal = l.sinal < 0 ? '-' : '';
+        return `<td>${tex(`\\${f}\\left(${rel.argTex}\\right)=${sinal}\\${l.res}\\,\\alpha`)}</td>`;
+      };
+      const linhas = reducao.relacoes.map((rel) => {
+        const ponto = `\\left(${rel.ponto.join(',\\,')}\\right)`;
+        return `<tr><th scope="row">${tex(rel.argTex)}</th><td>${tex(ponto)}</td>`
+          + `${identidade(rel, 'sin')}${identidade(rel, 'cos')}${identidade(rel, 'tan')}</tr>`;
+      });
+      el('reducao-tabela').innerHTML = `<table class="tab-reducao">
+        <thead><tr><th scope="col">Ângulo</th><th scope="col">Ponto</th><th scope="col">Seno</th><th scope="col">Cosseno</th><th scope="col">Tangente</th></tr></thead>
+        <tbody>${linhas.join('')}</tbody></table>`;
+    }
+
+    // ---------- 3. cartões, agrupados ----------
+    function montarCartoes(cartoes) {
+      const porGrupo = new Map(GRUPOS.map((g) => [g.id, []]));
+      for (const c of cartoes) {
+        if (porGrupo.has(c.grupo)) porGrupo.get(c.grupo).push(c);
+      }
+      const partes = [];
+      for (const g of GRUPOS) {
+        if (g.id === 'valores' || g.id === 'reducao') continue; // já têm tabelas
+        const lista = porGrupo.get(g.id);
+        if (!lista.length) continue;
+        const itens = lista.map((c) =>
+          `<li><span class="fr">${c.frente}</span><span class="seta" aria-hidden="true">→</span>`
+          + `<span class="sr-only"> Resposta: </span><span class="vs">${c.verso}</span></li>`);
+        partes.push(`<div class="grupo"><h3>${g.titulo}</h3><ul>${itens.join('')}</ul></div>`);
+      }
+      if (!partes.length) return;
+      el('cartoes-lista').innerHTML = partes.join('');
+      el('cartoes').hidden = false;
+    }
+
+    async function iniciar() {
+      try {
+        const [valores, reducao] = await Promise.all([json('valores'), json('reducao')]);
+        montarValores(valores);
+        montarReducao(reducao);
+        try {
+          const cartoes = await json('cartoes');
+          montarCartoes(cartoes.cartoes || []);
+        } catch (e) {
+          console.error(e); // sem cartões, a folha mostra só as tabelas
+        }
+        renderizar(document.getElementById('folha'));
+      } catch (e) {
+        console.error(e);
+        el('erro').hidden = false;
+      }
+      document.documentElement.dataset.pronto = 'sim'; // para os testes automáticos
+    }
+
+    iniciar();
+  </script>
+</head>
+<body>
+  <div class="barra nao-imprimir">
+    <a class="nao-imprimir" href="index.html">Voltar</a>
+    <button class="nao-imprimir" type="button" onclick="window.print()">Imprimir</button>
+  </div>
+
+  <main class="folha" id="folha">
+    <header class="cab">
+      <h1>Trigonometria · Folha de consulta</h1>
+      <p>Mat100limites</p>
+    </header>
+
+    <p class="aviso" id="erro" role="alert" hidden>Não consegui carregar os dados. Recarrega a página.</p>
+
+    <section class="bloco bloco--junto" aria-labelledby="t-valores">
+      <h2 id="t-valores">Valores notáveis</h2>
+      <div class="duas" id="valores-tabelas"></div>
+      <p class="nota">n.d. = não definida: a tangente não existe quando o cosseno é 0.</p>
+    </section>
+
+    <section class="bloco bloco--junto" aria-labelledby="t-reducao">
+      <h2 id="t-reducao">Redução ao 1.º quadrante</h2>
+      <div class="tabela-rolante" id="reducao-tabela"></div>
+      <p class="nota">$P=(x,\,y)=(\cos\alpha,\,\sin\alpha)$ é o ponto do ângulo agudo $\alpha$. A coluna «Ponto» diz onde cai o ponto do ângulo da primeira coluna.</p>
+    </section>
+
+    <section class="bloco" id="cartoes" aria-labelledby="t-cartoes" hidden>
+      <h2 id="t-cartoes">Para recordar</h2>
+      <div class="cartoes" id="cartoes-lista"></div>
+    </section>
+  </main>
+</body>
+</html>

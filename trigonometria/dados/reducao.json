@@ -1,0 +1,43 @@
+{
+ "_nota": "f(arg) = sinal · res(α). arg usa a variável a (α) e pi. ponto = onde cai o ponto do ângulo arg quando P = (x, y) é o ponto de α. 17 identidades: -α, π−α, π+α (sin, cos, tan) e π/2±α, 3π/2±α (sin, cos).",
+ "relacoes": [
+  { "id": "menos", "arg": "-a", "argTex": "-\\alpha", "ponto": ["x", "-y"], "troca": false,
+    "efeito": "o ponto é o simétrico de P em relação ao eixo Ox: a abcissa mantém-se e a ordenada muda de sinal",
+    "linhas": [
+      { "f": "sin", "sinal": -1, "res": "sin" },
+      { "f": "cos", "sinal": 1, "res": "cos" },
+      { "f": "tan", "sinal": -1, "res": "tan" } ] },
+  { "id": "pi-menos", "arg": "pi-a", "argTex": "\\pi-\\alpha", "ponto": ["-x", "y"], "troca": false,
+    "efeito": "o ponto é o simétrico de P em relação ao eixo Oy: a ordenada mantém-se e a abcissa muda de sinal",
+    "linhas": [
+      { "f": "sin", "sinal": 1, "res": "sin" },
+      { "f": "cos", "sinal": -1, "res": "cos" },
+      { "f": "tan", "sinal": -1, "res": "tan" } ] },
+  { "id": "pi-mais", "arg": "pi+a", "argTex": "\\pi+\\alpha", "ponto": ["-x", "-y"], "troca": false,
+    "efeito": "o ponto é o simétrico de P em relação à origem: a abcissa e a ordenada mudam de sinal",
+    "linhas": [
+      { "f": "sin", "sinal": -1, "res": "sin" },
+      { "f": "cos", "sinal": -1, "res": "cos" },
+      { "f": "tan", "sinal": 1, "res": "tan" } ] },
+  { "id": "meio-pi-menos", "arg": "pi/2-a", "argTex": "\\frac{\\pi}{2}-\\alpha", "ponto": ["y", "x"], "troca": true,
+    "efeito": "o ponto é o simétrico de P em relação à bissetriz y = x: a abcissa e a ordenada trocam",
+    "linhas": [
+      { "f": "sin", "sinal": 1, "res": "cos" },
+      { "f": "cos", "sinal": 1, "res": "sin" } ] },
+  { "id": "meio-pi-mais", "arg": "pi/2+a", "argTex": "\\frac{\\pi}{2}+\\alpha", "ponto": ["-y", "x"], "troca": true,
+    "efeito": "o ponto é P rodado 90° no sentido positivo: (x, y) passa a (−y, x)",
+    "linhas": [
+      { "f": "sin", "sinal": 1, "res": "cos" },
+      { "f": "cos", "sinal": -1, "res": "sin" } ] },
+  { "id": "tres-meios-pi-menos", "arg": "3*pi/2-a", "argTex": "\\frac{3\\pi}{2}-\\alpha", "ponto": ["-y", "-x"], "troca": true,
+    "efeito": "o ponto é o simétrico de P em relação à bissetriz y = −x: (x, y) passa a (−y, −x)",
+    "linhas": [
+      { "f": "sin", "sinal": -1, "res": "cos" },
+      { "f": "cos", "sinal": -1, "res": "sin" } ] },
+  { "id": "tres-meios-pi-mais", "arg": "3*pi/2+a", "argTex": "\\frac{3\\pi}{2}+\\alpha", "ponto": ["y", "-x"], "troca": true,
+    "efeito": "o ponto é P rodado 90° no sentido negativo: (x, y) passa a (y, −x)",
+    "linhas": [
+      { "f": "sin", "sinal": -1, "res": "cos" },
+      { "f": "cos", "sinal": 1, "res": "sin" } ] }
+ ]
+}

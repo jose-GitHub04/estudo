@@ -1,0 +1,86 @@
+/* triangulo: triângulo retângulo ABC e tabela dos valores notáveis */
+
+.tri [hidden], .tri-valores [hidden] { display: none !important; }
+
+/* alvos de toque de pelo menos 40 px */
+.tri .chip, .tri .botao, .tri-valores .botao { min-height: 2.5rem; }
+.tri .chip { padding-inline: 1rem; }
+
+/* disposição: em ecrã estreito tudo em coluna, em ecrã largo desenho e controlos lado a lado */
+.tri-layout { display: grid; gap: 0.6rem 1.5rem; }
+.tri-coluna { min-width: 0; }
+.tri-painel { display: grid; gap: 0.9rem; align-content: start; min-width: 0; }
+.tri .tri-dica { margin: 0.6rem 0 0; text-align: center; }
+
+@media (min-width: 52em) {
+  .tri-layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* desenho */
+.tri .tri-fig { max-width: 34rem; cursor: grab; }
+.tri .tri-fig:active { cursor: grabbing; }
+.tri-fig text { font-size: 14px; }
+
+.tri-fig .tri-lado { fill: none; stroke-width: 4; stroke-linecap: round; }
+.tri-fig .tri-lado--oposto { stroke: var(--c-seno); }
+.tri-fig .tri-lado--adjacente { stroke: var(--c-cosseno); }
+.tri-fig .tri-lado--hipotenusa { stroke: var(--c-curva); }
+
+.tri-fig .tri-nome { font-weight: 700; }
+.tri-fig .tri-nome--oposto { fill: var(--c-seno); }
+.tri-fig .tri-nome--adjacente { fill: var(--c-cosseno); }
+.tri-fig .tri-nome--hipotenusa { fill: var(--c-curva); }
+.tri-fig .tri-medida { fill: var(--tinta); font-variant-numeric: tabular-nums; }
+
+.tri-fig .tri-recto { fill: none; stroke: var(--c-eixo); stroke-width: 1.5; }
+.tri-fig .tri-arco { fill: none; stroke: var(--c-angulo); stroke-width: 1.5; }
+.tri-fig .tri-arco--ref { stroke-width: 3; }
+.tri-fig .tri-cunha { fill: var(--dourado-fundo); stroke: none; }
+.tri-fig .tri-grego { fill: var(--c-angulo); font-family: var(--serif); font-size: 15px; font-style: italic; }
+.tri-fig .tri-grego--ref { font-weight: 700; font-size: 18px; }
+.tri-fig .tri-vertice { fill: var(--tinta); font-family: var(--serif); font-size: 16px; font-weight: 700; }
+
+.tri-fig .tri-pega { fill: var(--papel); stroke: var(--c-destaque); stroke-width: 3; }
+.tri-fig .tri-pega-alvo { fill: transparent; stroke: none; }
+
+/* grupos de controlos */
+.tri-grupo { display: grid; gap: 0.3rem; }
+.tri-grupo__rotulo { color: var(--tinta-suave); font-size: 0.85rem; }
+.tri .tri-chips { margin: 0; }
+.tri-atalhos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tri .tri-atalho { min-width: 3.5rem; }
+.tri-controlo__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.tri-controlo input[type="range"] { height: 2.5rem; margin: 0; }
+.tri .controlo { margin: 0; }
+
+/* leituras */
+.tri-leituras { margin: 0; }
+.tri-leituras .tri-leitura { min-width: 0; }
+.tri-leituras .tri-leitura--larga { grid-column: 1 / -1; }
+.tri-leituras .leitura__valor { overflow-x: auto; overflow-y: hidden; }
+.tri-leituras .katex { font-size: 1.05em; }
+.tri-notavel { display: inline-block; margin: 0 0.9rem 0.1rem 0; white-space: nowrap; }
+.tri .nota { margin-top: 0; }
+
+/* tabela dos valores notáveis */
+.tri-valores .tri-intro { margin: 0 0 0.7rem; }
+.tri-tabela { table-layout: fixed; }
+.tri-tabela th, .tri-tabela td { padding: 0.3rem; }
+.tri-tabela thead th { line-height: 1.25; }
+.tri-rad { display: block; color: var(--tinta-suave); font-size: 0.8rem; font-weight: 400; }
+.tri-tabela .tri-canto { background: var(--dourado-fundo); }
+.tri-tabela .tri-col--ativa { background: var(--dourado); color: var(--castanho-escuro); }
+.tri-tabela .tri-col--ativa .tri-rad { color: var(--castanho-escuro); }
+
+.tri-celula {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 3rem; padding: 0.25rem;
+  border: 1px dashed #cdbfae; border-radius: 0.35rem;
+  background: var(--creme); color: var(--castanho);
+  font: inherit; font-size: 1.1rem; cursor: pointer;
+}
+.tri-celula:hover { border-color: var(--castanho); background: var(--dourado-fundo); }
+.tri-celula[data-aberta="sim"] { border-style: solid; border-color: var(--dourado); background: var(--dourado-fundo); color: var(--tinta); }
+
+.tri-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
+.tri-contagem { margin: 0 0 0 auto; }

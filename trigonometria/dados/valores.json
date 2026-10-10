@@ -1,0 +1,254 @@
+{
+ "_nota": "tan é null onde não está definida (90° e 270°). Gerado por tools/gerar_valores.py.",
+ "angulos": [
+  {
+   "graus": 0,
+   "sin": {
+    "expr": "0",
+    "tex": "0"
+   },
+   "cos": {
+    "expr": "1",
+    "tex": "1"
+   },
+   "tan": {
+    "expr": "0",
+    "tex": "0"
+   }
+  },
+  {
+   "graus": 30,
+   "sin": {
+    "expr": "1/2",
+    "tex": "\\frac{1}{2}"
+   },
+   "cos": {
+    "expr": "sqrt(3)/2",
+    "tex": "\\frac{\\sqrt{3}}{2}"
+   },
+   "tan": {
+    "expr": "sqrt(3)/3",
+    "tex": "\\frac{\\sqrt{3}}{3}"
+   }
+  },
+  {
+   "graus": 45,
+   "sin": {
+    "expr": "sqrt(2)/2",
+    "tex": "\\frac{\\sqrt{2}}{2}"
+   },
+   "cos": {
+    "expr": "sqrt(2)/2",
+    "tex": "\\frac{\\sqrt{2}}{2}"
+   },
+   "tan": {
+    "expr": "1",
+    "tex": "1"
+   }
+  },
+  {
+   "graus": 60,
+   "sin": {
+    "expr": "sqrt(3)/2",
+    "tex": "\\frac{\\sqrt{3}}{2}"
+   },
+   "cos": {
+    "expr": "1/2",
+    "tex": "\\frac{1}{2}"
+   },
+   "tan": {
+    "expr": "sqrt(3)",
+    "tex": "\\sqrt{3}"
+   }
+  },
+  {
+   "graus": 90,
+   "sin": {
+    "expr": "1",
+    "tex": "1"
+   },
+   "cos": {
+    "expr": "0",
+    "tex": "0"
+   },
+   "tan": null
+  },
+  {
+   "graus": 120,
+   "sin": {
+    "expr": "sqrt(3)/2",
+    "tex": "\\frac{\\sqrt{3}}{2}"
+   },
+   "cos": {
+    "expr": "-1/2",
+    "tex": "-\\frac{1}{2}"
+   },
+   "tan": {
+    "expr": "-sqrt(3)",
+    "tex": "-\\sqrt{3}"
+   }
+  },
+  {
+   "graus": 135,
+   "sin": {
+    "expr": "sqrt(2)/2",
+    "tex": "\\frac{\\sqrt{2}}{2}"
+   },
+   "cos": {
+    "expr": "-sqrt(2)/2",
+    "tex": "-\\frac{\\sqrt{2}}{2}"
+   },
+   "tan": {
+    "expr": "-1",
+    "tex": "-1"
+   }
+  },
+  {
+   "graus": 150,
+   "sin": {
+    "expr": "1/2",
+    "tex": "\\frac{1}{2}"
+   },
+   "cos": {
+    "expr": "-sqrt(3)/2",
+    "tex": "-\\frac{\\sqrt{3}}{2}"
+   },
+   "tan": {
+    "expr": "-sqrt(3)/3",
+    "tex": "-\\frac{\\sqrt{3}}{3}"
+   }
+  },
+  {
+   "graus": 180,
+   "sin": {
+    "expr": "0",
+    "tex": "0"
+   },
+   "cos": {
+    "expr": "-1",
+    "tex": "-1"
+   },
+   "tan": {
+    "expr": "0",
+    "tex": "0"
+   }
+  },
+  {
+   "graus": 210,
+   "sin": {
+    "expr": "-1/2",
+    "tex": "-\\frac{1}{2}"
+   },
+   "cos": {
+    "expr": "-sqrt(3)/2",
+    "tex": "-\\frac{\\sqrt{3}}{2}"
+   },
+   "tan": {
+    "expr": "sqrt(3)/3",
+    "tex": "\\frac{\\sqrt{3}}{3}"
+   }
+  },
+  {
+   "graus": 225,
+   "sin": {
+    "expr": "-sqrt(2)/2",
+    "tex": "-\\frac{\\sqrt{2}}{2}"
+   },
+   "cos": {
+    "expr": "-sqrt(2)/2",
+    "tex": "-\\frac{\\sqrt{2}}{2}"
+   },
+   "tan": {
+    "expr": "1",
+    "tex": "1"
+   }
+  },
+  {
+   "graus": 240,
+   "sin": {
+    "expr": "-sqrt(3)/2",
+    "tex": "-\\frac{\\sqrt{3}}{2}"
+   },
+   "cos": {
+    "expr": "-1/2",
+    "tex": "-\\frac{1}{2}"
+   },
+   "tan": {
+    "expr": "sqrt(3)",
+    "tex": "\\sqrt{3}"
+   }
+  },
+  {
+   "graus": 270,
+   "sin": {
+    "expr": "-1",
+    "tex": "-1"
+   },
+   "cos": {
+    "expr": "0",
+    "tex": "0"
+   },
+   "tan": null
+  },
+  {
+   "graus": 300,
+   "sin": {
+    "expr": "-sqrt(3)/2",
+    "tex": "-\\frac{\\sqrt{3}}{2}"
+   },
+   "cos": {
+    "expr": "1/2",
+    "tex": "\\frac{1}{2}"
+   },
+   "tan": {
+    "expr": "-sqrt(3)",
+    "tex": "-\\sqrt{3}"
+   }
+  },
+  {
+   "graus": 315,
+   "sin": {
+    "expr": "-sqrt(2)/2",
+    "tex": "-\\frac{\\sqrt{2}}{2}"
+   },
+   "cos": {
+    "expr": "sqrt(2)/2",
+    "tex": "\\frac{\\sqrt{2}}{2}"
+   },
+   "tan": {
+    "expr": "-1",
+    "tex": "-1"
+   }
+  },
+  {
+   "graus": 330,
+   "sin": {
+    "expr": "-1/2",
+    "tex": "-\\frac{1}{2}"
+   },
+   "cos": {
+    "expr": "sqrt(3)/2",
+    "tex": "\\frac{\\sqrt{3}}{2}"
+   },
+   "tan": {
+    "expr": "-sqrt(3)/3",
+    "tex": "-\\frac{\\sqrt{3}}{3}"
+   }
+  },
+  {
+   "graus": 360,
+   "sin": {
+    "expr": "0",
+    "tex": "0"
+   },
+   "cos": {
+    "expr": "1",
+    "tex": "1"
+   },
+   "tan": {
+    "expr": "0",
+    "tex": "0"
+   }
+  }
+ ]
+}

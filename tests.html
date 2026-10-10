@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do treino</title>
+<!-- Testes que correm no browser: avaliador, correção e os 9 geradores de perguntas.
+     Abrir /tests.html ou: msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8765/tests.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
+<script src="./assets/katex/katex.min.js"></script>
+</head>
+<body>
+<h1>Testes do treino</h1>
+<pre id="resultado">A correr...</pre>
+<script type="module">
+import * as M from './assets/motor/matematica.js';
+import { TIPOS, gerarPergunta } from './trigonometria/geradores.js';
+
+const SEMENTES = Number(new URLSearchParams(location.search).get('n')) || 2000; // ?n=20000 para uma bateria maior
+const TRACO_LONGO = new RegExp(String.fromCharCode(0x2014));
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+
+/** Corre um teste. `fn(ok)` chama ok(condicao, mensagem); a primeira exceção também conta. */
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 3) erros.push(msg); }
+  };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const rad = (g) => (g * Math.PI) / 180;
+
+// ---------- dados ----------
+const [valores, reducao] = await Promise.all([
+  fetch('./trigonometria/dados/valores.json').then((r) => r.json()),
+  fetch('./trigonometria/dados/reducao.json').then((r) => r.json()),
+]);
+const dados = { valores, reducao };
+
+// ---------- (a) avaliador e correção ----------
+const ACEITES = [
+  ['√3/2', Math.sqrt(3) / 2], ['sqrt(3)/2', Math.sqrt(3) / 2], ['raiz(3)/2', Math.sqrt(3) / 2],
+  ['√(3)/2', Math.sqrt(3) / 2], ['√ 3 / 2', Math.sqrt(3) / 2], ['3π/4', 3 * Math.PI / 4], ['2pi', 2 * Math.PI],
+  ['pi/2', Math.PI / 2], ['1,5', 1.5], ['1.5', 1.5], ['2(3)', 6], ['(1/2)(3)', 1.5], ['3√2', 3 * Math.sqrt(2)],
+  ['2sqrt(3)', 2 * Math.sqrt(3)], ['−1/2', -0.5], ['-√2/2', -Math.sqrt(2) / 2], ['2*3', 6], ['2×3', 6],
+  ['1/2^2', 0.25], ['-(1/2)', -0.5], ['  7  ', 7], ['5π/6', 5 * Math.PI / 6],
+];
+await teste('avaliar aceita ' + ACEITES.length + ' escritas válidas', (ok) => {
+  for (const [txt, esperado] of ACEITES) {
+    const r = M.avaliar(txt);
+    ok(r.ok && perto(r.valor, esperado, 1e-12), `«${txt}» devia dar ${esperado}, deu ${r.ok ? r.valor : r.erro}`);
+  }
+});
+
+const REJEITADAS = ['', '   ', 'abc', '2 3', '1 2', '1,5,3', '1/0', '3+', '(1/2', '1/2)', '@#', '√-1', 'sqrt(', 'x', '2..3', '+', '/2', '3 4/5'];
+await teste('avaliar rejeita ' + REJEITADAS.length + ' escritas inválidas', (ok) => {
+  for (const txt of REJEITADAS) {
+    const r = M.avaliar(txt);
+    ok(!r.ok, `«${txt}» devia ser inválido mas deu ${r.valor}`);
+  }
+});
+
+await teste('avaliar: marcas de decimal e de raiz no denominador', (ok) => {
+  ok(M.avaliar('0,866').dec === true, '0,866 devia ser decimal');
+  ok(M.avaliar('√3/2').dec === false, '√3/2 não é decimal');
+  ok(M.avaliar('1/√3').raizDenominador === true, '1/√3 tem raiz no denominador');
+  ok(M.avaliar('√3/3').raizDenominador === false, '√3/3 não tem raiz no denominador');
+});
+
+const CORRECAO = [
+  ['√3/2', { expr: 'sqrt(3)/2' }, 'certo'],
+  ['sqrt(3)/2', { expr: 'sqrt(3)/2' }, 'certo'],
+  ['raiz(3)/2', { expr: 'sqrt(3)/2' }, 'certo'],
+  ['1/√3', { expr: 'sqrt(3)/3' }, 'certo-forma'],
+  ['√3/3', { expr: 'sqrt(3)/3' }, 'certo'],
+  ['0,866', { expr: 'sqrt(3)/2' }, 'decimal'],
+  ['0.707', { expr: 'sqrt(2)/2' }, 'decimal'],
+  ['n.d.', { naoDefinida: true }, 'certo'],
+  ['ND', { naoDefinida: true }, 'certo'],
+  ['não definida', { naoDefinida: true }, 'certo'],
+  ['indefinida', { naoDefinida: true }, 'certo'],
+  ['1', { naoDefinida: true }, 'errado'],
+  ['n.d.', { expr: '1' }, 'errado'],
+  ['−1/2', { expr: '-1/2' }, 'certo'],
+  ['1/2', { expr: '-1/2' }, 'errado'],
+  ['1', { expr: '1' }, 'certo'],
+  ['1,0', { expr: '1' }, 'certo'],
+  ['0', { expr: '0' }, 'certo'],
+  ['2/√3', { expr: 'sqrt(3)/3' }, 'errado'],
+  ['abc', { expr: '1/2' }, 'invalido'],
+  ['', { expr: '1/2' }, 'invalido'],
+  ['2 3', { expr: '1/2' }, 'invalido'],
+  ['√2/2', { expr: 'sqrt(2)/2' }, 'certo'],
+  ['1/√2', { expr: 'sqrt(2)/2' }, 'certo-forma'],
+  ['2/√2', { expr: 'sqrt(2)' }, 'certo-forma'],
+];
+await teste('corrigir dá o estado certo em ' + CORRECAO.length + ' casos', (ok) => {
+  for (const [resp, esp, estado] of CORRECAO) {
+    const r = M.corrigir(resp, esp);
+    ok(r.estado === estado, `corrigir(«${resp}», ${JSON.stringify(esp)}) = ${r.estado}, esperava ${estado}`);
+  }
+});
+
+await teste('ehNaoDefinida aceita as variantes e rejeita números', (ok) => {
+  for (const s of ['n.d.', 'n.d', 'nd', 'ND', 'N.D.', 'não definida', 'Nao definida', 'indefinida', 'impossível']) ok(M.ehNaoDefinida(s), `«${s}» devia contar`);
+  for (const s of ['0', '1', 'sqrt(3)', '']) ok(!M.ehNaoDefinida(s), `«${s}» não devia contar`);
+});
+
+await teste('tabela: linhaDe, exato e valoresPossiveis', (ok) => {
+  ok(M.linhaDe(valores, -30).graus === 330, 'linhaDe(-30) devia ser 330');
+  ok(M.linhaDe(valores, 750).graus === 30, 'linhaDe(750) devia ser 30');
+  ok(M.linhaDe(valores, 35) === undefined, 'linhaDe(35) devia ser undefined');
+  ok(M.exato(valores, 90, 'tan') === null, 'tan 90 devia ser null');
+  ok(M.exato(valores, -90, 'tan') === null, 'tan -90 devia ser null');
+  ok(M.exato(valores, 810, 'tan') === null, 'tan 810 devia ser null');
+  ok(M.valoresPossiveis(valores, 'sin').length === 9, 'sin devia ter 9 valores');
+  ok(M.valoresPossiveis(valores, 'cos').length === 9, 'cos devia ter 9 valores');
+  ok(M.valoresPossiveis(valores, 'tan').length === 7, 'tan devia ter 7 valores');
+  for (const a of valores.angulos) {
+    for (const f of ['sin', 'cos', 'tan']) {
+      if (a[f] === null) { ok(f === 'tan' && Math.abs(Math.cos(rad(a.graus))) < 1e-9, `${f} ${a.graus} é null mas está definido`); continue; }
+      ok(perto(M.avaliar(a[f].expr).valor, Math[f](rad(a.graus)), 1e-9), `${f} ${a.graus}: ${a[f].expr}`);
+    }
+  }
+});
+
+await teste('fmt, fracTex e fracPiTex', (ok) => {
+  ok(M.fmt(0.866025) === '0,866', 'fmt 0,866');
+  ok(M.fmt(-0.5) === '−0,500', 'fmt -0,5 com menos U+2212');
+  ok(M.fracPiTex(5, 6) === '\\frac{5\\pi}{6}', 'fracPiTex(5,6)');
+  ok(M.fracPiTex(-1, 2) === '-\\frac{\\pi}{2}', 'fracPiTex(-1,2)');
+  ok(M.fracTex(2, 4) === '\\frac{1}{2}', 'fracTex(2,4)');
+  ok(JSON.stringify(M.grausEmFracPi(150)) === '[5,6]', 'grausEmFracPi(150)');
+});
+
+// ---------- (b) geradores ----------
+
+/** Corre `verificar(pergunta, ok, semente)` em SEMENTES sementes de um tipo. */
+async function porTipo(nome, tipoId, verificar, sementes = SEMENTES) {
+  await teste(nome, (ok) => {
+    for (let s = 1; s <= sementes; s++) {
+      let p;
+      try {
+        p = gerarPergunta(tipoId, M.criarRng(s), dados);
+      } catch (e) {
+        ok(false, `semente ${s}: exceção ${e.message}`);
+        continue;
+      }
+      verificar(p, (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 90)}]`), s);
+    }
+  });
+}
+
+const dolaresPares = (txt) => (txt.match(/\$/g) || []).length % 2 === 0;
+const semFormulas = (txt) => txt.replace(/\$[^$]*\$/g, '');
+const avisosKatex = [];
+const jaRenderizadas = new Set();
+function renderiza(src) {
+  if (jaRenderizadas.has(src)) return null;
+  jaRenderizadas.add(src);
+  try {
+    window.katex.renderToString(src, {
+      throwOnError: true,
+      strict: (codigo, msg) => { avisosKatex.push(`${codigo}: ${msg} em ${src}`); return 'ignore'; },
+    });
+    return null;
+  } catch (e) {
+    return `${src} -> ${e.message}`;
+  }
+}
+
+for (const tipo of TIPOS) {
+  // genérico: estrutura, opções, texto, fórmulas, determinismo, posição da correta
+  await teste(`${tipo.id}: estrutura, opções distintas, texto e KaTeX (${SEMENTES} sementes)`, (ok) => {
+    const posicoes = [0, 0, 0, 0];
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = gerarPergunta(tipo.id, M.criarRng(s), dados);
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 90)}]`);
+      aqui(p.tipo === tipo.id, `tipo «${p.tipo}»`);
+      aqui(p.modo === 'escolha' || p.modo === 'escrita', `modo «${p.modo}»`);
+      aqui(typeof p.enunciado === 'string' && p.enunciado.length > 10, 'enunciado vazio');
+      aqui(typeof p.explicacao === 'string' && p.explicacao.length > 10, 'explicação vazia');
+      aqui(p.verificacao && typeof p.verificacao === 'object', 'sem verificacao');
+      for (const campo of ['enunciado', 'explicacao']) {
+        aqui(dolaresPares(p[campo]), `$ desemparelhados em ${campo}`);
+        aqui(!/[\\^_{}]/.test(semFormulas(p[campo])), `LaTeX solto fora de $ em ${campo}`);
+        aqui(!TRACO_LONGO.test(p[campo]), `travessão em ${campo}`);
+        aqui(!/você|\bsen\b|\btg\b|\\sen\b|\\tg\b|\\operatorname/.test(p[campo]), `grafia que não é pt-PT em ${campo}`);
+        for (const m of p[campo].matchAll(/\$([^$]+)\$/g)) {
+          const e = renderiza(m[1]);
+          aqui(e === null, 'KaTeX: ' + e);
+        }
+      }
+      if (p.modo === 'escolha') {
+        aqui(Array.isArray(p.opcoes) && p.opcoes.length === 4, `${p.opcoes && p.opcoes.length} opções`);
+        const certas = p.opcoes.filter((o) => o.correta === true);
+        aqui(certas.length === 1, `${certas.length} opções corretas`);
+        aqui(p.opcoes.every((o) => o.correta === true || o.correta === false), 'correta tem de ser booleano');
+        const textos = new Set(p.opcoes.map((o) => o.tex));
+        aqui(textos.size === 4, 'opções com o mesmo texto');
+        const nums = p.opcoes.filter((o) => typeof o.expr === 'string').map((o) => M.avaliar(o.expr));
+        aqui(nums.every((r) => r.ok), 'expr ilegível numa opção');
+        for (let i = 0; i < nums.length; i++) for (let j = i + 1; j < nums.length; j++) {
+          aqui(!(nums[i].ok && nums[j].ok && perto(nums[i].valor, nums[j].valor, 1e-9)), 'duas opções com o mesmo valor numérico');
+        }
+        for (const o of p.opcoes) {
+          aqui(typeof o.tex === 'string' && o.tex.length > 0, 'opção sem tex');
+          aqui(!TRACO_LONGO.test(o.tex), 'travessão numa opção');
+          const e = renderiza(o.tex);
+          aqui(e === null, 'KaTeX opção: ' + e);
+        }
+        const certa = p.opcoes.find((o) => o.correta);
+        if (certa.naoDefinida) aqui(p.explicacao.includes('não está definida'), 'a explicação não diz que a tangente não está definida');
+        else if (tipo.id === 'sinais') aqui(p.explicacao.includes(`é o ${certa.quadrante}.º`), 'a explicação não conclui o quadrante certo');
+        else aqui(p.explicacao.includes(certa.tex), 'a explicação não traz a resposta certa ' + certa.tex);
+        posicoes[p.opcoes.findIndex((o) => o.correta)]++;
+      } else {
+        aqui(p.esperado && (p.esperado.naoDefinida === true || typeof p.esperado.expr === 'string'), 'escrita sem esperado');
+      }
+      if (s <= 150) {
+        const igual = JSON.stringify(gerarPergunta(tipo.id, M.criarRng(s), dados)) === JSON.stringify(p);
+        aqui(igual, 'a mesma semente deu perguntas diferentes');
+      }
+    }
+    for (let i = 0; i < 4; i++) ok(posicoes[i] > SEMENTES * 0.18, `a correta quase nunca está na posição ${i + 1}: ${posicoes}`);
+  });
+}
+
+await teste('KaTeX sem avisos nem erros em ' + jaRenderizadas.size + ' fórmulas distintas', (ok) => {
+  ok(jaRenderizadas.size > 100, 'poucas fórmulas verificadas: ' + jaRenderizadas.size);
+  ok(avisosKatex.length === 0, avisosKatex.slice(0, 3).join(' ; '));
+});
+
+await teste('gerarPergunta rejeita tipo desconhecido e há 9 tipos com nome e tema', (ok) => {
+  let deu = false;
+  try { gerarPergunta('nao-existe', M.criarRng(1), dados); } catch (e) { deu = true; }
+  ok(deu, 'devia lançar erro');
+  ok(TIPOS.length === 9, TIPOS.length + ' tipos');
+  ok(new Set(TIPOS.map((t) => t.id)).size === 9, 'ids repetidos');
+  ok(TIPOS.every((t) => t.nome && t.tema && typeof t.gerar === 'function'), 'tipo incompleto');
+});
+
+// 1. valor-exato
+{
+  const cobertura = { rad: 0, graus: 0, negativos: 0, grandes: 0, ndCorreta: 0, ndDistrator: 0, n: 0 };
+  await porTipo('valor-exato: recálculo com Math.sin/cos/tan, sinal trocado e outra função presentes', 'valor-exato', (p, ok) => {
+    const { funcao, graus, emRad } = p.verificacao;
+    const a = rad(graus);
+    const real = Math[funcao](a);
+    const indef = funcao === 'tan' && Math.abs(Math.cos(a)) < 1e-9;
+    const correta = p.opcoes.find((o) => o.correta);
+    cobertura.n++;
+    if (emRad) cobertura.rad++; else cobertura.graus++;
+    if (graus < 0) cobertura.negativos++;
+    if (graus > 360) cobertura.grandes++;
+    ok(Math.abs(graus) <= 720 + 330, 'ângulo fora de ±2 voltas');
+    const esperadoAng = emRad ? M.fracPiTex(...M.grausEmFracPi(graus)) : `${graus}^\\circ`;
+    ok(p.enunciado.includes(esperadoAng), 'o enunciado não traz o ângulo ' + esperadoAng);
+    ok(p.enunciado.includes('\\' + funcao), 'o enunciado não traz a função');
+    if (indef) {
+      cobertura.ndCorreta++;
+      ok(correta.naoDefinida === true, 'tan indefinida mas a correta não é «não definida»');
+    } else {
+      ok(!correta.naoDefinida, 'tan definida mas a correta é «não definida»');
+      ok(perto(M.avaliar(correta.expr).valor, real), `correta ${correta.expr} != ${real}`);
+    }
+    let nds = 0;
+    for (const o of p.opcoes) {
+      if (o.naoDefinida) { nds++; if (!o.correta) cobertura.ndDistrator++; ok(funcao === 'tan', 'não definida fora da tangente'); continue; }
+      if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, real), `distrator ${o.expr} igual ao valor real`);
+    }
+    ok(nds <= 1, 'mais de uma opção «não definida»');
+    // a explicação diz o quadrante e o sinal certos (calculados aqui com Math)
+    const gn = ((graus % 360) + 360) % 360;
+    if (gn % 90 !== 0) {
+      const quad = Math.floor(gn / 90) + 1;
+      const nome = { sin: 'seno', cos: 'cosseno', tan: 'tangente' }[funcao];
+      if (quad === 1) ok(p.explicacao.includes('1.º quadrante'), 'a explicação não diz que é do 1.º quadrante');
+      else {
+        ok(p.explicacao.includes(`Fica no ${quad}.º quadrante`), 'quadrante da explicação diferente de ' + quad);
+        ok(p.explicacao.includes(`onde o ${nome} é ${real > 0 ? 'positivo' : 'negativo'}`), 'sinal da explicação diferente do de Math: ' + real);
+      }
+    }
+    const pool = M.valoresPossiveis(valores, funcao).map((v) => v.tex);
+    ok(p.opcoes.every((o) => o.naoDefinida || pool.includes(o.tex)), 'opção que não vem de valoresPossiveis');
+    if (!indef) {
+      const vals = p.opcoes.filter((o) => !o.naoDefinida).map((o) => M.avaliar(o.expr).valor);
+      if (Math.abs(real) > 1e-9) ok(vals.some((v) => perto(v, -real)), 'falta o valor com sinal trocado');
+      if (funcao !== 'tan') {
+        const outra = Math[funcao === 'sin' ? 'cos' : 'sin'](a);
+        if (!perto(outra, real)) ok(vals.some((v) => perto(v, outra)), 'falta o valor da outra função');
+      }
+    }
+  });
+  await teste('valor-exato: cobertura (radianos ~60%, negativos, acima de 360°, não definida)', (ok) => {
+    const fr = cobertura.rad / cobertura.n;
+    ok(fr > 0.5 && fr < 0.7, 'fração em radianos ' + fr.toFixed(2));
+    ok(cobertura.negativos > cobertura.n * 0.2, 'poucos ângulos negativos: ' + cobertura.negativos);
+    ok(cobertura.grandes > cobertura.n * 0.15, 'poucos ângulos acima de 360°: ' + cobertura.grandes);
+    ok(cobertura.ndCorreta > 20, 'tan indefinida quase não aparece: ' + cobertura.ndCorreta);
+    ok(cobertura.ndDistrator > 20, '«não definida» como distrator quase não aparece: ' + cobertura.ndDistrator);
+  });
+}
+
+// 2. graus-rad
+{
+  const sentidos = { g2r: 0, r2g: 0 };
+  await porTipo('graus-rad: ambos os sentidos, múltiplos de 15°, recálculo numérico', 'graus-rad', (p, ok) => {
+    const { sentido, graus } = p.verificacao;
+    sentidos[sentido]++;
+    ok(graus % 15 === 0 && graus >= 15 && graus <= 360, 'ângulo fora de 15..360 em múltiplos de 15: ' + graus);
+    const correta = p.opcoes.find((o) => o.correta);
+    const v = M.avaliar(correta.expr).valor;
+    if (sentido === 'g2r') {
+      ok(perto(v, graus * Math.PI / 180), `correta vale ${v}, devia valer ${graus * Math.PI / 180}`);
+      ok(p.enunciado.includes(`${graus}^\\circ`), 'enunciado sem o ângulo em graus');
+      for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, graus * Math.PI / 180), 'distrator igual ao certo');
+    } else {
+      ok(perto(v, graus), `correta vale ${v}, devia valer ${graus}`);
+      ok(correta.tex === `${graus}^\\circ`, 'tex da correta');
+      ok(p.enunciado.includes(M.fracPiTex(...M.grausEmFracPi(graus))), 'enunciado sem o ângulo em radianos');
+    }
+  });
+  await teste('graus-rad: aparecem os dois sentidos', (ok) => {
+    ok(sentidos.g2r > 700 && sentidos.r2g > 700, JSON.stringify(sentidos));
+  });
+}
+
+// 3. reducao
+{
+  const vistos = new Set();
+  await porTipo('reducao: igualdade numérica em 2 valores de α, uma só opção certa', 'reducao', (p, ok) => {
+    const { relacao, arg, f } = p.verificacao;
+    const rel = reducao.relacoes.find((r) => r.id === relacao);
+    ok(rel && rel.arg === arg, 'relação desconhecida ' + relacao);
+    ok(p.enunciado.includes(rel.argTex) && p.enunciado.includes('\\' + f), 'enunciado sem argumento ou função');
+    const linha = rel.linhas.find((l) => l.f === f);
+    vistos.add(relacao + '|' + f);
+    ok(!!linha, 'a relação não tem a função ' + f);
+    const valor = (o, a) => {
+      const base = Math[o.v.res](a);
+      return o.v.sinal * (o.v.inv ? 1 / base : base);
+    };
+    const alfas = [0.37, 1.13];
+    const iguais = p.opcoes.map((o) => alfas.every((a) => perto(valor(o, a), Math[f](M.avaliar(arg, { a }).valor), 1e-9)));
+    ok(iguais.filter(Boolean).length === 1, `${iguais.filter(Boolean).length} opções igualam o lado esquerdo`);
+    ok(iguais.every((certa, i) => certa === p.opcoes[i].correta), 'a opção marcada como correta não é a que iguala');
+    if (f === 'tan') ok(p.opcoes.every((o) => o.v.res === 'tan'), 'tan só leva opções com tan');
+    else ok(p.opcoes.filter((o) => o.v.res === 'sin').length === 2 && p.opcoes.filter((o) => o.v.res === 'cos').length === 2, 'sin/cos: devia haver ±sin e ±cos');
+  });
+  await teste('reducao: aparecem as 17 identidades', (ok) => {
+    ok(vistos.size === 17, vistos.size + ' identidades');
+  });
+}
+
+// 4. arco-setor
+{
+  const cont = { arco: 0, area: 0, graus: 0, rad: 0 };
+  await porTipo('arco-setor: c = αr e A = αr²/2 recalculados, r de 2 a 10', 'arco-setor', (p, ok) => {
+    const { grandeza, r, graus, alfaRad } = p.verificacao;
+    cont[grandeza]++;
+    ok(Number.isInteger(r) && r >= 2 && r <= 10, 'r fora de 2..10: ' + r);
+    ok(perto(alfaRad, rad(graus)), 'alfaRad não bate com os graus');
+    const rEnun = /raio (\d+) cm/.exec(p.enunciado);
+    ok(rEnun && Number(rEnun[1]) === r, 'o raio do enunciado não é o da verificacao');
+    const emGraus = /(-?\d+)\^\\circ/.exec(p.enunciado);
+    if (emGraus) { cont.graus++; ok(Number(emGraus[1]) === graus, 'graus do enunciado diferentes'); } else cont.rad++;
+    ok(p.enunciado.includes(grandeza === 'arco' ? 'comprimento do arco' : 'área do setor'), 'pergunta diferente da verificacao');
+    const certo = grandeza === 'arco' ? alfaRad * r : (alfaRad * r * r) / 2;
+    const correta = p.opcoes.find((o) => o.correta);
+    ok(perto(M.avaliar(correta.expr).valor, certo), `correta ${correta.expr} = ${M.avaliar(correta.expr).valor}, devia ser ${certo}`);
+    for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, certo), 'distrator igual ao certo');
+    const unidade = grandeza === 'arco' ? '\\text{ cm}' : '\\text{ cm}^2';
+    ok(p.opcoes.every((o) => o.tex.endsWith(unidade)), 'falta a unidade');
+  });
+  await teste('arco-setor: arco e área, graus e radianos', (ok) => {
+    ok(cont.arco > 800 && cont.area > 800 && cont.graus > 600 && cont.rad > 900, JSON.stringify(cont));
+  });
+}
+
+// 5. periodo
+{
+  const cont = { periodo: 0, contradominio: 0, tan: 0, sin: 0, cos: 0 };
+  const cs = new Set();
+  const xs = [0.11, 0.37, 0.83, 1.29, 2.05, 2.71];
+  await porTipo('periodo: f(x+P)=f(x), P/k não é período, contradomínio por amostragem', 'periodo', (p, ok) => {
+    const { pergunta, fun, a, b, c } = p.verificacao;
+    cont[pergunta]++; cont[fun]++;
+    const cc = c[0] / c[1];
+    cs.add(c.join('/'));
+    ok(a >= -2 && a <= 2 && [1, 2, 3].includes(Math.abs(b)) && [0.5, 1, 2, 3, 4].includes(cc), 'parâmetros fora do pedido');
+    const f = (x) => a + b * Math[fun](cc * x);
+    const correta = p.opcoes.find((o) => o.correta);
+    if (pergunta === 'periodo') {
+      ok(p.enunciado.includes('período'), 'o enunciado não pede o período');
+      const P = M.avaliar(correta.expr).valor;
+      const esperado = (fun === 'tan' ? Math.PI : 2 * Math.PI) / cc;
+      ok(perto(P, esperado), `período ${P}, devia ser ${esperado}`);
+      const tol = (x, y) => Math.abs(x - y) <= 1e-7 * Math.max(1, Math.abs(x), Math.abs(y));
+      const seguro = (x) => fun !== 'tan' || Math.abs(Math.cos(cc * x)) > 0.1;
+      for (const x of xs.filter(seguro)) ok(tol(f(x + P), f(x)), `f(x+P) != f(x) em x=${x}`);
+      for (const k of [2, 3, 4, 5, 6]) {
+        const naoE = xs.some((x) => seguro(x) && seguro(x + P / k) && !tol(f(x + P / k), f(x)));
+        ok(naoE, `P/${k} também parece ser período`);
+      }
+      for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, P), 'distrator igual ao período');
+    } else {
+      ok(p.enunciado.includes('contradomínio'), 'o enunciado não pede o contradomínio');
+      let min = Infinity;
+      let max = -Infinity;
+      for (let x = 0; x < 4 * Math.PI; x += 0.001) {
+        const v = f(x);
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      if (fun === 'tan') {
+        ok(correta.todoR === true, 'tan: o contradomínio é R');
+        ok(min < -100 && max > 100, 'amostragem da tan devia ser ilimitada');
+        ok(p.opcoes.filter((o) => o.todoR).length === 1, 'só uma opção pode ser R');
+      } else {
+        ok(Array.isArray(correta.intervalo), 'a correta devia ser um intervalo');
+        ok(perto(correta.intervalo[0], min, 1e-4) && perto(correta.intervalo[1], max, 1e-4), `intervalo ${correta.intervalo} != [${min.toFixed(4)}, ${max.toFixed(4)}]`);
+        for (const o of p.opcoes) if (!o.correta) ok(!(perto(o.intervalo[0], min, 1e-4) && perto(o.intervalo[1], max, 1e-4)), 'distrator igual ao contradomínio');
+      }
+    }
+  });
+  await teste('periodo: cobertura de funções, perguntas e coeficientes c', (ok) => {
+    ok(cont.periodo > 800 && cont.contradominio > 600, JSON.stringify(cont));
+    ok(cont.sin > 500 && cont.cos > 500 && cont.tan > 500, JSON.stringify(cont));
+    ok(cs.size === 5, 'coeficientes c vistos: ' + [...cs]);
+  });
+}
+
+// 6. fundamental
+{
+  const pares = new Set();
+  const cont = { sin: 0, cos: 0, tan: 0, q: [0, 0, 0, 0, 0] };
+  await porTipo('fundamental: sin²+cos²=1, sinal no quadrante, tan = sin/cos', 'fundamental', (p, ok) => {
+    const { dado, valor, quadrante, pedido } = p.verificacao;
+    const v = valor[0] / valor[1];
+    cont[pedido]++; cont.q[quadrante]++;
+    pares.add(`${Math.abs(valor[0])}/${valor[1]}`);
+    ok(Math.abs(v) < 1 && [5, 13, 17, 25, 29].includes(valor[1]), 'valor dado fora dos pares pedidos: ' + valor);
+    ok(p.enunciado.includes(`${quadrante}.º quadrante`), 'quadrante do enunciado');
+    // ângulo no quadrante com o valor dado
+    let alfa;
+    if (dado === 'sin') alfa = (quadrante === 1 || quadrante === 4) ? Math.asin(v) : Math.PI - Math.asin(v);
+    else alfa = (quadrante === 1 || quadrante === 2) ? Math.acos(v) : 2 * Math.PI - Math.acos(v);
+    const s = Math.sin(alfa);
+    const co = Math.cos(alfa);
+    ok(perto(Math[dado](alfa), v), 'o ângulo construído não tem o valor dado');
+    ok(perto(s * s + co * co, 1), 'sin²+cos² != 1');
+    const sinaisOk = [[1, 1], [1, -1], [-1, -1], [-1, 1]][quadrante - 1];
+    ok(Math.sign(s) === sinaisOk[0] && Math.sign(co) === sinaisOk[1], 'sinais do ângulo construído não batem com o quadrante');
+    const certo = Math[pedido](alfa);
+    const correta = p.opcoes.find((o) => o.correta);
+    ok(perto(M.avaliar(correta.expr).valor, certo), `correta ${correta.expr} = ${M.avaliar(correta.expr).valor}, devia ser ${certo}`);
+    for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, certo), 'distrator igual ao certo');
+    ok(p.explicacao.includes('\\sin^2\\alpha+\\cos^2\\alpha=1'), 'explicação sem a fórmula fundamental');
+    ok(p.enunciado.includes('\\' + pedido + '\\alpha'), 'o enunciado não pede ' + pedido);
+    const falta = dado === 'sin' ? 'cos' : 'sin';
+    ok(p.explicacao.includes(`No ${quadrante}.º quadrante o ${{ sin: 'seno', cos: 'cosseno' }[falta]} é ${Math[falta](alfa) > 0 ? 'positivo' : 'negativo'}`), 'sinal do valor em falta, na explicação, diferente do de Math');
+  });
+  await teste('fundamental: cobertura dos 5 pares, dos 4 quadrantes e do que se pede', (ok) => {
+    ok(pares.size >= 10, 'valores vistos: ' + [...pares]);
+    ok(cont.q.slice(1).every((n) => n > 300), JSON.stringify(cont));
+    ok(cont.tan > 500 && cont.sin + cont.cos > 900, JSON.stringify(cont));
+  });
+}
+
+// 7. relacao-tangente
+{
+  const ts = new Set();
+  await porTipo('relacao-tangente: 1+tan²α = 1/cos²α recalculado com Math.atan', 'relacao-tangente', (p, ok) => {
+    const { t, pedido } = p.verificacao;
+    ts.add(t);
+    ok(Number.isInteger(t) && t >= 1 && t <= 4, 't fora de 1..4');
+    ok(p.enunciado.includes(`\\tan\\alpha=${t}`), 'enunciado sem tan α = t');
+    const alfa = Math.atan(t);
+    const certo = pedido === 'cos2' ? Math.cos(alfa) ** 2 : Math.sin(alfa) ** 2;
+    ok(p.enunciado.includes(pedido === 'cos2' ? '\\cos^2\\alpha' : '\\sin^2\\alpha'), 'enunciado pede outra coisa');
+    const correta = p.opcoes.find((o) => o.correta);
+    ok(perto(M.avaliar(correta.expr).valor, certo), `correta ${correta.expr} != ${certo}`);
+    if (pedido === 'cos2') ok(perto(M.avaliar(correta.expr).valor, 1 / (1 + t * t)), 'cos² devia ser 1/(1+t²)');
+    for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, certo), 'distrator igual ao certo');
+  });
+  await teste('relacao-tangente: aparecem t = 1, 2, 3 e 4', (ok) => { ok(ts.size === 4, [...ts].join(',')); });
+}
+
+// 8. sinais
+{
+  const combos = new Set();
+  await porTipo('sinais: as condições só se cumprem no quadrante certo', 'sinais', (p, ok) => {
+    const { condicoes, quadrante } = p.verificacao;
+    combos.add(JSON.stringify(condicoes.map((c) => [c.f, c.sinal]).sort()));
+    ok(condicoes.length === 2 && condicoes[0].f !== condicoes[1].f, 'duas funções diferentes');
+    const quadrantesQueCumprem = [];
+    for (let q = 1; q <= 4; q++) {
+      const resultados = [];
+      for (let g = 5; g < 90; g += 7) {
+        const a = rad(g + 90 * (q - 1));
+        resultados.push(condicoes.every((c) => Math.sign(Math[c.f](a)) === c.sinal));
+      }
+      ok(resultados.every((r) => r === resultados[0]), 'o sinal varia dentro do quadrante ' + q);
+      if (resultados[0]) quadrantesQueCumprem.push(q);
+    }
+    ok(quadrantesQueCumprem.length === 1 && quadrantesQueCumprem[0] === quadrante, `cumprem ${quadrantesQueCumprem}, a pergunta diz ${quadrante}`);
+    ok(p.opcoes.map((o) => o.quadrante).sort().join() === '1,2,3,4', 'as opções têm de ser os 4 quadrantes');
+    ok(p.opcoes.find((o) => o.correta).quadrante === quadrante, 'a correta não é o quadrante certo');
+    ok(p.opcoes.every((o) => o.tex === `${o.quadrante}.^{\\mathrm{o}}\\ \\text{quadrante}`), 'texto das opções');
+    for (const c of condicoes) ok(p.enunciado.includes(`\\${c.f}\\alpha${c.sinal > 0 ? '>' : '<'}0`), 'enunciado sem a condição');
+  });
+  await teste('sinais: aparecem as 12 combinações', (ok) => { ok(combos.size === 12, combos.size + ' combinações'); });
+}
+
+// 9. razoes-triangulo
+{
+  const cont = { A: 0, C: 0, sin: 0, cos: 0, tan: 0, trios: new Set() };
+  await porTipo('razoes-triangulo: Pitágoras e razões recalculadas com atan2', 'razoes-triangulo', (p, ok) => {
+    const { AB, BC, AC, vertice, f } = p.verificacao;
+    cont[vertice]++; cont[f]++; cont.trios.add([AB, BC].sort((x, y) => x - y).join('-') + '-' + AC);
+    ok(AB * AB + BC * BC === AC * AC, 'não é pitagórico');
+    ok(p.enunciado.includes(`\\overline{AB}=${AB}`) && p.enunciado.includes(`\\overline{BC}=${BC}`) && p.enunciado.includes(`\\overline{AC}=${AC}`), 'lados do enunciado');
+    const alfa = vertice === 'A' ? Math.atan2(BC, AB) : Math.atan2(AB, BC);
+    const certo = Math[f](alfa);
+    const correta = p.opcoes.find((o) => o.correta);
+    ok(perto(M.avaliar(correta.expr).valor, certo), `correta ${correta.expr} != ${certo}`);
+    for (const o of p.opcoes) if (!o.correta) ok(!perto(M.avaliar(o.expr).valor, certo), 'distrator igual ao certo');
+    const recip = 1 / certo;
+    ok(p.opcoes.some((o) => !o.correta && perto(M.avaliar(o.expr).valor, recip)), 'falta a razão recíproca');
+    ok(p.enunciado.includes(vertice === 'A' ? '\\alpha' : '\\beta'), 'o ângulo do enunciado');
+  });
+  await teste('razoes-triangulo: cobertura de vértices, funções e triângulos', (ok) => {
+    ok(cont.A > 800 && cont.C > 800 && cont.sin > 500 && cont.cos > 500 && cont.tan > 500, JSON.stringify({ ...cont, trios: cont.trios.size }));
+    ok(cont.trios.size === 4, 'triângulos: ' + [...cont.trios]);
+  });
+}
+
+// ---------- resumo ----------
+const ms = Math.round(performance.now() - t0);
+linhas.push('');
+linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

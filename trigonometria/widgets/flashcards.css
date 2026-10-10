@@ -1,0 +1,47 @@
+/* Flashcards (widgets/flashcards.js). Prefixo .fc- */
+
+.fc-resumo { display: flex; flex-wrap: wrap; gap: 0.1rem 0.5rem; margin: 0 0 0.6rem; font-size: 0.95rem; color: var(--tinta-suave); }
+.fc-resumo strong { color: var(--tinta); }
+.fc-sep { color: var(--linha); }
+
+.fc-grupos, .fc-modos { margin-top: 0.5rem; }
+.fc-modos { padding-bottom: 0.9rem; border-bottom: 1px solid var(--linha); }
+
+.fc-palco { margin-top: 1rem; }
+.fc-vazio { padding: 1.2rem 0.2rem 0.6rem; text-align: center; }
+.fc-vazio .botao { min-width: 11rem; }
+
+.fc-progresso { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.6rem; font-size: 0.82rem; color: var(--tinta-suave); }
+.fc-progresso progress { flex: 1; height: 0.45rem; accent-color: var(--castanho); }
+
+.fc-cartao {
+  padding: 1rem 1rem 1.1rem;
+  border: 1px solid var(--dourado); border-radius: 0.6rem;
+  background: var(--creme);
+  box-shadow: 0 2px 6px rgba(36, 23, 16, 0.08);
+}
+.fc-meta { display: flex; justify-content: space-between; gap: 0.6rem; margin: 0 0 0.7rem; color: var(--dourado-texto); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.fc-caixa { white-space: nowrap; color: var(--tinta-suave); }
+
+.fc-frente { min-height: 4.2rem; font-family: var(--serif); font-size: 1.2rem; line-height: 1.5; }
+.fc-frente .katex, .fc-resposta .katex { font-size: 1.08em; }
+
+.fc-verso { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px dashed var(--dourado); }
+.fc-resposta { font-size: 1.1rem; }
+.fc-porque { margin: 0.7rem 0 0; padding: 0.5rem 0.7rem; border-radius: 0.35rem; background: var(--dourado-fundo); color: var(--tinta-suave); font-size: 0.92rem; }
+
+.fc-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.9rem; }
+.fc-acoes--uma { grid-template-columns: 1fr; }
+.fc-acoes .botao { min-height: 3rem; }
+.fc-dica { text-align: center; }
+
+.fc-rodape { margin: 1.2rem 0 0; padding-top: 0.8rem; border-top: 1px solid var(--linha); text-align: right; }
+
+/* o cartão pode ter fórmulas largas: nunca estica a página */
+.fc-frente, .fc-resposta { overflow-x: auto; overflow-y: hidden; }
+
+@media (min-width: 46em) {
+  .fc-cartao { padding: 1.4rem 1.6rem 1.5rem; }
+  .fc-frente { font-size: 1.35rem; min-height: 5rem; }
+  .fc-acoes { max-width: 26rem; margin-left: auto; margin-right: auto; }
+}

@@ -1,0 +1,256 @@
+/* Mat100limites, Estudo: folha de estilo base.
+   Os valores dos tokens (castanhos, dourados, tipos de letra) são os do site de
+   angariação, copiados para aqui de propósito: este repositório é separado e não
+   pode depender do outro. Cada widget tem a sua própria folha em
+   trigonometria/widgets/<nome>.css; aqui ficam só as peças partilhadas.
+   Desenhado a 390px, cresce a partir daí. */
+
+:root {
+  color-scheme: light;
+
+  --tinta:            #2a1c13;
+  --tinta-suave:      #6b5a4e;
+  --creme:            #fbf7f1;
+  --papel:            #ffffff;
+  --linha:            #e6dbcf;
+  --castanho:         #5a3e2b;
+  --castanho-medio:   #3a2718;
+  --castanho-escuro:  #241710;
+  --castanho-fundo:   #1b110b;
+  --dourado:          #c79a3f;
+  --dourado-texto:    #8a6520;   /* legível sobre creme */
+  --dourado-claro:    #e2c078;   /* legível sobre castanho escuro */
+  --dourado-fundo:    #f6ecd6;
+  --claro:            #fdf8f0;
+  --claro-suave:      rgba(253, 248, 240, 0.78);
+
+  --certo:            #1f6b3a;
+  --certo-fundo:      #e3f1e7;
+  --erro:             #a3321f;
+  --erro-fundo:       #f8e4df;
+
+  /* cores dos desenhos SVG (contraste ≥ 4,5:1 sobre branco) */
+  --c-seno:           #1d5f94;
+  --c-cosseno:        #b4452f;
+  --c-tangente:       #2d7a4b;
+  --c-angulo:         #8a6520;
+  --c-eixo:           #6b5a4e;
+  --c-grelha:         #e6dbcf;
+  --c-curva:          #5a3e2b;
+  --c-ponto:          #241710;
+  --c-destaque:       #7a3f98;
+
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --envolve: 62rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; }
+
+body {
+  margin: 0;
+  background: var(--creme);
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+p { margin: 0 0 1rem; }
+a { color: var(--castanho); }
+img { max-width: 100%; }
+
+:focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.envolve { max-width: var(--envolve); margin: 0 auto; padding: 0 1.25rem; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.saltar { position: absolute; left: -9999px; }
+.saltar:focus {
+  left: 1rem; top: 1rem; z-index: 30; padding: 0.7rem 1rem; border-radius: 0.3rem;
+  background: var(--castanho-escuro); color: var(--claro); text-decoration: none;
+}
+
+/* ---------- Barra ---------- */
+
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  border-bottom: 1px solid var(--linha);
+  background: rgba(251, 247, 241, 0.95);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+
+.barra__interior {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem;
+  max-width: var(--envolve); margin: 0 auto; padding: 0.5rem 1.25rem 0.3rem;
+}
+
+.marca { display: flex; align-items: center; gap: 0.6rem; color: inherit; text-decoration: none; line-height: 1.2; }
+.marca__logo { width: 44px; height: 38px; display: block; object-fit: contain; }
+.marca__nome { display: block; font-family: var(--serif); font-size: 1.02rem; }
+.marca__papel { display: block; color: var(--tinta-suave); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.menu {
+  display: flex; gap: 1.1rem; margin-left: auto;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.menu::-webkit-scrollbar { display: none; }
+.menu a {
+  flex: 0 0 auto; padding: 0.3rem 0; border-bottom: 2px solid transparent;
+  color: var(--tinta-suave); font-size: 0.78rem; letter-spacing: 0.09em;
+  text-decoration: none; text-transform: uppercase; white-space: nowrap;
+}
+.menu a:hover { color: var(--castanho); border-bottom-color: var(--dourado); }
+
+@media (max-width: 34em) {
+  .menu { order: 3; width: 100%; margin-left: 0; }
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  border-bottom: 1px solid rgba(226, 192, 120, 0.28);
+  background:
+    radial-gradient(115% 85% at 50% -10%, #4a3220 0%, rgba(74, 50, 32, 0) 62%),
+    linear-gradient(180deg, var(--castanho-medio) 0%, var(--castanho-escuro) 100%);
+  color: var(--claro);
+}
+.hero .envolve { padding-top: 2rem; padding-bottom: 2.25rem; }
+.hero__etiqueta { margin: 0 0 0.4rem; color: var(--dourado-claro); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.hero h1 { margin: 0 0 0.8rem; color: var(--claro); font-size: clamp(2.05rem, 7.6vw, 3.25rem); letter-spacing: -0.02em; }
+.hero__sub { max-width: 36rem; margin: 0; color: var(--claro-suave); }
+
+/* ---------- Secções ---------- */
+
+.seccao { padding: 2.25rem 0 0.5rem; }
+.seccao > .envolve > h2 { margin: 0 0 0.35rem; font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.seccao__intro { max-width: 40rem; margin: 0 0 1.5rem; color: var(--tinta-suave); }
+
+.modulo { margin: 0 0 2.75rem; }
+.modulo > h3 { margin: 0 0 0.75rem; font-size: 1.4rem; }
+.modulo > h3::after { content: ""; display: block; width: 2.5rem; height: 2px; margin-top: 0.45rem; background: var(--dourado); }
+
+.resumo {
+  margin: 0 0 1rem; padding: 0.9rem 1.1rem 0.4rem;
+  border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--dourado-fundo);
+}
+.resumo__titulo {
+  margin: 0 0 0.4rem; color: var(--dourado-texto); font-family: var(--sans);
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.resumo .katex-display { margin: 0.7rem 0; overflow-x: auto; overflow-y: hidden; }
+
+/* ---------- Cartão do widget ---------- */
+
+.widget {
+  margin: 0 0 1rem; padding: 1rem;
+  border: 1px solid var(--linha); border-radius: 0.6rem; background: var(--papel);
+  box-shadow: 0 1px 2px rgba(36, 23, 16, 0.06);
+}
+.widget__titulo { margin: 0 0 0.6rem; color: var(--tinta-suave); font-family: var(--sans); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* desenho SVG interativo */
+.figura {
+  display: block; width: 100%; height: auto; max-width: 34rem; margin: 0 auto;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.figura--fixa { touch-action: auto; }
+.figura text { font-family: var(--sans); fill: var(--tinta); }
+
+/* leituras em direto (valores que mudam quando se mexe no desenho) */
+.leituras { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.25rem, 1fr)); gap: 0.5rem; margin: 0.9rem 0 0; }
+.leitura { padding: 0.4rem 0.65rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); }
+.leitura__rotulo { display: block; color: var(--tinta-suave); font-size: 0.78rem; }
+.leitura__valor { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.leitura--seno .leitura__rotulo { color: var(--c-seno); }
+.leitura--cosseno .leitura__rotulo { color: var(--c-cosseno); }
+.leitura--tangente .leitura__rotulo { color: var(--c-tangente); }
+
+/* controlos: sliders, campos, interruptores */
+.controlos { display: grid; gap: 0.7rem; margin: 0.9rem 0 0; }
+.controlo { display: grid; gap: 0.15rem; }
+.controlo label, .controlo__rotulo { font-size: 0.85rem; color: var(--tinta-suave); }
+.controlo output { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--castanho); }
+.campo {
+  width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #cdbfae; border-radius: 0.4rem;
+  background: var(--papel); color: var(--tinta); font: inherit; font-size: 1rem;
+}
+.campo:focus-visible { outline-offset: 1px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.8rem 0 0; }
+.chip {
+  padding: 0.4rem 0.8rem; border: 1px solid #cdbfae; border-radius: 999px;
+  background: var(--creme); color: var(--castanho); font: inherit; font-size: 0.88rem; cursor: pointer;
+}
+.chip:hover { border-color: var(--castanho); }
+.chip[aria-pressed="true"], .chip[aria-selected="true"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
+
+/* ---------- Botões ---------- */
+
+.botao {
+  display: inline-block; padding: 0.7rem 1.2rem; border: 1px solid #a87f2b; border-radius: 0.35rem;
+  background: linear-gradient(180deg, #e6c479 0%, #c79a3f 100%);
+  box-shadow: 0 1px 2px rgba(36, 23, 16, 0.25);
+  color: var(--castanho-escuro); font-family: var(--sans); font-size: 1rem; font-weight: 600;
+  line-height: 1.25; text-align: center; text-decoration: none; cursor: pointer;
+}
+.botao:hover { background: linear-gradient(180deg, #efd49a 0%, #d2a748 100%); }
+.botao:disabled { opacity: 0.5; cursor: not-allowed; }
+.botao--suave {
+  border-color: #cdbfae; background: var(--creme); box-shadow: none; color: var(--castanho);
+}
+.botao--suave:hover { border-color: var(--castanho); background: var(--dourado-fundo); }
+.botao--mini { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+/* ---------- Estados e notas ---------- */
+
+.nota { margin: 0.6rem 0 0; color: var(--tinta-suave); font-size: 0.88rem; }
+.ok { color: var(--certo); }
+.erro { color: var(--erro); }
+.aviso-ok, .aviso-erro { margin: 0.7rem 0 0; padding: 0.55rem 0.8rem; border-radius: 0.4rem; font-size: 0.95rem; }
+.aviso-ok { background: var(--certo-fundo); color: var(--certo); }
+.aviso-erro { background: var(--erro-fundo); color: var(--erro); }
+
+/* ---------- Tabelas ---------- */
+
+.tabela-rolante { overflow-x: auto; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.tabela th, .tabela td { padding: 0.45rem 0.6rem; border: 1px solid var(--linha); text-align: center; }
+.tabela thead th { background: var(--dourado-fundo); font-weight: 600; }
+.tabela tbody th { background: var(--creme); font-weight: 600; }
+
+/* ---------- Rodapé ---------- */
+
+.rodape { margin-top: 3rem; padding: 2rem 0; background: var(--castanho-fundo); color: var(--claro-suave); font-size: 0.9rem; }
+.rodape p { margin: 0 0 0.4rem; }
+.rodape__nome { color: var(--claro); font-family: var(--serif); font-size: 1.15rem; }
+.rodape__fino { margin-top: 0.9rem; color: rgba(253, 248, 240, 0.55); font-size: 0.8rem; }
+.rodape a { color: var(--dourado-claro); }
+
+@media (min-width: 46em) {
+  body { font-size: 1.125rem; }
+  .widget { padding: 1.25rem; }
+  .hero .envolve { padding-top: 2.75rem; padding-bottom: 3rem; }
+}

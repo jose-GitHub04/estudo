@@ -1,0 +1,127 @@
+/* circulo: circunferência trigonométrica. Classes com prefixo .cir- */
+
+.cir [hidden] { display: none !important; }
+
+.cir-modos { margin: 0 0 0.9rem; }
+.cir .chip { min-height: 2.5rem; }
+
+/* uma coluna no telemóvel; figura à esquerda e leituras à direita em ecrãs largos */
+.cir-corpo { display: grid; gap: 0.2rem; }
+.cir-fig, .cir-info { min-width: 0; }
+
+@media (min-width: 52em) {
+  .cir-corpo { grid-template-columns: minmax(0, 30rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .cir-gen .leituras { margin-top: 0; }
+}
+
+/* ---------- desenho ---------- */
+
+.cir-svg { max-width: 30rem; cursor: grab; }
+.cir-svg:active { cursor: grabbing; }
+.cir-svg:focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; border-radius: 0.4rem; }
+
+.cir-svg text {
+  font-size: 14px; font-weight: 600;
+  paint-order: stroke; stroke: var(--papel); stroke-width: 4px; stroke-linejoin: round;
+}
+.cir-svg line, .cir-svg path { fill: none; stroke-linecap: round; }
+
+.cir-toque { fill: transparent; pointer-events: all; }
+.cir-disco { fill: var(--creme); stroke: none; }
+.cir-circ { fill: none; stroke: var(--c-curva); stroke-width: 2.5; }
+
+.cir-eixo { stroke: var(--c-eixo); stroke-width: 1.6; }
+.cir-seta { fill: var(--c-eixo); stroke: none; }
+.cir-svg .cir-eixo-nome { font-size: 15px; font-style: italic; font-weight: 500; fill: var(--c-eixo); }
+.cir-svg .cir-num { font-size: 13px; font-weight: 500; fill: var(--c-eixo); }
+.cir-svg .cir-quad { font-size: 13px; font-weight: 500; fill: var(--c-eixo); opacity: 0.6; }
+.cir-svg .cir-quad--ativo { opacity: 1; fill: var(--dourado-texto); font-weight: 700; }
+
+.cir-raio { stroke: var(--c-ponto); stroke-width: 2.2; }
+.cir-raio--q { stroke: var(--c-destaque); }
+.cir-P { fill: var(--c-ponto); stroke: var(--papel); stroke-width: 2.5; }
+.cir-Q { fill: var(--c-destaque); stroke: var(--papel); stroke-width: 2.5; }
+
+.cir-arco { stroke: var(--c-angulo); stroke-width: 2.6; }
+.cir-arco--q { stroke: var(--c-destaque); }
+.cir-arco-seta { fill: var(--c-angulo); stroke: none; }
+.cir-svg .cir-t-ang { fill: var(--c-angulo); }
+.cir-svg .cir-t-ponto { fill: var(--c-ponto); }
+.cir-svg .cir-t-destaque { fill: var(--c-destaque); }
+.cir-svg .cir-t-seno { fill: var(--c-seno); }
+.cir-svg .cir-t-cosseno { fill: var(--c-cosseno); }
+.cir-svg .cir-t-tangente { fill: var(--c-tangente); }
+.cir-svg .cir-t-pequeno { font-size: 12px; font-weight: 500; }
+
+.cir-seg { stroke-width: 4.5; }
+.cir-seg--seno { stroke: var(--c-seno); }
+.cir-seg--cosseno { stroke: var(--c-cosseno); }
+.cir-seg--tangente { stroke: var(--c-tangente); }
+.cir-proj { stroke-width: 1.6; stroke-dasharray: 4 4; }
+.cir-proj--seno { stroke: var(--c-seno); opacity: 0.75; }
+.cir-ponto-seno { fill: var(--c-seno); stroke: var(--papel); stroke-width: 1.5; }
+.cir-ponto-cosseno { fill: var(--c-cosseno); stroke: var(--papel); stroke-width: 1.5; }
+.cir-ponto-tangente { fill: var(--c-tangente); stroke: var(--papel); stroke-width: 2; }
+.cir-seta-tangente { fill: var(--c-tangente); stroke: none; }
+.cir-reta-x { stroke: var(--c-tangente); stroke-width: 1.6; opacity: 0.6; }
+.cir-reta-op { stroke: var(--c-ponto); stroke-width: 1.6; stroke-dasharray: 5 4; }
+
+.cir-ligacao { stroke: var(--c-destaque); stroke-width: 1.6; stroke-dasharray: 4 4; opacity: 0.8; }
+.cir-bissetriz { stroke: var(--c-eixo); stroke-width: 1.2; stroke-dasharray: 2 5; opacity: 0.8; }
+
+/* ---------- avisos e leituras ---------- */
+
+.cir-selo, .cir-aviso {
+  margin: 0.6rem 0 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem;
+  font-size: 0.92rem; line-height: 1.4;
+}
+.cir-selo { background: var(--certo-fundo); color: var(--certo); }
+.cir-selo--perto { background: var(--dourado-fundo); color: var(--tinta); }
+.cir-aviso { border-left: 3px solid var(--c-tangente); background: var(--dourado-fundo); color: var(--tinta); }
+.cir-dica { margin-top: 0.7rem; }
+
+.cir-leituras { margin-top: 0.9rem; }
+.cir-leituras .katex { font-size: 1.05em; }
+/* os rótulos têm sin, cos, tan e letras gregas: nada de maiúsculas forçadas */
+.cir .leitura__rotulo { text-transform: none; letter-spacing: 0.02em; font-size: 0.8rem; }
+.cir-larga { grid-column: 1 / -1; }
+.cir-sub { display: block; color: var(--tinta-suave); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.cir-dec { color: var(--tinta-suave); font-size: 0.85em; white-space: nowrap; }
+.cir-leitura--q .leitura__rotulo { color: var(--c-destaque); }
+
+.cir-sinais-lugar { margin-top: 0.8rem; }
+.cir-sinais { font-size: 0.9rem; }
+.cir-sinais th, .cir-sinais td { padding: 0.3rem 0.4rem; }
+.cir-sinais[data-q="1"] tr > :nth-child(2),
+.cir-sinais[data-q="2"] tr > :nth-child(3),
+.cir-sinais[data-q="3"] tr > :nth-child(4),
+.cir-sinais[data-q="4"] tr > :nth-child(5) {
+  background: var(--dourado-fundo); color: var(--dourado-texto); font-weight: 700;
+}
+
+/* ---------- controlos ---------- */
+
+.cir-controlos { margin-top: 0.9rem; }
+.cir-campo { max-width: 12rem; min-height: 2.5rem; }
+.cir-iman {
+  display: flex; align-items: center; gap: 0.6rem; min-height: 2.75rem;
+  color: var(--tinta); font-size: 0.95rem; cursor: pointer;
+}
+.cir-iman input { width: 1.3rem; height: 1.3rem; margin: 0; accent-color: var(--castanho); flex: 0 0 auto; }
+.cir-rapidos { margin-top: 0; }
+.cir-rapidos .chip { min-width: 3rem; }
+
+/* ---------- redução ---------- */
+
+.cir-rels { margin-top: 0.8rem; }
+.cir-efeito { margin: 0.8rem 0 0; color: var(--tinta); font-size: 0.95rem; line-height: 1.45; }
+.cir-efeito strong { color: var(--c-destaque); }
+.cir-ident-titulo { margin: 1rem 0 0.3rem; color: var(--tinta-suave); font-size: 0.88rem; }
+.cir-ident { margin: 0; padding: 0; list-style: none; }
+.cir-ident__linha {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: 0.1rem 0.8rem; padding: 0.45rem 0; border-top: 1px solid var(--linha);
+}
+.cir-ident__linha:first-child { border-top: 0; }
+.cir-ident__tex .katex { font-size: 1.1em; }
+.cir-ident__num { color: var(--tinta); font-size: 0.95rem; font-variant-numeric: tabular-nums; white-space: nowrap; }

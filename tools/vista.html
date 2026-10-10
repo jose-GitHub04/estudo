@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>vista</title>
+<!-- Ferramenta de desenvolvimento: mostra uma página numa largura exata (o Edge sem
+     janela não desce de ~500px) e salta para uma secção. Uso:
+     /tools/vista.html?u=/trigonometria/&s=circunferencia&w=390&h=900 -->
+<style>
+  body { margin: 0; background: #888; }
+  #c { overflow: hidden; background: #fff; }
+  iframe { border: 0; display: block; }
+</style>
+<div id="c"><iframe id="f"></iframe></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const w = +q.get('w') || 390, h = +q.get('h') || 844, s = q.get('s');
+  const c = document.getElementById('c'), f = document.getElementById('f');
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  f.style.width = w + 'px'; f.style.height = '24000px';
+  f.src = q.get('u') || '/trigonometria/';
+  f.onload = () => {
+    if (!s) return;
+    setTimeout(() => {
+      const e = f.contentDocument.getElementById(s);
+      if (e) f.style.marginTop = (-(e.getBoundingClientRect().top - 8)) + 'px';
+    }, 2000);
+  };
+</script>
