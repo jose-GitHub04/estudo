@@ -1,0 +1,22 @@
+{
+ "_nota": "Exemplo do formato (ficheiros que começam por _ são ignorados). Um ficheiro por tema: perguntas/<tema>.json com { tema, perguntas: [...] }. tex é texto com $...$ (KaTeX, por isso cada barra de LaTeX vai dobrada no JSON). valor e ref: expressões Python para a verificação numérica (sqrt, pi, sin, cos, tan, atan, asin, acos, radians, degrees, abs). verifica: afirmações com a (ângulo agudo aleatório) e k (inteiro) que têm de ser verdadeiras; ig(x, y) = igual.",
+ "tema": "valores",
+ "perguntas": [
+  { "id": "val-01", "nivel": 1,
+    "enunciado": "Qual é o valor exato de $\\sin\\dfrac{5\\pi}{6}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" } ],
+    "certa": 0,
+    "ref": "sin(5*pi/6)",
+    "explicacao": "$\\dfrac{5\\pi}{6}=\\pi-\\dfrac{\\pi}{6}$ está no 2.º quadrante, onde o seno é positivo, logo $\\sin\\dfrac{5\\pi}{6}=\\sin\\dfrac{\\pi}{6}=\\dfrac{1}{2}$." },
+  { "id": "val-02", "nivel": 2,
+    "enunciado": "Em que quadrante está o ângulo de $-120^\\circ$?",
+    "opcoes": [ { "tex": "1.º quadrante" }, { "tex": "2.º quadrante" }, { "tex": "3.º quadrante" }, { "tex": "4.º quadrante" } ],
+    "certa": 2,
+    "verifica": ["sin(radians(-120))<0 and cos(radians(-120))<0"],
+    "explicacao": "$-120^\\circ$ equivale a $360^\\circ-120^\\circ=240^\\circ$, que está no 3.º quadrante (seno e cosseno negativos)." }
+ ]
+}

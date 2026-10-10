@@ -11,6 +11,7 @@ Sai com código 1 se algo falhar.
 import json
 import math
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -28,6 +29,8 @@ def falha(msg):
 def avaliar(expr, **vars):
     """Avalia uma expressão dos nossos ficheiros de dados (são nossos, não do aluno)."""
     espaco = {"sqrt": math.sqrt, "pi": math.pi, "sin": math.sin, "cos": math.cos, "tan": math.tan,
+              "atan": math.atan, "asin": math.asin, "acos": math.acos,
+              "radians": math.radians, "degrees": math.degrees,
               "abs": abs, "k": 0, "ig": lambda x, y: abs(x - y) < 1e-9, **vars}
     return eval(expr, {"__builtins__": {}}, espaco)
 
@@ -149,10 +152,115 @@ def verificar_travessoes():
     print(f"travessões: {n} ficheiros verificados")
 
 
+# ---------- 5. perguntas (banco de escolha múltipla) ----------
+PREFIXOS = {"definicoes": "def", "razoes": "raz", "circunferencia": "cir", "relacoes": "rel",
+            "valores": "val", "reducao": "red", "radianos": "rad", "funcoes": "fun"}
+# a lista fixa de opções baralha-se no ecrã, por isso não pode haver opções que apontem umas para as outras
+OPCAO_PROIBIDA = re.compile(r"(nenhuma|todas|ambas)\s+(d?as\s+)?(anteriores|acima|outras)|\b[abcd]\)\s*e\s*[abcd]\)", re.I)
+PTBR = re.compile(r"\b(tela|arquivo|celular|você|vocês|equipe|ônibus|time de)\b", re.I)
+
+
+def verificar_perguntas():
+    pasta = DADOS / "perguntas"
+    if not pasta.exists():
+        print("perguntas: pasta ainda não existe (ignorado)")
+        return
+    ids, total, com_ref, com_verifica, verificadas = set(), 0, 0, 0, 0
+    rnd = random.Random(23)
+    por_tema = {}
+    for caminho in sorted(pasta.glob("*.json")):
+        if caminho.name.startswith("_"):
+            continue
+        try:
+            dados = json.loads(caminho.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            falha(f"{caminho.name}: JSON inválido ({e}). Cada barra do LaTeX tem de ir dobrada: \\\\frac")
+            continue
+        tema = dados.get("tema")
+        if tema != caminho.stem or tema not in PREFIXOS:
+            falha(f"{caminho.name}: tema «{tema}» não coincide com o nome do ficheiro ou não existe")
+            continue
+        for p in dados.get("perguntas", []):
+            total += 1
+            por_tema[tema] = por_tema.get(tema, 0) + 1
+            pid = p.get("id", "?")
+            if not str(pid).startswith(PREFIXOS[tema] + "-"):
+                falha(f"{pid}: o id deve começar por {PREFIXOS[tema]}-")
+            if pid in ids:
+                falha(f"{pid}: id repetido")
+            ids.add(pid)
+            for campo in ("enunciado", "explicacao"):
+                if not p.get(campo, "").strip():
+                    falha(f"{pid}: sem {campo}")
+            opcoes = p.get("opcoes", [])
+            if len(opcoes) != 4:
+                falha(f"{pid}: tem de ter 4 opções, tem {len(opcoes)}")
+                continue
+            textos = [o.get("tex", "").strip() for o in opcoes]
+            if "" in textos or len(set(textos)) != 4:
+                falha(f"{pid}: opções vazias ou repetidas")
+            certa = p.get("certa")
+            if not isinstance(certa, int) or not 0 <= certa <= 3:
+                falha(f"{pid}: «certa» tem de ser 0 a 3")
+                continue
+            for t in [p.get("enunciado", ""), p.get("explicacao", "")] + textos:
+                if t.count("$") % 2:
+                    falha(f"{pid}: número ímpar de $ em «{t[:50]}»")
+                if OPCAO_PROIBIDA.search(t):
+                    falha(f"{pid}: opção que aponta para outras opções («{t[:50]}»)")
+                if PTBR.search(t):
+                    falha(f"{pid}: palavra de pt-BR em «{t[:50]}»")
+            if p.get("nivel") not in (None, 1, 2, 3):
+                falha(f"{pid}: nivel tem de ser 1, 2 ou 3")
+            # verificação numérica independente da resposta
+            tem = False
+            if "ref" in p:
+                com_ref += 1
+                tem = True
+                valores = []
+                try:
+                    ref = avaliar(p["ref"])
+                    valores = [avaliar(o["valor"]) for o in opcoes]
+                except Exception as e:  # noqa: BLE001
+                    falha(f"{pid}: ref/valor ilegível ({e})")
+                if valores:
+                    if abs(valores[certa] - ref) > 1e-9:
+                        falha(f"{pid}: a opção certa vale {valores[certa]} mas ref dá {ref}")
+                    for i, v in enumerate(valores):
+                        if i != certa and abs(v - ref) <= 1e-9:
+                            falha(f"{pid}: a opção {i} também vale {ref}, há duas certas")
+                    for i in range(4):
+                        for j in range(i + 1, 4):
+                            if abs(valores[i] - valores[j]) <= 1e-9:
+                                falha(f"{pid}: as opções {i} e {j} têm o mesmo valor")
+            if p.get("verifica"):
+                com_verifica += 1
+                tem = True
+            for expr in p.get("verifica", []):
+                for _ in range(30):
+                    a = rnd.uniform(0.1, 1.4)
+                    k = rnd.randint(-3, 3)
+                    try:
+                        ok = avaliar(expr, a=a, k=k)
+                    except Exception as e:  # noqa: BLE001
+                        falha(f"{pid}: não consegui avaliar «{expr}»: {e}")
+                        break
+                    if not ok:
+                        falha(f"{pid}: afirmação falsa «{expr}» com a={a:.3f}, k={k}")
+                        break
+            verificadas += 1 if tem else 0
+    pct = (100 * verificadas / total) if total else 0
+    print(f"perguntas: {total} perguntas ({', '.join(f'{t} {n}' for t, n in sorted(por_tema.items()))}); "
+          f"{verificadas} com verificação numérica ({pct:.0f}%)")
+    if total and pct < 55:
+        falha(f"perguntas: só {pct:.0f}% têm `ref` ou `verifica` (mínimo 55%)")
+
+
 if __name__ == "__main__":
     verificar_valores()
     verificar_reducao()
     verificar_cartoes()
+    verificar_perguntas()
     verificar_travessoes()
     if erros:
         print(f"\n{len(erros)} falha(s).")

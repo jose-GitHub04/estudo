@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matéria · Trigonometria · Mat100limites</title>
+  <meta name="description" content="Matéria de Trigonometria, Matemática A, 12.º ano: triângulo, circunferência trigonométrica, radianos e gráficos, com desenhos para mexer.">
+  <link rel="icon" href="../assets/mat100_logo.png">
+  <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  <link rel="stylesheet" href="../assets/estilo.css">
+  <link rel="stylesheet" href="widgets/circulo.css">
+  <link rel="stylesheet" href="widgets/triangulo.css">
+  <link rel="stylesheet" href="widgets/radianos.css">
+  <link rel="stylesheet" href="widgets/graficos.css">
+  <script defer src="../assets/katex/katex.min.js"></script>
+  <script defer src="../assets/katex/auto-render.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body data-pagina="materia" data-dados="valores reducao">
+  <a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+  <header id="barra"></header>
+
+  <main id="conteudo">
+    <section class="hero hero--pagina">
+      <div class="envolve">
+        <p class="hero__etiqueta">Trigonometria · 12.º ano</p>
+        <h1>Matéria</h1>
+        <p class="hero__sub">Primeiro percebe, depois decora. Em cada parte lês o essencial e experimentas logo a seguir.</p>
+      </div>
+    </section>
+
+    <section class="seccao">
+      <div class="envolve">
+        <nav class="indice" aria-label="Nesta página">
+          <span class="indice__rotulo">Nesta página:</span>
+          <a href="#triangulo">Triângulo</a>
+          <a href="#circunferencia">Circunferência</a>
+          <a href="#radianos">Radianos</a>
+          <a href="#graficos">Gráficos</a>
+        </nav>
+
+        <article class="modulo" id="triangulo">
+          <h3>Razões trigonométricas no triângulo</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Num triângulo retângulo, escolhe um ângulo agudo $\alpha$. O cateto <strong>oposto</strong> é o que fica à frente de $\alpha$, o cateto <strong>adjacente</strong> é o que lhe toca e a <strong>hipotenusa</strong> é o lado maior, à frente do ângulo reto.</p>
+            $$\begin{gathered}\sin\alpha=\frac{\text{oposto}}{\text{hipotenusa}}\\[0.4em] \cos\alpha=\frac{\text{adjacente}}{\text{hipotenusa}}\\[0.4em] \tan\alpha=\frac{\text{oposto}}{\text{adjacente}}\end{gathered}$$
+            <p>Exemplo: com catetos 3 e 4 e hipotenusa 5, o ângulo à frente do cateto 3 tem $\sin\alpha=\frac{3}{5}$, $\cos\alpha=\frac{4}{5}$ e $\tan\alpha=\frac{3}{4}$. Estes valores só dependem do ângulo, não do tamanho do triângulo.</p>
+          </div>
+          <div data-widget="triangulo"></div>
+        </article>
+
+        <article class="modulo" id="circunferencia">
+          <h3>Circunferência trigonométrica</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>A circunferência trigonométrica tem centro na origem e raio 1. Um ângulo orientado começa no semieixo positivo $Ox$ (lado origem) e gira até ao lado extremidade: no sentido contrário ao dos ponteiros do relógio é positivo, no sentido dos ponteiros é negativo. O lado extremidade corta a circunferência num ponto $P$, e é aí que aparecem os valores.</p>
+            $$P=(\cos\alpha,\ \sin\alpha)$$
+            <p>O cosseno é a abcissa de $P$ e o seno é a ordenada. A tangente é a ordenada do ponto $T$ em que a reta $OP$ corta a reta $x=1$, e também se calcula como $\tan\alpha=\dfrac{\sin\alpha}{\cos\alpha}$. O cosseno está no denominador e o denominador não pode ser zero, por isso a tangente não existe quando $\cos\alpha=0$. Nesse caso a reta $OP$ é paralela à reta $x=1$ e nunca a corta.</p>
+            <p>Um ângulo generalizado $(\alpha, n)$ junta $n$ voltas completas, e a sua amplitude é $\alpha+n\times 360^\circ$. Exemplo: 400° é o par $(40^\circ,\ 1)$, uma volta inteira mais 40°, por isso tem o mesmo seno e o mesmo cosseno que 40°.</p>
+            <p>Três relações que vais usar sempre:</p>
+            $$\begin{gathered}\sin^2\alpha+\cos^2\alpha=1\\[0.4em] \tan\alpha=\frac{\sin\alpha}{\cos\alpha}\\[0.4em] 1+\tan^2\alpha=\frac{1}{\cos^2\alpha}\end{gathered}$$
+            <p>Redução ao 1.º quadrante: os pontos de $-\alpha$, $\pi-\alpha$ e $\pi+\alpha$ são simétricos de $P$ (em relação a $Ox$, a $Oy$ e à origem), por isso o seno e o cosseno só podem mudar de sinal. Exemplo: $\sin(\pi-\alpha)=\sin\alpha$ e $\cos(\pi-\alpha)=-\cos\alpha$.</p>
+          </div>
+          <div data-widget="circulo"></div>
+        </article>
+
+        <article class="modulo" id="radianos">
+          <h3>Radianos, arco e setor circular</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Um radiano é a amplitude do ângulo ao centro que determina um arco com o mesmo comprimento do raio. Por isso $\pi\text{ rad}=180^\circ$ e $1\text{ rad}=\frac{180^\circ}{\pi}\approx 57{,}3^\circ$. Para converter, multiplica por $\frac{\pi}{180}$ (graus para radianos) ou por $\frac{180}{\pi}$ (radianos para graus).</p>
+            <p>Com $\alpha$ em radianos e $r$ o raio, o comprimento do arco e a área do setor circular são:</p>
+            $$c=\alpha r\qquad\qquad A=\frac{\alpha r^2}{2}$$
+            <p>Exemplo: um setor de 60° num círculo de raio 6. Em radianos, $\alpha=\frac{\pi}{3}$, logo $c=\frac{\pi}{3}\times 6=2\pi$ e $A=\frac{\frac{\pi}{3}\times 6^2}{2}=6\pi$.</p>
+          </div>
+          <div data-widget="radianos"></div>
+        </article>
+
+        <article class="modulo" id="graficos">
+          <h3>Funções seno, cosseno e tangente</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>O seno e o cosseno têm domínio $\mathbb{R}$, contradomínio $[-1,1]$ e período $2\pi$. A tangente tem período $\pi$ e contradomínio $\mathbb{R}$. Como $\tan x=\dfrac{\sin x}{\cos x}$ e o denominador não pode ser zero, não existe quando $\cos x=0$. A frequência é o inverso do período: $f=\frac{1}{P_0}$.</p>
+            <p>Em $y=a+b\sin\bigl(c(x-d)\bigr)$, o $a$ sobe ou desce o gráfico, o $d$ desloca-o na horizontal, a amplitude é $|b|$ e o período é $\frac{2\pi}{|c|}$ (na tangente, $\frac{\pi}{|c|}$).</p>
+            <p>Exemplo: $f(x)=2\sin(3x)-2$ tem amplitude 2, período $\frac{2\pi}{3}$ e, como $-1\le\sin(3x)\le 1$, contradomínio $[-4,\,0]$.</p>
+          </div>
+          <div data-widget="graficos"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

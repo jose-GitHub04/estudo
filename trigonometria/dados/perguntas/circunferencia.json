@@ -1,0 +1,157 @@
+{
+ "tema": "circunferencia",
+ "perguntas": [
+  { "id": "cir-01", "nivel": 1,
+    "enunciado": "Na circunferência trigonométrica, o lado extremidade de um ângulo $\\alpha$ corta-a num ponto $P$. Quais são as coordenadas de $P$?",
+    "opcoes": [
+      { "tex": "$(\\sin\\alpha,\\ \\cos\\alpha)$" },
+      { "tex": "$(\\cos\\alpha,\\ \\tan\\alpha)$" },
+      { "tex": "$(1,\\ \\tan\\alpha)$" },
+      { "tex": "$(\\cos\\alpha,\\ \\sin\\alpha)$" } ],
+    "certa": 3,
+    "explicacao": "A abcissa de $P$ é o cosseno de $\\alpha$ e a ordenada é o seno: $P=(\\cos\\alpha,\\ \\sin\\alpha)$. O ponto $(1,\\ \\tan\\alpha)$ é o ponto $T$ da tangente, que está na reta $x=1$ e não na circunferência." },
+
+  { "id": "cir-02", "nivel": 1,
+    "enunciado": "O lado extremidade de um ângulo $\\alpha$ corta a circunferência trigonométrica no ponto $P\\left(\\dfrac{24}{25},\\ -\\dfrac{7}{25}\\right)$. Qual é o valor de $\\sin\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{24}{25}$", "valor": "24/25" },
+      { "tex": "$-\\dfrac{7}{25}$", "valor": "-7/25" },
+      { "tex": "$\\dfrac{7}{25}$", "valor": "7/25" },
+      { "tex": "$-\\dfrac{24}{25}$", "valor": "-24/25" } ],
+    "certa": 1,
+    "ref": "-7/25",
+    "explicacao": "O seno é a ordenada de $P$, por isso $\\sin\\alpha=-\\dfrac{7}{25}$, com o sinal negativo incluído. A abcissa, $\\dfrac{24}{25}$, é o cosseno." },
+
+  { "id": "cir-03", "nivel": 1,
+    "enunciado": "Uma circunferência tem centro na origem e raio $5$. O lado extremidade de um ângulo $\\alpha$ (com lado origem no semieixo positivo $Ox$) corta-a no ponto $P$. Quais são as coordenadas de $P$?",
+    "opcoes": [
+      { "tex": "$(5\\cos\\alpha,\\ 5\\sin\\alpha)$" },
+      { "tex": "$(\\cos\\alpha,\\ \\sin\\alpha)$" },
+      { "tex": "$(5\\sin\\alpha,\\ 5\\cos\\alpha)$" },
+      { "tex": "$\\left(\\dfrac{\\cos\\alpha}{5},\\ \\dfrac{\\sin\\alpha}{5}\\right)$" } ],
+    "certa": 0,
+    "verifica": ["ig((5*cos(a))**2+(5*sin(a))**2, 25)", "not ig(cos(a)**2+sin(a)**2, 25)", "not ig((cos(a)/5)**2+(sin(a)/5)**2, 25)", "ig(5*sin(a)/(5*cos(a)), tan(a))", "not ig(5*cos(a)/(5*sin(a)), tan(a))"],
+    "explicacao": "Na circunferência de raio $1$ o ponto é $(\\cos\\alpha,\\ \\sin\\alpha)$. Com raio $5$, as duas coordenadas ficam multiplicadas por $5$: $P=(5\\cos\\alpha,\\ 5\\sin\\alpha)$. Em geral, com raio $r$ obtém-se $(r\\cos\\alpha,\\ r\\sin\\alpha)$." },
+
+  { "id": "cir-04", "nivel": 2,
+    "enunciado": "Qual das afirmações é verdadeira para um ângulo $\\alpha$ do 3.º quadrante?",
+    "opcoes": [
+      { "tex": "$\\sin\\alpha>0$ e $\\tan\\alpha>0$" },
+      { "tex": "$\\cos\\alpha>0$ e $\\tan\\alpha<0$" },
+      { "tex": "$\\sin\\alpha<0$ e $\\tan\\alpha>0$" },
+      { "tex": "$\\sin\\alpha<0$ e $\\tan\\alpha<0$" } ],
+    "certa": 2,
+    "verifica": ["sin(pi+a)<0 and tan(pi+a)>0", "not (sin(pi+a)>0 and tan(pi+a)>0)", "not (cos(pi+a)>0 and tan(pi+a)<0)", "not (sin(pi+a)<0 and tan(pi+a)<0)"],
+    "explicacao": "No 3.º quadrante o ponto $P$ tem abcissa e ordenada negativas, por isso $\\cos\\alpha<0$ e $\\sin\\alpha<0$. A tangente é $\\dfrac{\\sin\\alpha}{\\cos\\alpha}$, um quociente de dois números negativos, logo é positiva." },
+
+  { "id": "cir-05", "nivel": 1,
+    "enunciado": "Na circunferência trigonométrica, o lado extremidade de $\\alpha$ corta a circunferência em $P$, e a reta $OP$ corta a reta $x=1$ no ponto $T$. A que corresponde $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "À abcissa de $T$" },
+      { "tex": "À ordenada de $T$" },
+      { "tex": "À ordenada de $P$" },
+      { "tex": "À abcissa de $P$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(a)/cos(a)*1, tan(a))", "not ig(tan(a), sin(a))", "not ig(tan(a), cos(a))", "not ig(tan(a), 1)"],
+    "explicacao": "A reta $OP$ tem declive $\\dfrac{\\sin\\alpha}{\\cos\\alpha}=\\tan\\alpha$, por isso, ao chegar a $x=1$, a altura é $\\tan\\alpha$ e $T=(1,\\ \\tan\\alpha)$. A tangente é a ordenada de $T$. A abcissa de $T$ vale sempre $1$." },
+
+  { "id": "cir-06", "nivel": 2,
+    "enunciado": "Para que valores de $\\alpha$ não existe $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "Quando $\\cos\\alpha=0$" },
+      { "tex": "Quando $\\sin\\alpha=0$" },
+      { "tex": "Quando $\\cos\\alpha=1$" },
+      { "tex": "Quando $\\sin\\alpha=\\cos\\alpha$" } ],
+    "certa": 0,
+    "verifica": ["abs(cos(pi/2+k*pi))<1e-9", "abs(tan(k*pi))<1e-9", "abs(tan(2*k*pi))<1e-9", "ig(tan(pi/4+k*pi), 1)"],
+    "explicacao": "A tangente é $\\tan\\alpha=\\dfrac{\\sin\\alpha}{\\cos\\alpha}$ e o cosseno está no denominador. Como o denominador não pode ser zero, a tangente não existe quando $\\cos\\alpha=0$, isto é, em $\\alpha=\\dfrac{\\pi}{2}+k\\pi$, com $k\\in\\mathbb{Z}$. Com $\\sin\\alpha=0$ a tangente existe e vale $0$." },
+
+  { "id": "cir-07", "nivel": 1,
+    "enunciado": "Em que quadrante está o ângulo de $-50^\\circ$?",
+    "opcoes": [
+      { "tex": "1.º quadrante" },
+      { "tex": "2.º quadrante" },
+      { "tex": "3.º quadrante" },
+      { "tex": "4.º quadrante" } ],
+    "certa": 3,
+    "verifica": ["sin(radians(-50))<0 and cos(radians(-50))>0"],
+    "explicacao": "O ângulo é negativo, por isso o giro faz-se no sentido dos ponteiros do relógio a partir do semieixo positivo $Ox$. Rodando $50^\\circ$ nesse sentido ficas abaixo do eixo $Ox$ e à direita do eixo $Oy$, no 4.º quadrante (cosseno positivo, seno negativo)." },
+
+  { "id": "cir-08", "nivel": 2,
+    "enunciado": "Em que quadrante está o ângulo de $850^\\circ$?",
+    "opcoes": [
+      { "tex": "1.º quadrante" },
+      { "tex": "2.º quadrante" },
+      { "tex": "3.º quadrante" },
+      { "tex": "4.º quadrante" } ],
+    "certa": 1,
+    "verifica": ["sin(radians(850))>0 and cos(radians(850))<0"],
+    "explicacao": "Cada volta completa são $360^\\circ$ e não muda a posição do lado extremidade. Como $850^\\circ=130^\\circ+2\\times360^\\circ$, o ângulo termina onde termina o de $130^\\circ$, que está entre $90^\\circ$ e $180^\\circ$, no 2.º quadrante. Em ângulo generalizado, é o par $(130^\\circ,\\ 2)$." },
+
+  { "id": "cir-09", "nivel": 2,
+    "enunciado": "Qual é o ângulo generalizado $(\\alpha,\\ n)$, com $0^\\circ\\le\\alpha<360^\\circ$, que corresponde a $765^\\circ$?",
+    "opcoes": [
+      { "tex": "$(45^\\circ,\\ 1)$", "valor": "45+1*360" },
+      { "tex": "$(45^\\circ,\\ 3)$", "valor": "45+3*360" },
+      { "tex": "$(45^\\circ,\\ 2)$", "valor": "45+2*360" },
+      { "tex": "$(65^\\circ,\\ 2)$", "valor": "65+2*360" } ],
+    "certa": 2,
+    "ref": "765",
+    "explicacao": "Divide por $360$: $765=2\\times360+45$, ou seja, duas voltas completas mais $45^\\circ$. O par é $(45^\\circ,\\ 2)$, e confirma-se com $45^\\circ+2\\times360^\\circ=765^\\circ$." },
+
+  { "id": "cir-10", "nivel": 3,
+    "enunciado": "Em que quadrante está o ângulo de $-\\dfrac{11\\pi}{4}$ radianos?",
+    "opcoes": [
+      { "tex": "3.º quadrante" },
+      { "tex": "1.º quadrante" },
+      { "tex": "2.º quadrante" },
+      { "tex": "4.º quadrante" } ],
+    "certa": 0,
+    "verifica": ["sin(-11*pi/4)<0 and cos(-11*pi/4)<0"],
+    "explicacao": "Soma voltas completas ($2\\pi$) até ficares entre $0$ e $2\\pi$: $-\\dfrac{11\\pi}{4}+2\\times2\\pi=-\\dfrac{11\\pi}{4}+\\dfrac{16\\pi}{4}=\\dfrac{5\\pi}{4}$. Como $\\pi<\\dfrac{5\\pi}{4}<\\dfrac{3\\pi}{2}$, o ângulo está no 3.º quadrante." },
+
+  { "id": "cir-11", "nivel": 2,
+    "enunciado": "Qual destas igualdades é impossível, qualquer que seja o ângulo $\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\tan\\alpha=5$" },
+      { "tex": "$\\cos\\alpha=-\\dfrac{3}{4}$" },
+      { "tex": "$\\sin\\alpha=-1$" },
+      { "tex": "$\\sin\\alpha=\\dfrac{\\pi}{3}$" } ],
+    "certa": 3,
+    "verifica": ["abs(pi/3)>1", "abs(-3/4)<=1", "ig(tan(atan(5)), 5)", "ig(sin(3*pi/2), -1)"],
+    "explicacao": "O seno e o cosseno são a ordenada e a abcissa de um ponto da circunferência de raio $1$, por isso estão sempre entre $-1$ e $1$. Como $\\dfrac{\\pi}{3}\\approx1{,}05>1$, nenhum ângulo tem seno igual a $\\dfrac{\\pi}{3}$. A tangente, pelo contrário, pode tomar qualquer valor real." },
+
+  { "id": "cir-12", "nivel": 3,
+    "enunciado": "Existe um ângulo $\\alpha$ tal que $\\cos\\alpha=3k-2$ se e só se $k$ pertencer a que intervalo?",
+    "opcoes": [
+      { "tex": "$\\left[-\\dfrac{1}{3},\\ \\dfrac{1}{3}\\right]$" },
+      { "tex": "$\\left[1,\\ 3\\right]$" },
+      { "tex": "$\\left[\\dfrac{1}{3},\\ 1\\right]$" },
+      { "tex": "$\\left[-1,\\ -\\dfrac{1}{3}\\right]$" } ],
+    "certa": 2,
+    "verifica": ["ig(3*(1/3)-2, -1)", "ig(3*1-2, 1)", "not (abs(3*3-2)<=1)", "not (abs(3*(-1/3)-2)<=1)"],
+    "explicacao": "O cosseno está sempre entre $-1$ e $1$, por isso é preciso $-1\\le3k-2\\le1$. Somando $2$ a todos os membros fica $1\\le3k\\le3$, e dividindo por $3$ obtém-se $\\dfrac{1}{3}\\le k\\le1$." },
+
+  { "id": "cir-13", "nivel": 2,
+    "enunciado": "Uma circunferência de centro na origem e raio $4$ é cortada pelo lado extremidade do ângulo de $60^\\circ$ no ponto $P$. Qual é a ordenada de $P$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$2\\sqrt{3}$", "valor": "2*sqrt(3)" },
+      { "tex": "$2$", "valor": "2" },
+      { "tex": "$4\\sqrt{3}$", "valor": "4*sqrt(3)" } ],
+    "certa": 1,
+    "ref": "4*sin(radians(60))",
+    "explicacao": "Com raio $r$, a ordenada de $P$ é $r\\sin\\alpha$. Aqui $4\\sin 60^\\circ=4\\times\\dfrac{\\sqrt{3}}{2}=2\\sqrt{3}$. O valor $\\dfrac{\\sqrt{3}}{2}$ seria a ordenada na circunferência de raio $1$, e $2$ é a abcissa ($4\\cos 60^\\circ$)." },
+
+  { "id": "cir-14", "nivel": 3,
+    "enunciado": "O lado extremidade de um ângulo $\\alpha$ corta a circunferência trigonométrica no ponto $P\\left(-\\dfrac{3}{5},\\ \\dfrac{4}{5}\\right)$. A reta $OP$ corta a reta $x=1$ no ponto $T$. Qual é a ordenada de $T$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{4}{3}$", "valor": "-4/3" },
+      { "tex": "$\\dfrac{4}{3}$", "valor": "4/3" },
+      { "tex": "$-\\dfrac{3}{4}$", "valor": "-3/4" },
+      { "tex": "$\\dfrac{4}{5}$", "valor": "4/5" } ],
+    "certa": 0,
+    "ref": "(4/5)/(-3/5)",
+    "explicacao": "A ordenada de $T$ é $\\tan\\alpha=\\dfrac{\\sin\\alpha}{\\cos\\alpha}=\\dfrac{4/5}{-3/5}=-\\dfrac{4}{3}$. O ponto $P$ está no 2.º quadrante, onde a tangente é negativa. O valor $\\dfrac{4}{5}$ é a ordenada de $P$, não a de $T$." }
+ ]
+}

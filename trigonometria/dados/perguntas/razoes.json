@@ -1,0 +1,113 @@
+{
+ "tema": "razoes",
+ "perguntas": [
+  { "id": "raz-01", "nivel": 1,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=3$, $\\overline{BC}=4$ e $\\overline{AC}=5$. Seja $\\alpha$ a amplitude do ângulo de vértice $A$. Qual é o valor de $\\sin\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{3}{5}$", "valor": "3/5" },
+      { "tex": "$\\dfrac{4}{5}$", "valor": "4/5" },
+      { "tex": "$\\dfrac{4}{3}$", "valor": "4/3" },
+      { "tex": "$\\dfrac{5}{4}$", "valor": "5/4" } ],
+    "certa": 1,
+    "ref": "sin(atan(4/3))",
+    "explicacao": "Em relação a $\\alpha$ (vértice $A$), o cateto oposto é $\\overline{BC}=4$ e a hipotenusa é $\\overline{AC}=5$. Logo $\\sin\\alpha=\\dfrac{\\text{oposto}}{\\text{hipotenusa}}=\\dfrac{4}{5}$. O valor $\\dfrac{3}{5}$ seria o cosseno, que usa o cateto adjacente." },
+
+  { "id": "raz-02", "nivel": 1,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=5$, $\\overline{BC}=12$ e $\\overline{AC}=13$. Seja $\\beta$ a amplitude do ângulo de vértice $C$. Qual é o valor de $\\cos\\beta$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{5}{13}$", "valor": "5/13" },
+      { "tex": "$\\dfrac{5}{12}$", "valor": "5/12" },
+      { "tex": "$\\dfrac{13}{12}$", "valor": "13/12" },
+      { "tex": "$\\dfrac{12}{13}$", "valor": "12/13" } ],
+    "certa": 3,
+    "ref": "cos(atan(5/12))",
+    "explicacao": "Em relação a $\\beta$ (vértice $C$), o cateto adjacente é $\\overline{BC}=12$ e a hipotenusa é $\\overline{AC}=13$. Logo $\\cos\\beta=\\dfrac{\\text{adjacente}}{\\text{hipotenusa}}=\\dfrac{12}{13}$. O cateto $[AB]$ é o oposto a $\\beta$, por isso $\\dfrac{5}{13}$ é o seno." },
+
+  { "id": "raz-03", "nivel": 1,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=8$, $\\overline{BC}=15$ e $\\overline{AC}=17$. Seja $\\alpha$ a amplitude do ângulo de vértice $A$. Qual é o valor de $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{15}{8}$", "valor": "15/8" },
+      { "tex": "$\\dfrac{8}{15}$", "valor": "8/15" },
+      { "tex": "$\\dfrac{15}{17}$", "valor": "15/17" },
+      { "tex": "$\\dfrac{8}{17}$", "valor": "8/17" } ],
+    "certa": 0,
+    "ref": "tan(asin(15/17))",
+    "explicacao": "A tangente é $\\dfrac{\\text{cateto oposto}}{\\text{cateto adjacente}}$. Em relação a $\\alpha$, o oposto é $\\overline{BC}=15$ e o adjacente é $\\overline{AB}=8$, logo $\\tan\\alpha=\\dfrac{15}{8}$. A hipotenusa não entra na tangente, e inverter a razão daria $\\dfrac{8}{15}$." },
+
+  { "id": "raz-04", "nivel": 1,
+    "enunciado": "Qual é o valor exato de $\\tan 30^\\circ$?",
+    "opcoes": [
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" } ],
+    "certa": 2,
+    "ref": "tan(radians(30))",
+    "explicacao": "A tangente é o quociente entre o seno e o cosseno: $\\tan 30^\\circ=\\dfrac{\\sin 30^\\circ}{\\cos 30^\\circ}=\\dfrac{1/2}{\\sqrt{3}/2}=\\dfrac{1}{\\sqrt{3}}=\\dfrac{\\sqrt{3}}{3}$. Os valores $\\dfrac{1}{2}$ e $\\dfrac{\\sqrt{3}}{2}$ são o seno e o cosseno, e $\\sqrt{3}$ é a tangente de $60^\\circ$." },
+
+  { "id": "raz-05", "nivel": 2,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, os ângulos agudos de vértices $A$ e $C$ têm amplitudes $\\alpha$ e $\\beta$. Qual das igualdades é sempre verdadeira?",
+    "opcoes": [
+      { "tex": "$\\sin\\alpha=\\sin\\beta$" },
+      { "tex": "$\\sin\\alpha=\\cos\\beta$" },
+      { "tex": "$\\cos\\alpha=\\cos\\beta$" },
+      { "tex": "$\\tan\\alpha=\\tan\\beta$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(a), cos(pi/2-a))", "not ig(sin(a), sin(pi/2-a))", "not ig(cos(a), cos(pi/2-a))", "not ig(tan(a), tan(pi/2-a))"],
+    "explicacao": "Os dois ângulos agudos somam $90^\\circ$, e o cateto oposto a $\\alpha$ é o adjacente a $\\beta$. Assim $\\sin\\alpha=\\dfrac{\\overline{BC}}{\\overline{AC}}=\\cos\\beta$. As outras igualdades só seriam verdadeiras no caso particular em que $\\alpha=\\beta=45^\\circ$." },
+
+  { "id": "raz-06", "nivel": 2,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AC}=10$ e o ângulo de vértice $A$ mede $30^\\circ$. Qual é o comprimento de $[BC]$?",
+    "opcoes": [
+      { "tex": "$5$", "valor": "5" },
+      { "tex": "$5\\sqrt{3}$", "valor": "5*sqrt(3)" },
+      { "tex": "$20$", "valor": "20" },
+      { "tex": "$\\dfrac{20\\sqrt{3}}{3}$", "valor": "20*sqrt(3)/3" } ],
+    "certa": 0,
+    "ref": "10*sin(radians(30))",
+    "explicacao": "O lado $[BC]$ é o cateto oposto ao ângulo de $30^\\circ$ e $[AC]$ é a hipotenusa. Como $\\sin 30^\\circ=\\dfrac{\\overline{BC}}{\\overline{AC}}$, vem $\\overline{BC}=10\\times\\sin 30^\\circ=10\\times\\dfrac{1}{2}=5$. Usar o cosseno daria $5\\sqrt{3}$, e dividir em vez de multiplicar daria $20$." },
+
+  { "id": "raz-07", "nivel": 2,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=7$ e $\\overline{AC}=25$. Seja $\\beta$ a amplitude do ângulo de vértice $C$. Qual é o valor de $\\tan\\beta$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{24}{7}$", "valor": "24/7" },
+      { "tex": "$\\dfrac{7}{25}$", "valor": "7/25" },
+      { "tex": "$\\dfrac{7}{24}$", "valor": "7/24" },
+      { "tex": "$\\dfrac{24}{25}$", "valor": "24/25" } ],
+    "certa": 2,
+    "ref": "tan(asin(7/25))",
+    "explicacao": "Primeiro o cateto que falta, por Pitágoras: $\\overline{BC}^2=25^2-7^2=576$, logo $\\overline{BC}=24$. Em relação a $\\beta$, o oposto é $\\overline{AB}=7$ e o adjacente é $\\overline{BC}=24$, por isso $\\tan\\beta=\\dfrac{7}{24}$. O valor $\\dfrac{7}{25}$ seria o seno de $\\beta$." },
+
+  { "id": "raz-08", "nivel": 2,
+    "enunciado": "Os triângulos retângulos $[ABC]$ e $[DEF]$ têm, cada um, um ângulo agudo de $40^\\circ$, e os lados de $[DEF]$ são o dobro dos lados de $[ABC]$. Como se comparam os senos dos ângulos de $40^\\circ$ nos dois triângulos?",
+    "opcoes": [
+      { "tex": "O seno em $[DEF]$ é o dobro do seno em $[ABC]$" },
+      { "tex": "O seno em $[DEF]$ é metade do seno em $[ABC]$" },
+      { "tex": "Não se podem comparar sem conhecer o comprimento dos lados" },
+      { "tex": "São iguais, porque o seno só depende da amplitude do ângulo" } ],
+    "certa": 3,
+    "explicacao": "Os dois triângulos são semelhantes. Se todos os lados dobram, o quociente $\\dfrac{\\text{oposto}}{\\text{hipotenusa}}$ mantém-se, porque o dobro aparece no numerador e no denominador. O seno (tal como o cosseno e a tangente) depende apenas da amplitude do ângulo, não do tamanho do triângulo." },
+
+  { "id": "raz-09", "nivel": 3,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=4$ e o ângulo de vértice $A$ mede $60^\\circ$. Qual é o perímetro do triângulo?",
+    "opcoes": [
+      { "tex": "$6+2\\sqrt{3}$", "valor": "6+2*sqrt(3)" },
+      { "tex": "$12+4\\sqrt{3}$", "valor": "12+4*sqrt(3)" },
+      { "tex": "$12+2\\sqrt{3}$", "valor": "12+2*sqrt(3)" },
+      { "tex": "$12+\\dfrac{4\\sqrt{3}}{3}$", "valor": "12+4*sqrt(3)/3" } ],
+    "certa": 1,
+    "ref": "4+4/cos(radians(60))+4*tan(radians(60))",
+    "explicacao": "O lado $[AB]$ é o cateto adjacente ao ângulo de $60^\\circ$. De $\\cos 60^\\circ=\\dfrac{4}{\\overline{AC}}$ vem $\\overline{AC}=\\dfrac{4}{1/2}=8$, e de $\\tan 60^\\circ=\\dfrac{\\overline{BC}}{4}$ vem $\\overline{BC}=4\\sqrt{3}$. O perímetro é $4+8+4\\sqrt{3}=12+4\\sqrt{3}$." },
+
+  { "id": "raz-10", "nivel": 3,
+    "enunciado": "No triângulo $[ABC]$, retângulo em $B$, tem-se $\\overline{AB}=6$ e o ângulo de vértice $A$ mede $30^\\circ$. Qual é a área do triângulo?",
+    "opcoes": [
+      { "tex": "$6\\sqrt{3}$", "valor": "6*sqrt(3)" },
+      { "tex": "$12\\sqrt{3}$", "valor": "12*sqrt(3)" },
+      { "tex": "$9$", "valor": "9" },
+      { "tex": "$9\\sqrt{3}$", "valor": "9*sqrt(3)" } ],
+    "certa": 0,
+    "ref": "0.5*6*(6*tan(radians(30)))",
+    "explicacao": "A área é $\\dfrac{\\overline{AB}\\times\\overline{BC}}{2}$ e falta $\\overline{BC}$, o cateto oposto a $30^\\circ$. De $\\tan 30^\\circ=\\dfrac{\\overline{BC}}{6}$ vem $\\overline{BC}=6\\times\\dfrac{\\sqrt{3}}{3}=2\\sqrt{3}$. Então $A=\\dfrac{6\\times 2\\sqrt{3}}{2}=6\\sqrt{3}$. Esquecer a divisão por $2$ daria $12\\sqrt{3}$." }
+ ]
+}

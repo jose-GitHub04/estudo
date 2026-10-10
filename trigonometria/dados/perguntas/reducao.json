@@ -1,0 +1,158 @@
+{
+ "tema": "reducao",
+ "perguntas": [
+  { "id": "red-01", "nivel": 1,
+    "enunciado": "Simplifica $\\sin(\\pi-\\alpha)$.",
+    "opcoes": [
+      { "tex": "$-\\sin\\alpha$" },
+      { "tex": "$\\cos\\alpha$" },
+      { "tex": "$\\sin\\alpha$" },
+      { "tex": "$-\\cos\\alpha$" } ],
+    "certa": 2,
+    "verifica": ["ig(sin(pi-a), sin(a))", "not ig(sin(pi-a), -sin(a))", "not ig(sin(pi-a), cos(a))", "not ig(sin(pi-a), -cos(a))"],
+    "explicacao": "Com $\\alpha$ pequeno, $\\pi-\\alpha$ fica no 2.º quadrante, onde o seno é positivo. Nas reduções com $\\pi\\pm\\alpha$ o seno não muda de nome, por isso $\\sin(\\pi-\\alpha)=\\sin\\alpha$." },
+
+  { "id": "red-02", "nivel": 1,
+    "enunciado": "Qual das igualdades é verdadeira para qualquer $\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\sin(-\\alpha)=\\sin\\alpha$" },
+      { "tex": "$\\cos(-\\alpha)=\\cos\\alpha$" },
+      { "tex": "$\\sin(-\\alpha)=\\cos\\alpha$" },
+      { "tex": "$\\cos(-\\alpha)=-\\cos\\alpha$" } ],
+    "certa": 1,
+    "verifica": ["ig(cos(-a), cos(a))", "not ig(sin(-a), sin(a))", "not ig(sin(-a), cos(a))", "not ig(cos(-a), -cos(a))"],
+    "explicacao": "Os pontos de $\\alpha$ e de $-\\alpha$ são simétricos em relação ao eixo $Ox$: a abcissa (o cosseno) mantém-se e a ordenada (o seno) muda de sinal. Logo $\\cos(-\\alpha)=\\cos\\alpha$ e $\\sin(-\\alpha)=-\\sin\\alpha$." },
+
+  { "id": "red-03", "nivel": 1,
+    "enunciado": "Qual é o valor exato de $\\cos\\dfrac{2\\pi}{3}$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" } ],
+    "certa": 0,
+    "ref": "cos(2*pi/3)",
+    "explicacao": "$\\dfrac{2\\pi}{3}=\\pi-\\dfrac{\\pi}{3}$ está no 2.º quadrante, onde o cosseno é negativo. Logo $\\cos\\dfrac{2\\pi}{3}=-\\cos\\dfrac{\\pi}{3}=-\\dfrac{1}{2}$. Os valores com $\\sqrt{3}$ são os do seno de $\\dfrac{\\pi}{3}$." },
+
+  { "id": "red-04", "nivel": 1,
+    "enunciado": "Qual é o valor de $\\tan\\dfrac{5\\pi}{4}$?",
+    "opcoes": [
+      { "tex": "$-1$", "valor": "-1" },
+      { "tex": "$-\\dfrac{\\sqrt{2}}{2}$", "valor": "-sqrt(2)/2" },
+      { "tex": "$\\dfrac{\\sqrt{2}}{2}$", "valor": "sqrt(2)/2" },
+      { "tex": "$1$", "valor": "1" } ],
+    "certa": 3,
+    "ref": "tan(5*pi/4)",
+    "explicacao": "$\\dfrac{5\\pi}{4}=\\pi+\\dfrac{\\pi}{4}$ está no 3.º quadrante, onde o seno e o cosseno são negativos, por isso a tangente é positiva. Logo $\\tan\\dfrac{5\\pi}{4}=\\tan\\dfrac{\\pi}{4}=1$." },
+
+  { "id": "red-05", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\sin\\dfrac{5\\pi}{3}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" },
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" } ],
+    "certa": 1,
+    "ref": "sin(5*pi/3)",
+    "explicacao": "Tirando uma volta, $\\sin\\dfrac{5\\pi}{3}=\\sin\\left(-\\dfrac{\\pi}{3}\\right)=-\\sin\\dfrac{\\pi}{3}=-\\dfrac{\\sqrt{3}}{2}$. Confirma: $\\dfrac{5\\pi}{3}$ está no 4.º quadrante, onde o seno é negativo." },
+
+  { "id": "red-06", "nivel": 1,
+    "enunciado": "Simplifica $\\cos\\left(\\dfrac{\\pi}{2}+\\alpha\\right)$.",
+    "opcoes": [
+      { "tex": "$-\\sin\\alpha$" },
+      { "tex": "$\\sin\\alpha$" },
+      { "tex": "$\\cos\\alpha$" },
+      { "tex": "$-\\cos\\alpha$" } ],
+    "certa": 0,
+    "verifica": ["ig(cos(pi/2+a), -sin(a))", "not ig(cos(pi/2+a), sin(a))", "not ig(cos(pi/2+a), cos(a))", "not ig(cos(pi/2+a), -cos(a))"],
+    "explicacao": "Nas reduções com $\\dfrac{\\pi}{2}\\pm\\alpha$ o cosseno passa a seno. Com $\\alpha$ pequeno, $\\dfrac{\\pi}{2}+\\alpha$ fica no 2.º quadrante, onde o cosseno é negativo. Logo $\\cos\\left(\\dfrac{\\pi}{2}+\\alpha\\right)=-\\sin\\alpha$." },
+
+  { "id": "red-07", "nivel": 2,
+    "enunciado": "Simplifica $\\cos\\left(\\dfrac{3\\pi}{2}-\\alpha\\right)$.",
+    "opcoes": [
+      { "tex": "$\\sin\\alpha$" },
+      { "tex": "$\\cos\\alpha$" },
+      { "tex": "$-\\cos\\alpha$" },
+      { "tex": "$-\\sin\\alpha$" } ],
+    "certa": 3,
+    "verifica": ["ig(cos(3*pi/2-a), -sin(a))", "not ig(cos(3*pi/2-a), sin(a))", "not ig(cos(3*pi/2-a), cos(a))", "not ig(cos(3*pi/2-a), -cos(a))"],
+    "explicacao": "Nas reduções com $\\dfrac{3\\pi}{2}\\pm\\alpha$ o cosseno passa a seno. Com $\\alpha$ pequeno, $\\dfrac{3\\pi}{2}-\\alpha$ fica no 3.º quadrante, onde o cosseno é negativo. Logo $\\cos\\left(\\dfrac{3\\pi}{2}-\\alpha\\right)=-\\sin\\alpha$." },
+
+  { "id": "red-08", "nivel": 2,
+    "enunciado": "Simplifica $\\sin(\\pi-\\alpha)+\\cos\\left(\\dfrac{\\pi}{2}-\\alpha\\right)$.",
+    "opcoes": [
+      { "tex": "$0$" },
+      { "tex": "$\\sin\\alpha+\\cos\\alpha$" },
+      { "tex": "$2\\sin\\alpha$" },
+      { "tex": "$2\\cos\\alpha$" } ],
+    "certa": 2,
+    "verifica": ["ig(sin(pi-a)+cos(pi/2-a), 2*sin(a))", "not ig(sin(pi-a)+cos(pi/2-a), 0)", "not ig(sin(pi-a)+cos(pi/2-a), sin(a)+cos(a))", "not ig(sin(pi-a)+cos(pi/2-a), 2*cos(a))"],
+    "explicacao": "$\\sin(\\pi-\\alpha)=\\sin\\alpha$ e $\\cos\\left(\\dfrac{\\pi}{2}-\\alpha\\right)=\\sin\\alpha$ (o cosseno passa a seno e fica positivo, porque $\\dfrac{\\pi}{2}-\\alpha$ está no 1.º quadrante). Somando, obtém-se $2\\sin\\alpha$." },
+
+  { "id": "red-09", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\tan\\left(-\\dfrac{5\\pi}{6}\\right)$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{\\sqrt{3}}{3}$", "valor": "-sqrt(3)/3" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" },
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" },
+      { "tex": "$-\\sqrt{3}$", "valor": "-sqrt(3)" } ],
+    "certa": 1,
+    "ref": "tan(-5*pi/6)",
+    "explicacao": "$\\tan(-\\alpha)=-\\tan\\alpha$, logo $\\tan\\left(-\\dfrac{5\\pi}{6}\\right)=-\\tan\\dfrac{5\\pi}{6}$. Como $\\dfrac{5\\pi}{6}=\\pi-\\dfrac{\\pi}{6}$ está no 2.º quadrante, $\\tan\\dfrac{5\\pi}{6}=-\\tan\\dfrac{\\pi}{6}=-\\dfrac{\\sqrt{3}}{3}$. Então o resultado é $\\dfrac{\\sqrt{3}}{3}$." },
+
+  { "id": "red-10", "nivel": 2,
+    "enunciado": "Sendo $\\alpha$ um ângulo agudo, qual das afirmações é verdadeira?",
+    "opcoes": [
+      { "tex": "$\\sin(\\pi+\\alpha)>0$" },
+      { "tex": "$\\tan(\\pi-\\alpha)>0$" },
+      { "tex": "$\\cos(\\pi-\\alpha)<0$" },
+      { "tex": "$\\cos(-\\alpha)<0$" } ],
+    "certa": 2,
+    "verifica": ["cos(pi-a)<0", "not (sin(pi+a)>0)", "not (tan(pi-a)>0)", "not (cos(-a)<0)"],
+    "explicacao": "Com $\\alpha$ agudo, $\\pi-\\alpha$ está no 2.º quadrante, onde o cosseno é negativo. As outras falham: $\\pi+\\alpha$ está no 3.º (seno negativo), $\\pi-\\alpha$ no 2.º (tangente negativa) e $-\\alpha$ no 4.º (cosseno positivo)." },
+
+  { "id": "red-11", "nivel": 2,
+    "enunciado": "Sabe-se que $\\sin\\alpha=\\dfrac{3}{5}$. Qual é o valor de $\\sin(\\pi+\\alpha)$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{3}{5}$", "valor": "-3/5" },
+      { "tex": "$\\dfrac{3}{5}$", "valor": "3/5" },
+      { "tex": "$-\\dfrac{4}{5}$", "valor": "-4/5" },
+      { "tex": "$\\dfrac{4}{5}$", "valor": "4/5" } ],
+    "certa": 0,
+    "ref": "sin(pi+asin(3/5))",
+    "explicacao": "Os pontos de $\\alpha$ e de $\\pi+\\alpha$ são simétricos em relação à origem, por isso o seno só muda de sinal: $\\sin(\\pi+\\alpha)=-\\sin\\alpha=-\\dfrac{3}{5}$. Os valores com $4$ no numerador viriam de usar o cosseno em vez do seno." },
+
+  { "id": "red-12", "nivel": 3,
+    "enunciado": "Simplifica $\\sin(\\pi-\\alpha)\\cos\\left(\\dfrac{\\pi}{2}-\\alpha\\right)+\\cos(\\pi+\\alpha)\\cos(-\\alpha)$.",
+    "opcoes": [
+      { "tex": "$1$" },
+      { "tex": "$-1$" },
+      { "tex": "$\\cos^2\\alpha-\\sin^2\\alpha$" },
+      { "tex": "$\\sin^2\\alpha-\\cos^2\\alpha$" } ],
+    "certa": 3,
+    "verifica": ["ig(sin(pi-a)*cos(pi/2-a)+cos(pi+a)*cos(-a), sin(a)**2-cos(a)**2)", "not ig(sin(pi-a)*cos(pi/2-a)+cos(pi+a)*cos(-a), 1)", "not ig(sin(pi-a)*cos(pi/2-a)+cos(pi+a)*cos(-a), -1)", "not ig(sin(pi-a)*cos(pi/2-a)+cos(pi+a)*cos(-a), cos(a)**2-sin(a)**2)"],
+    "explicacao": "Reduz cada fator: $\\sin(\\pi-\\alpha)=\\sin\\alpha$, $\\cos\\left(\\dfrac{\\pi}{2}-\\alpha\\right)=\\sin\\alpha$, $\\cos(\\pi+\\alpha)=-\\cos\\alpha$ e $\\cos(-\\alpha)=\\cos\\alpha$. A expressão fica $\\sin\\alpha\\cdot\\sin\\alpha+(-\\cos\\alpha)\\cos\\alpha=\\sin^2\\alpha-\\cos^2\\alpha$. O resultado seria $1$ se o segundo termo tivesse sinal positivo." },
+
+  { "id": "red-13", "nivel": 3,
+    "enunciado": "Sabe-se que $\\alpha$ pertence ao 2.º quadrante e que $\\sin\\alpha=\\dfrac{5}{13}$. Qual é o valor de $\\cos(\\pi+\\alpha)$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{12}{13}$", "valor": "-12/13" },
+      { "tex": "$-\\dfrac{5}{13}$", "valor": "-5/13" },
+      { "tex": "$\\dfrac{12}{13}$", "valor": "12/13" },
+      { "tex": "$\\dfrac{5}{13}$", "valor": "5/13" } ],
+    "certa": 2,
+    "ref": "cos(pi+(pi-asin(5/13)))",
+    "explicacao": "Pela fórmula fundamental, $\\cos^2\\alpha=1-\\dfrac{25}{169}=\\dfrac{144}{169}$, e no 2.º quadrante o cosseno é negativo: $\\cos\\alpha=-\\dfrac{12}{13}$. Como $\\cos(\\pi+\\alpha)=-\\cos\\alpha$, vem $\\cos(\\pi+\\alpha)=\\dfrac{12}{13}$. O valor $-\\dfrac{12}{13}$ é o de $\\cos\\alpha$." },
+
+  { "id": "red-14", "nivel": 3,
+    "enunciado": "Sabe-se que $\\alpha$ é um ângulo agudo e que $\\cos\\alpha=\\dfrac{4}{5}$. Qual é o valor de $\\tan(\\pi-\\alpha)$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{3}{4}$", "valor": "3/4" },
+      { "tex": "$-\\dfrac{3}{4}$", "valor": "-3/4" },
+      { "tex": "$-\\dfrac{4}{3}$", "valor": "-4/3" },
+      { "tex": "$\\dfrac{4}{3}$", "valor": "4/3" } ],
+    "certa": 1,
+    "ref": "tan(pi-acos(4/5))",
+    "explicacao": "Pela fórmula fundamental, $\\sin^2\\alpha=1-\\dfrac{16}{25}=\\dfrac{9}{25}$ e, sendo $\\alpha$ agudo, $\\sin\\alpha=\\dfrac{3}{5}$. Então $\\tan\\alpha=\\dfrac{3/5}{4/5}=\\dfrac{3}{4}$. Como $\\tan(\\pi-\\alpha)=-\\tan\\alpha$, o resultado é $-\\dfrac{3}{4}$." }
+ ]
+}

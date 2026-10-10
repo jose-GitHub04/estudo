@@ -15,7 +15,8 @@
   const w = +q.get('w') || 390, h = +q.get('h') || 844, s = q.get('s');
   const c = document.getElementById('c'), f = document.getElementById('f');
   c.style.width = w + 'px'; c.style.height = h + 'px';
-  f.style.width = w + 'px'; f.style.height = '24000px';
+  // ih = altura do iframe. Os <dialog> modais centram-se no iframe inteiro: para os ver, ih = h
+  f.style.width = w + 'px'; f.style.height = (+q.get('ih') || 24000) + 'px';
   f.src = q.get('u') || '/trigonometria/';
   f.onload = () => {
     if (!s) return;

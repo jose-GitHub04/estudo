@@ -1,0 +1,89 @@
+{
+ "tema": "definicoes",
+ "perguntas": [
+  { "id": "def-01", "nivel": 1,
+    "enunciado": "Num ângulo orientado, o que é o lado origem?",
+    "opcoes": [
+      { "tex": "O lado onde o giro termina" },
+      { "tex": "O lado de maior comprimento" },
+      { "tex": "O lado onde o giro começa" },
+      { "tex": "O lado que fica sobre o eixo $Oy$" } ],
+    "certa": 2,
+    "explicacao": "Um ângulo orientado descreve um giro: o lado origem é onde o giro começa e o lado extremidade é onde termina. Na circunferência trigonométrica, o lado origem é o semieixo positivo $Ox$." },
+
+  { "id": "def-02", "nivel": 2,
+    "enunciado": "Qual das afirmações sobre o ângulo orientado de amplitude $-50^\\circ$ é verdadeira?",
+    "opcoes": [
+      { "tex": "O giro é de $50^\\circ$ no sentido dos ponteiros do relógio" },
+      { "tex": "O giro é de $50^\\circ$ no sentido contrário ao dos ponteiros do relógio" },
+      { "tex": "Não existe, porque a amplitude de um ângulo nunca é negativa" },
+      { "tex": "O giro é de $50^\\circ$, seja em que sentido for" } ],
+    "certa": 0,
+    "explicacao": "O sinal da amplitude indica o sentido do giro: positivo é no sentido contrário ao dos ponteiros do relógio e negativo é no sentido dos ponteiros. Nos ângulos orientados a amplitude pode ser negativa, e $-50^\\circ$ é um giro de $50^\\circ$ no sentido dos ponteiros." },
+
+  { "id": "def-03", "nivel": 1,
+    "enunciado": "Qual é a amplitude do ângulo generalizado $(70^\\circ,\\ 3)$?",
+    "opcoes": [
+      { "tex": "$210^\\circ$", "valor": "210" },
+      { "tex": "$430^\\circ$", "valor": "430" },
+      { "tex": "$1080^\\circ$", "valor": "1080" },
+      { "tex": "$1150^\\circ$", "valor": "1150" } ],
+    "certa": 3,
+    "ref": "70+3*360",
+    "explicacao": "A amplitude de $(\\alpha,\\ n)$ é $\\alpha+n\\times360^\\circ$. Aqui $70^\\circ+3\\times360^\\circ=70^\\circ+1080^\\circ=1150^\\circ$: são três voltas completas e mais $70^\\circ$." },
+
+  { "id": "def-04", "nivel": 2,
+    "enunciado": "Qual é a amplitude do ângulo generalizado $(-40^\\circ,\\ -2)$?",
+    "opcoes": [
+      { "tex": "$680^\\circ$", "valor": "680" },
+      { "tex": "$-760^\\circ$", "valor": "-760" },
+      { "tex": "$-680^\\circ$", "valor": "-680" },
+      { "tex": "$760^\\circ$", "valor": "760" } ],
+    "certa": 1,
+    "ref": "-40+(-2)*360",
+    "explicacao": "Usa $\\alpha+n\\times360^\\circ$ com $\\alpha=-40^\\circ$ e $n=-2$: $-40^\\circ+(-2)\\times360^\\circ=-40^\\circ-720^\\circ=-760^\\circ$. O ângulo e as voltas são negativos, por isso as duas parcelas têm o mesmo sinal e somam-se em valor absoluto: $40+720=760$." },
+
+  { "id": "def-05", "nivel": 1,
+    "enunciado": "O que é a circunferência trigonométrica?",
+    "opcoes": [
+      { "tex": "A circunferência de centro na origem do referencial e raio $1$" },
+      { "tex": "A circunferência de centro em $(1,\\ 0)$ e raio $1$" },
+      { "tex": "A circunferência de centro na origem e diâmetro $1$" },
+      { "tex": "A circunferência de centro na origem e raio $2\\pi$" } ],
+    "certa": 0,
+    "verifica": ["ig(cos(a)**2+sin(a)**2, 1)"],
+    "explicacao": "A circunferência trigonométrica tem centro na origem de um referencial ortonormado e raio $1$. É por o raio ser $1$ que as coordenadas do ponto $P$ são exatamente $(\\cos\\alpha,\\ \\sin\\alpha)$." },
+
+  { "id": "def-06", "nivel": 2,
+    "enunciado": "Numa circunferência de raio $r$, um ângulo ao centro de $2$ radianos determina um arco com que comprimento?",
+    "opcoes": [
+      { "tex": "$r$" },
+      { "tex": "$\\dfrac{r}{2}$" },
+      { "tex": "$2r$" },
+      { "tex": "$2\\pi r$" } ],
+    "certa": 2,
+    "explicacao": "Um radiano é a amplitude do ângulo ao centro que determina um arco com o mesmo comprimento do raio. Dois radianos determinam, então, um arco com o dobro do comprimento do raio: $2r$. O comprimento $2\\pi r$ é o da circunferência inteira, que corresponde a $2\\pi$ radianos." },
+
+  { "id": "def-07", "nivel": 3,
+    "enunciado": "Sabe-se que $f$ é uma função periódica de período fundamental $P_0=6$. Qual das afirmações é verdadeira?",
+    "opcoes": [
+      { "tex": "$f(x+3)=f(x)$ para todo o $x$ do domínio" },
+      { "tex": "$f(x+12)=f(x)$ para todo o $x$ do domínio" },
+      { "tex": "$6$ é o único período de $f$" },
+      { "tex": "$12$ não é período de $f$, porque o período fundamental é $6$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(pi*(a+12)/3), sin(pi*a/3))", "ig(sin(pi*(a+6)/3), sin(pi*a/3))", "not ig(sin(pi*(a+3)/3), sin(pi*a/3))"],
+    "explicacao": "Se $6$ é período, somar $6$ duas vezes também deixa $f$ igual: $f(x+12)=f(x+6)=f(x)$. Por isso qualquer múltiplo positivo de $6$ é período, e o período fundamental é apenas o menor de todos. O número $3$ não pode ser período, porque seria menor do que $P_0$." },
+
+  { "id": "def-08", "nivel": 3,
+    "enunciado": "Qual é a frequência da função $g(x)=\\sin(4x)$?",
+    "opcoes": [
+      { "tex": "$4$", "valor": "4" },
+      { "tex": "$\\dfrac{\\pi}{2}$", "valor": "pi/2" },
+      { "tex": "$\\dfrac{1}{2\\pi}$", "valor": "1/(2*pi)" },
+      { "tex": "$\\dfrac{2}{\\pi}$", "valor": "2/pi" } ],
+    "certa": 3,
+    "ref": "1/(2*pi/4)",
+    "explicacao": "O período fundamental de $\\sin(4x)$ é $P_0=\\dfrac{2\\pi}{4}=\\dfrac{\\pi}{2}$. A frequência é o inverso do período: $f=\\dfrac{1}{P_0}=\\dfrac{2}{\\pi}$. O valor $\\dfrac{\\pi}{2}$ é o período, não a frequência, e $\\dfrac{1}{2\\pi}$ seria a frequência de $\\sin x$." }
+ ]
+}

@@ -1,0 +1,136 @@
+{
+ "tema": "relacoes",
+ "perguntas": [
+  { "id": "rel-01", "nivel": 1,
+    "enunciado": "Sabe-se que $\\sin\\alpha=\\dfrac{3}{5}$ e que $\\alpha$ pertence ao 1.º quadrante. Qual é o valor de $\\cos\\alpha$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{4}{5}$", "valor": "-4/5" },
+      { "tex": "$\\dfrac{2}{5}$", "valor": "2/5" },
+      { "tex": "$\\dfrac{4}{5}$", "valor": "4/5" },
+      { "tex": "$\\dfrac{16}{25}$", "valor": "16/25" } ],
+    "certa": 2,
+    "ref": "sqrt(1-(3/5)**2)",
+    "explicacao": "Pela fórmula fundamental, $\\cos^2\\alpha=1-\\sin^2\\alpha=1-\\dfrac{9}{25}=\\dfrac{16}{25}$. No 1.º quadrante o cosseno é positivo, por isso $\\cos\\alpha=\\dfrac{4}{5}$. O valor $\\dfrac{16}{25}$ é $\\cos^2\\alpha$: falta a raiz quadrada." },
+
+  { "id": "rel-02", "nivel": 1,
+    "enunciado": "Sabe-se que $\\cos\\alpha=-\\dfrac{5}{13}$ e que $\\alpha$ pertence ao 2.º quadrante. Qual é o valor de $\\sin\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{12}{13}$", "valor": "12/13" },
+      { "tex": "$-\\dfrac{12}{13}$", "valor": "-12/13" },
+      { "tex": "$\\dfrac{8}{13}$", "valor": "8/13" },
+      { "tex": "$\\dfrac{144}{169}$", "valor": "144/169" } ],
+    "certa": 0,
+    "ref": "sqrt(1-(5/13)**2)",
+    "explicacao": "$\\sin^2\\alpha=1-\\cos^2\\alpha=1-\\dfrac{25}{169}=\\dfrac{144}{169}$, logo $\\sin\\alpha=\\pm\\dfrac{12}{13}$. No 2.º quadrante o seno é positivo, então $\\sin\\alpha=\\dfrac{12}{13}$." },
+
+  { "id": "rel-03", "nivel": 2,
+    "enunciado": "Sabe-se que $\\sin\\alpha=-\\dfrac{8}{17}$ e que $\\alpha$ pertence ao 3.º quadrante. Qual é o valor de $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{8}{15}$", "valor": "-8/15" },
+      { "tex": "$\\dfrac{15}{8}$", "valor": "15/8" },
+      { "tex": "$-\\dfrac{15}{8}$", "valor": "-15/8" },
+      { "tex": "$\\dfrac{8}{15}$", "valor": "8/15" } ],
+    "certa": 3,
+    "ref": "tan(asin(8/17))",
+    "explicacao": "$\\cos^2\\alpha=1-\\dfrac{64}{289}=\\dfrac{225}{289}$ e, no 3.º quadrante, $\\cos\\alpha=-\\dfrac{15}{17}$. Então $\\tan\\alpha=\\dfrac{\\sin\\alpha}{\\cos\\alpha}=\\dfrac{-8/17}{-15/17}=\\dfrac{8}{15}$. A tangente é positiva no 3.º quadrante, porque é o quociente de dois números negativos." },
+
+  { "id": "rel-04", "nivel": 2,
+    "enunciado": "Sabe-se que $\\cos\\alpha=\\dfrac{24}{25}$ e que $\\alpha$ pertence ao 4.º quadrante. Qual é o valor de $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{7}{24}$", "valor": "7/24" },
+      { "tex": "$-\\dfrac{7}{24}$", "valor": "-7/24" },
+      { "tex": "$-\\dfrac{24}{7}$", "valor": "-24/7" },
+      { "tex": "$-\\dfrac{7}{25}$", "valor": "-7/25" } ],
+    "certa": 1,
+    "ref": "tan(-acos(24/25))",
+    "explicacao": "$\\sin^2\\alpha=1-\\dfrac{576}{625}=\\dfrac{49}{625}$ e, no 4.º quadrante, $\\sin\\alpha=-\\dfrac{7}{25}$. Então $\\tan\\alpha=\\dfrac{-7/25}{24/25}=-\\dfrac{7}{24}$. O valor $-\\dfrac{7}{25}$ é o seno, não a tangente." },
+
+  { "id": "rel-05", "nivel": 2,
+    "enunciado": "Sabe-se que $\\tan\\alpha=2$ e que $\\alpha$ pertence ao 1.º quadrante. Qual é o valor de $\\cos\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{5}$", "valor": "1/5" },
+      { "tex": "$\\dfrac{1}{3}$", "valor": "1/3" },
+      { "tex": "$\\dfrac{\\sqrt{5}}{5}$", "valor": "sqrt(5)/5" },
+      { "tex": "$\\dfrac{2\\sqrt{5}}{5}$", "valor": "2*sqrt(5)/5" } ],
+    "certa": 2,
+    "ref": "cos(atan(2))",
+    "explicacao": "De $1+\\tan^2\\alpha=\\dfrac{1}{\\cos^2\\alpha}$ vem $1+4=\\dfrac{1}{\\cos^2\\alpha}$, logo $\\cos^2\\alpha=\\dfrac{1}{5}$. No 1.º quadrante o cosseno é positivo: $\\cos\\alpha=\\dfrac{1}{\\sqrt{5}}=\\dfrac{\\sqrt{5}}{5}$. O valor $\\dfrac{1}{5}$ é $\\cos^2\\alpha$ e $\\dfrac{2\\sqrt{5}}{5}$ é o seno." },
+
+  { "id": "rel-06", "nivel": 1,
+    "enunciado": "Qual das igualdades é verdadeira para qualquer ângulo $\\alpha$?",
+    "opcoes": [
+      { "tex": "$\\sin\\alpha+\\cos\\alpha=1$" },
+      { "tex": "$\\sin^2\\alpha+\\cos^2\\alpha=1$" },
+      { "tex": "$(\\sin\\alpha+\\cos\\alpha)^2=1$" },
+      { "tex": "$\\sin^2\\alpha-\\cos^2\\alpha=1$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(a)**2+cos(a)**2, 1)", "not ig(sin(a)+cos(a), 1)", "not ig((sin(a)+cos(a))**2, 1)", "not ig(sin(a)**2-cos(a)**2, 1)"],
+    "explicacao": "A fórmula fundamental da trigonometria é $\\sin^2\\alpha+\\cos^2\\alpha=1$: é o teorema de Pitágoras no triângulo de hipotenusa $1$ que tem $P$ por vértice. Somar o seno e o cosseno sem os elevar ao quadrado não dá $1$: com $\\alpha=45^\\circ$ obtém-se $\\sqrt{2}$." },
+
+  { "id": "rel-07", "nivel": 1,
+    "enunciado": "Qual das igualdades é verdadeira, nos ângulos em que as expressões fazem sentido?",
+    "opcoes": [
+      { "tex": "$1+\\tan^2\\alpha=\\dfrac{1}{\\cos^2\\alpha}$" },
+      { "tex": "$1+\\tan^2\\alpha=\\dfrac{1}{\\sin^2\\alpha}$" },
+      { "tex": "$1-\\tan^2\\alpha=\\dfrac{1}{\\cos^2\\alpha}$" },
+      { "tex": "$1+\\tan^2\\alpha=\\dfrac{1}{\\cos\\alpha}$" } ],
+    "certa": 0,
+    "verifica": ["ig(1+tan(a)**2, 1/cos(a)**2)", "not ig(1+tan(a)**2, 1/sin(a)**2)", "not ig(1-tan(a)**2, 1/cos(a)**2)", "not ig(1+tan(a)**2, 1/cos(a))"],
+    "explicacao": "Divide os dois membros de $\\sin^2\\alpha+\\cos^2\\alpha=1$ por $\\cos^2\\alpha$ (com $\\cos\\alpha\\ne0$): $\\tan^2\\alpha+1=\\dfrac{1}{\\cos^2\\alpha}$. É o cosseno, e ao quadrado, que fica no denominador." },
+
+  { "id": "rel-08", "nivel": 2,
+    "enunciado": "A expressão $(\\sin\\alpha+\\cos\\alpha)^2-2\\sin\\alpha\\cos\\alpha$ é igual a:",
+    "opcoes": [
+      { "tex": "$1-2\\sin\\alpha\\cos\\alpha$" },
+      { "tex": "$1+4\\sin\\alpha\\cos\\alpha$" },
+      { "tex": "$\\sin\\alpha+\\cos\\alpha-2\\sin\\alpha\\cos\\alpha$" },
+      { "tex": "$1$" } ],
+    "certa": 3,
+    "verifica": ["ig((sin(a)+cos(a))**2-2*sin(a)*cos(a), 1)", "not ig((sin(a)+cos(a))**2-2*sin(a)*cos(a), 1-2*sin(a)*cos(a))", "not ig((sin(a)+cos(a))**2-2*sin(a)*cos(a), 1+4*sin(a)*cos(a))", "not ig((sin(a)+cos(a))**2-2*sin(a)*cos(a), sin(a)+cos(a)-2*sin(a)*cos(a))"],
+    "explicacao": "Desenvolve o quadrado: $(\\sin\\alpha+\\cos\\alpha)^2=\\sin^2\\alpha+2\\sin\\alpha\\cos\\alpha+\\cos^2\\alpha$. O termo $2\\sin\\alpha\\cos\\alpha$ cancela com o que se subtrai, e fica $\\sin^2\\alpha+\\cos^2\\alpha=1$. Esquecer o termo do meio do quadrado é o erro típico." },
+
+  { "id": "rel-09", "nivel": 2,
+    "enunciado": "Simplifica $\\dfrac{\\sin\\alpha}{\\tan\\alpha}$, nos ângulos em que $\\sin\\alpha\\ne0$ e $\\cos\\alpha\\ne0$.",
+    "opcoes": [
+      { "tex": "$\\sin\\alpha$" },
+      { "tex": "$\\cos\\alpha$" },
+      { "tex": "$\\dfrac{1}{\\cos\\alpha}$" },
+      { "tex": "$\\dfrac{\\sin^2\\alpha}{\\cos\\alpha}$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(a)/tan(a), cos(a))", "not ig(sin(a)/tan(a), sin(a))", "not ig(sin(a)/tan(a), 1/cos(a))", "not ig(sin(a)/tan(a), sin(a)**2/cos(a))"],
+    "explicacao": "Como $\\tan\\alpha=\\dfrac{\\sin\\alpha}{\\cos\\alpha}$, tem-se $\\dfrac{\\sin\\alpha}{\\tan\\alpha}=\\sin\\alpha\\times\\dfrac{\\cos\\alpha}{\\sin\\alpha}=\\cos\\alpha$: dividir por uma fração é multiplicar pela fração inversa. Multiplicar por $\\tan\\alpha$, em vez de dividir, daria $\\dfrac{\\sin^2\\alpha}{\\cos\\alpha}$." },
+
+  { "id": "rel-10", "nivel": 3,
+    "enunciado": "Sabe-se que $\\cos\\alpha=-\\dfrac{2}{3}$ e que $\\alpha$ pertence ao 3.º quadrante. Qual é o valor de $\\tan\\alpha$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{\\sqrt{5}}{2}$", "valor": "-sqrt(5)/2" },
+      { "tex": "$\\dfrac{2\\sqrt{5}}{5}$", "valor": "2*sqrt(5)/5" },
+      { "tex": "$\\dfrac{\\sqrt{5}}{2}$", "valor": "sqrt(5)/2" },
+      { "tex": "$\\dfrac{5}{4}$", "valor": "5/4" } ],
+    "certa": 2,
+    "ref": "tan(pi+acos(2/3))",
+    "explicacao": "$\\sin^2\\alpha=1-\\dfrac{4}{9}=\\dfrac{5}{9}$ e, no 3.º quadrante, $\\sin\\alpha=-\\dfrac{\\sqrt{5}}{3}$. Então $\\tan\\alpha=\\dfrac{-\\sqrt{5}/3}{-2/3}=\\dfrac{\\sqrt{5}}{2}$, positivo porque o seno e o cosseno são ambos negativos. O valor $\\dfrac{5}{4}$ é $\\tan^2\\alpha$." },
+
+  { "id": "rel-11", "nivel": 3,
+    "enunciado": "Sabe-se que $\\sin\\alpha+\\cos\\alpha=\\dfrac{1}{2}$. Qual é o valor de $\\sin\\alpha\\cos\\alpha$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{3}{8}$", "valor": "-3/8" },
+      { "tex": "$-\\dfrac{3}{4}$", "valor": "-3/4" },
+      { "tex": "$\\dfrac{3}{8}$", "valor": "3/8" },
+      { "tex": "$\\dfrac{1}{4}$", "valor": "1/4" } ],
+    "certa": 0,
+    "ref": "sin(asin(1/(2*sqrt(2)))-pi/4)*cos(asin(1/(2*sqrt(2)))-pi/4)",
+    "explicacao": "Eleva os dois membros ao quadrado: $\\sin^2\\alpha+2\\sin\\alpha\\cos\\alpha+\\cos^2\\alpha=\\dfrac{1}{4}$. Como $\\sin^2\\alpha+\\cos^2\\alpha=1$, fica $1+2\\sin\\alpha\\cos\\alpha=\\dfrac{1}{4}$, logo $2\\sin\\alpha\\cos\\alpha=-\\dfrac{3}{4}$ e $\\sin\\alpha\\cos\\alpha=-\\dfrac{3}{8}$. O valor $\\dfrac{1}{4}$ é o quadrado de $\\dfrac{1}{2}$, sem passar pela fórmula fundamental." },
+
+  { "id": "rel-12", "nivel": 3,
+    "enunciado": "Sabe-se que $\\tan\\alpha=-\\dfrac{3}{4}$ e que $\\alpha$ pertence ao 2.º quadrante. Qual é o valor de $\\sin\\alpha$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{3}{5}$", "valor": "-3/5" },
+      { "tex": "$-\\dfrac{4}{5}$", "valor": "-4/5" },
+      { "tex": "$\\dfrac{4}{5}$", "valor": "4/5" },
+      { "tex": "$\\dfrac{3}{5}$", "valor": "3/5" } ],
+    "certa": 3,
+    "ref": "sin(pi-atan(3/4))",
+    "explicacao": "De $1+\\tan^2\\alpha=\\dfrac{1}{\\cos^2\\alpha}$ vem $1+\\dfrac{9}{16}=\\dfrac{25}{16}=\\dfrac{1}{\\cos^2\\alpha}$, logo $\\cos^2\\alpha=\\dfrac{16}{25}$ e, no 2.º quadrante, $\\cos\\alpha=-\\dfrac{4}{5}$. Como $\\sin\\alpha=\\tan\\alpha\\times\\cos\\alpha$, vem $\\sin\\alpha=-\\dfrac{3}{4}\\times\\left(-\\dfrac{4}{5}\\right)=\\dfrac{3}{5}$, positivo como se espera no 2.º quadrante." }
+ ]
+}

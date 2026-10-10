@@ -1,0 +1,158 @@
+{
+ "tema": "valores",
+ "perguntas": [
+  { "id": "val-01", "nivel": 1,
+    "enunciado": "Qual é o valor exato de $\\cos\\dfrac{\\pi}{6}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" },
+      { "tex": "$\\dfrac{\\sqrt{2}}{2}$", "valor": "sqrt(2)/2" } ],
+    "certa": 1,
+    "ref": "cos(pi/6)",
+    "explicacao": "$\\dfrac{\\pi}{6}$ equivale a $30^\\circ$, e $\\cos 30^\\circ=\\dfrac{\\sqrt{3}}{2}$. O valor $\\dfrac{1}{2}$ é o seno de $30^\\circ$ (seno e cosseno trocados) e $\\dfrac{\\sqrt{3}}{3}$ é a tangente." },
+
+  { "id": "val-02", "nivel": 1,
+    "enunciado": "Qual é o valor exato de $\\tan 60^\\circ$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" } ],
+    "certa": 3,
+    "ref": "tan(radians(60))",
+    "explicacao": "$\\tan 60^\\circ=\\dfrac{\\sin 60^\\circ}{\\cos 60^\\circ}=\\dfrac{\\sqrt{3}/2}{1/2}=\\sqrt{3}$. O valor $\\dfrac{\\sqrt{3}}{3}$ é a tangente de $30^\\circ$." },
+
+  { "id": "val-03", "nivel": 1,
+    "enunciado": "Qual das seguintes expressões não está definida?",
+    "opcoes": [
+      { "tex": "$\\tan\\dfrac{3\\pi}{2}$" },
+      { "tex": "$\\tan\\pi$" },
+      { "tex": "$\\sin\\dfrac{3\\pi}{2}$" },
+      { "tex": "$\\cos\\dfrac{3\\pi}{2}$" } ],
+    "certa": 0,
+    "verifica": ["abs(cos(3*pi/2))<1e-9", "abs(cos(pi))>0.5", "ig(sin(3*pi/2), -1)"],
+    "explicacao": "A tangente é $\\dfrac{\\sin}{\\cos}$ e $\\cos\\dfrac{3\\pi}{2}=0$, por isso $\\tan\\dfrac{3\\pi}{2}=\\dfrac{-1}{0}$ não existe. As outras têm valor: $\\tan\\pi=\\dfrac{0}{-1}=0$, $\\sin\\dfrac{3\\pi}{2}=-1$ e $\\cos\\dfrac{3\\pi}{2}=0$." },
+
+  { "id": "val-04", "nivel": 1,
+    "enunciado": "Qual é o valor de $\\sin\\dfrac{\\pi}{6}+\\cos\\dfrac{\\pi}{3}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$\\dfrac{1+\\sqrt{3}}{2}$", "valor": "(1+sqrt(3))/2" },
+      { "tex": "$1$", "valor": "1" },
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" } ],
+    "certa": 2,
+    "ref": "sin(pi/6)+cos(pi/3)",
+    "explicacao": "$\\sin\\dfrac{\\pi}{6}=\\dfrac{1}{2}$ e $\\cos\\dfrac{\\pi}{3}=\\dfrac{1}{2}$, logo a soma é $\\dfrac{1}{2}+\\dfrac{1}{2}=1$." },
+
+  { "id": "val-05", "nivel": 1,
+    "enunciado": "Qual é o valor de $\\sin\\dfrac{\\pi}{3}\\cdot\\cos\\dfrac{\\pi}{6}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{3}}{4}$", "valor": "sqrt(3)/4" },
+      { "tex": "$\\dfrac{3}{2}$", "valor": "3/2" },
+      { "tex": "$\\dfrac{1}{4}$", "valor": "1/4" },
+      { "tex": "$\\dfrac{3}{4}$", "valor": "3/4" } ],
+    "certa": 3,
+    "ref": "sin(pi/3)*cos(pi/6)",
+    "explicacao": "$\\sin\\dfrac{\\pi}{3}=\\dfrac{\\sqrt{3}}{2}$ e $\\cos\\dfrac{\\pi}{6}=\\dfrac{\\sqrt{3}}{2}$. O produto é $\\dfrac{\\sqrt{3}}{2}\\times\\dfrac{\\sqrt{3}}{2}=\\dfrac{3}{4}$: multiplicam-se numeradores e denominadores, e $\\sqrt{3}\\times\\sqrt{3}=3$." },
+
+  { "id": "val-06", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\cos\\dfrac{3\\pi}{4}$?",
+    "opcoes": [
+      { "tex": "$-\\dfrac{\\sqrt{2}}{2}$", "valor": "-sqrt(2)/2" },
+      { "tex": "$\\dfrac{\\sqrt{2}}{2}$", "valor": "sqrt(2)/2" },
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" } ],
+    "certa": 0,
+    "ref": "cos(3*pi/4)",
+    "explicacao": "$\\dfrac{3\\pi}{4}=\\pi-\\dfrac{\\pi}{4}$ está no 2.º quadrante, onde o cosseno é negativo. O ângulo de referência é $\\dfrac{\\pi}{4}$, logo $\\cos\\dfrac{3\\pi}{4}=-\\cos\\dfrac{\\pi}{4}=-\\dfrac{\\sqrt{2}}{2}$." },
+
+  { "id": "val-07", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\tan 240^\\circ$?",
+    "opcoes": [
+      { "tex": "$-\\sqrt{3}$", "valor": "-sqrt(3)" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{3}$", "valor": "-sqrt(3)/3" },
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" } ],
+    "certa": 2,
+    "ref": "tan(radians(240))",
+    "explicacao": "$240^\\circ=180^\\circ+60^\\circ$ está no 3.º quadrante, onde o seno e o cosseno são negativos e a tangente é positiva. O ângulo de referência é $60^\\circ$, logo $\\tan 240^\\circ=\\tan 60^\\circ=\\sqrt{3}$." },
+
+  { "id": "val-08", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\cos\\left(-\\dfrac{2\\pi}{3}\\right)$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" } ],
+    "certa": 1,
+    "ref": "cos(-2*pi/3)",
+    "explicacao": "Os pontos de $x$ e de $-x$ têm a mesma abcissa, por isso $\\cos(-x)=\\cos x$ e $\\cos\\left(-\\dfrac{2\\pi}{3}\\right)=\\cos\\dfrac{2\\pi}{3}$. Este ângulo está no 2.º quadrante, onde o cosseno é negativo, com ângulo de referência $\\dfrac{\\pi}{3}$: $-\\cos\\dfrac{\\pi}{3}=-\\dfrac{1}{2}$." },
+
+  { "id": "val-09", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\cos\\dfrac{13\\pi}{6}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{3}$", "valor": "sqrt(3)/3" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" } ],
+    "certa": 3,
+    "ref": "cos(13*pi/6)",
+    "explicacao": "$\\dfrac{13\\pi}{6}=2\\pi+\\dfrac{\\pi}{6}$: é uma volta completa mais $\\dfrac{\\pi}{6}$, e a volta completa não altera o ponto da circunferência. Logo $\\cos\\dfrac{13\\pi}{6}=\\cos\\dfrac{\\pi}{6}=\\dfrac{\\sqrt{3}}{2}$." },
+
+  { "id": "val-10", "nivel": 2,
+    "enunciado": "Qual é o valor exato de $\\tan\\left(-\\dfrac{3\\pi}{4}\\right)$?",
+    "opcoes": [
+      { "tex": "$-1$", "valor": "-1" },
+      { "tex": "$-\\dfrac{\\sqrt{2}}{2}$", "valor": "-sqrt(2)/2" },
+      { "tex": "$1$", "valor": "1" },
+      { "tex": "$\\dfrac{\\sqrt{2}}{2}$", "valor": "sqrt(2)/2" } ],
+    "certa": 2,
+    "ref": "tan(-3*pi/4)",
+    "explicacao": "$-\\dfrac{3\\pi}{4}$ corresponde a $2\\pi-\\dfrac{3\\pi}{4}=\\dfrac{5\\pi}{4}$, no 3.º quadrante, onde a tangente é positiva. O ângulo de referência é $\\dfrac{\\pi}{4}$ e $\\tan\\dfrac{\\pi}{4}=1$, logo o valor é $1$. Usando $\\tan(-x)=-\\tan x$ obtém-se o mesmo: $-\\tan\\dfrac{3\\pi}{4}=-(-1)=1$." },
+
+  { "id": "val-11", "nivel": 3,
+    "enunciado": "Qual é o valor exato de $\\sin(-420^\\circ)$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" },
+      { "tex": "$-\\dfrac{\\sqrt{3}}{2}$", "valor": "-sqrt(3)/2" },
+      { "tex": "$-\\dfrac{1}{2}$", "valor": "-1/2" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" } ],
+    "certa": 1,
+    "ref": "sin(radians(-420))",
+    "explicacao": "Soma uma volta completa: $-420^\\circ+360^\\circ=-60^\\circ$, que termina no mesmo ponto. O ângulo de $-60^\\circ$ está no 4.º quadrante, onde o seno é negativo, e o ângulo de referência é $60^\\circ$: $\\sin(-60^\\circ)=-\\sin 60^\\circ=-\\dfrac{\\sqrt{3}}{2}$." },
+
+  { "id": "val-12", "nivel": 3,
+    "enunciado": "Qual é o valor exato de $\\sin\\dfrac{19\\pi}{4}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{\\sqrt{2}}{2}$", "valor": "sqrt(2)/2" },
+      { "tex": "$-\\dfrac{\\sqrt{2}}{2}$", "valor": "-sqrt(2)/2" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" },
+      { "tex": "$\\dfrac{\\sqrt{3}}{2}$", "valor": "sqrt(3)/2" } ],
+    "certa": 0,
+    "ref": "sin(19*pi/4)",
+    "explicacao": "$\\dfrac{19\\pi}{4}=4\\pi+\\dfrac{3\\pi}{4}$, ou seja, duas voltas completas mais $\\dfrac{3\\pi}{4}$. Como $\\dfrac{3\\pi}{4}=\\pi-\\dfrac{\\pi}{4}$ está no 2.º quadrante, onde o seno é positivo, $\\sin\\dfrac{19\\pi}{4}=\\sin\\dfrac{\\pi}{4}=\\dfrac{\\sqrt{2}}{2}$." },
+
+  { "id": "val-13", "nivel": 3,
+    "enunciado": "Qual é o valor de $\\sin\\dfrac{2\\pi}{3}+\\cos\\dfrac{5\\pi}{6}$?",
+    "opcoes": [
+      { "tex": "$\\sqrt{3}$", "valor": "sqrt(3)" },
+      { "tex": "$-\\sqrt{3}$", "valor": "-sqrt(3)" },
+      { "tex": "$0$", "valor": "0" },
+      { "tex": "$\\dfrac{\\sqrt{3}-1}{2}$", "valor": "(sqrt(3)-1)/2" } ],
+    "certa": 2,
+    "ref": "sin(2*pi/3)+cos(5*pi/6)",
+    "explicacao": "$\\dfrac{2\\pi}{3}=\\pi-\\dfrac{\\pi}{3}$ está no 2.º quadrante, onde o seno é positivo: $\\sin\\dfrac{2\\pi}{3}=\\dfrac{\\sqrt{3}}{2}$. Também $\\dfrac{5\\pi}{6}=\\pi-\\dfrac{\\pi}{6}$ está no 2.º quadrante, onde o cosseno é negativo: $\\cos\\dfrac{5\\pi}{6}=-\\dfrac{\\sqrt{3}}{2}$. A soma é $\\dfrac{\\sqrt{3}}{2}-\\dfrac{\\sqrt{3}}{2}=0$." },
+
+  { "id": "val-14", "nivel": 1,
+    "enunciado": "Qual das igualdades é verdadeira?",
+    "opcoes": [
+      { "tex": "$\\tan\\dfrac{\\pi}{4}=\\dfrac{\\sqrt{2}}{2}$" },
+      { "tex": "$\\sin\\dfrac{\\pi}{3}=\\cos\\dfrac{\\pi}{6}$" },
+      { "tex": "$\\cos\\dfrac{\\pi}{3}=\\dfrac{\\sqrt{3}}{2}$" },
+      { "tex": "$\\sin\\dfrac{\\pi}{2}=0$" } ],
+    "certa": 1,
+    "verifica": ["ig(sin(pi/3), cos(pi/6))", "not ig(tan(pi/4), sqrt(2)/2)", "not ig(cos(pi/3), sqrt(3)/2)", "not ig(sin(pi/2), 0)"],
+    "explicacao": "Os ângulos $\\dfrac{\\pi}{3}$ e $\\dfrac{\\pi}{6}$ somam $\\dfrac{\\pi}{2}$, por isso o seno de um é o cosseno do outro: ambos valem $\\dfrac{\\sqrt{3}}{2}$. As outras são falsas, porque $\\tan\\dfrac{\\pi}{4}=1$, $\\cos\\dfrac{\\pi}{3}=\\dfrac{1}{2}$ e $\\sin\\dfrac{\\pi}{2}=1$." }
+ ]
+}
