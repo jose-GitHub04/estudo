@@ -607,7 +607,7 @@ export async function montar(el, dados) {
 
     let txtAviso = '';
     if (est.modo === 'tan') {
-      if (!def) txtAviso = 'tan não está definida (a reta OP é paralela a x = 1)';
+      if (!def) txtAviso = 'tan α = sin α / cos α, e aqui cos α = 0. O denominador não pode ser zero, por isso tan α não está definida (a reta OP é paralela à reta x = 1 e nunca a corta).';
       else if (Math.abs(R * ty) > T_MAX) txtAviso = `T fica fora do desenho: tan α ≈ ${M.fmt(ty, 3)}`;
     }
     aviso.hidden = !txtAviso;
@@ -618,7 +618,7 @@ export async function montar(el, dados) {
 
   const DICAS = {
     sc: 'Arrasta o ponto P à volta da circunferência (ou usa as setas do teclado). O cosseno é a abcissa de P e o seno é a ordenada.',
-    tan: 'A tangente é a ordenada do ponto T, onde a reta OP corta a reta x = 1.',
+    tan: 'A tangente é a ordenada do ponto T, onde a reta OP corta a reta x = 1. Como tan α = sin α / cos α, quando cos α = 0 o denominador é zero e a tangente não existe.',
     red: 'Arrasta no 1.º quadrante para mudar α. O ponto Q, a roxo, é o ponto do ângulo escolhido nos botões em baixo.',
   };
 

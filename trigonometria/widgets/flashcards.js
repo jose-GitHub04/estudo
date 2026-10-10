@@ -29,10 +29,15 @@ export async function montar(el, dados) {
   const lista = Array.isArray(dados.cartoes) ? dados.cartoes : dados.cartoes.cartoes;
   const tituloGrupo = Object.fromEntries(GRUPOS.map((g) => [g.id, g.titulo]));
   const rng = criarRng();
+  const uid = Math.random().toString(36).slice(2, 8);
 
   let estado = P.ler('flashcards', {});
-  let grupo = 'todos';
-  let modo = 'hoje'; // 'hoje' = só os que já podem voltar; 'tudo' = o grupo inteiro
+  // temas escolhidos (um ou vários); por omissão estão todos
+  const idsGrupos = GRUPOS.filter((g) => lista.some((c) => c.grupo === g.id)).map((g) => g.id);
+  const temasGuardados = P.ler('flashcards-temas', null);
+  let escolhidos = new Set(Array.isArray(temasGuardados) ? temasGuardados.filter((id) => idsGrupos.includes(id)) : idsGrupos);
+  if (escolhidos.size === 0) escolhidos = new Set(idsGrupos);
+  let modo = 'hoje'; // 'hoje' = só os que já podem voltar; 'tudo' = todos os cartões dos temas escolhidos
   let sessao = null; // { fila, total, feitos, certas, falhadas, repeticoes, virado }
   let avisouStorage = false;
 
@@ -47,7 +52,22 @@ export async function montar(el, dados) {
 
   // ---------- Cálculos ----------
 
-  const doGrupo = () => lista.filter((c) => grupo === 'todos' || c.grupo === grupo);
+  const todosEscolhidos = () => escolhidos.size === idsGrupos.length;
+  const doGrupo = () => lista.filter((c) => escolhidos.has(c.grupo));
+  const sufixoTemas = () => (todosEscolhidos() ? '' : escolhidos.size === 1 ? ' neste tema' : ' nestes temas');
+
+  /** Primeiro toque (com todos escolhidos) isola esse tema; depois cada toque junta ou tira um tema. */
+  function alternarTema(id) {
+    if (todosEscolhidos()) {
+      escolhidos = new Set([id]);
+    } else if (escolhidos.has(id)) {
+      escolhidos.delete(id);
+      if (escolhidos.size === 0) escolhidos = new Set(idsGrupos); // nunca fica sem nenhum
+    } else {
+      escolhidos.add(id);
+    }
+    P.guardar('flashcards-temas', [...escolhidos]);
+  }
   const devido = (c) => !estado[c.id] || estado[c.id].prox <= hoje();
   const caixaDe = (c) => (estado[c.id] ? estado[c.id].caixa : 0);
 
@@ -95,20 +115,23 @@ export async function montar(el, dados) {
     const devidos = doGrupo().filter(devido).length;
     const dominados = lista.filter((c) => caixaDe(c) === 5).length;
     const nGrupo = doGrupo().length;
+    const idLegenda = `${uid}-legenda`;
     return `
       <p class="fc-resumo" aria-live="polite">
-        <span><strong>${devidos}</strong> ${devidos === 1 ? 'cartão' : 'cartões'} para rever hoje${grupo === 'todos' ? '' : ' neste grupo'}</span>
+        <span><strong>${devidos}</strong> ${devidos === 1 ? 'cartão' : 'cartões'} para rever hoje${sufixoTemas()}</span>
         <span class="fc-sep" aria-hidden="true">·</span>
         <span>dominados: <strong>${dominados}</strong> de ${lista.length}</span>
       </p>
-      <div class="chips fc-grupos" role="group" aria-label="Grupo de cartões">
-        <button type="button" class="chip" data-grupo="todos" aria-pressed="${grupo === 'todos'}">Todos (${lista.length})</button>
-        ${GRUPOS.filter((g) => lista.some((c) => c.grupo === g.id)).map((g) => `
-          <button type="button" class="chip" data-grupo="${g.id}" aria-pressed="${grupo === g.id}">${g.titulo} (${lista.filter((c) => c.grupo === g.id).length})</button>`).join('')}
+      <p class="fc-legenda" id="${idLegenda}">Temas: toca num para o escolher e junta mais se quiseres. Toca outra vez para tirar um.</p>
+      <div class="chips fc-grupos" role="group" aria-labelledby="${idLegenda}">
+        <button type="button" class="chip" data-grupo="todos" aria-pressed="${todosEscolhidos()}">Todos (${lista.length})</button>
+        ${GRUPOS.filter((g) => idsGrupos.includes(g.id)).map((g) => `
+          <button type="button" class="chip" data-grupo="${g.id}" aria-pressed="${!todosEscolhidos() && escolhidos.has(g.id)}">${g.titulo} (${lista.filter((c) => c.grupo === g.id).length})</button>`).join('')}
       </div>
+      <p class="nota fc-escolha" aria-live="polite">${todosEscolhidos() ? 'Todos os temas escolhidos.' : `${escolhidos.size} ${escolhidos.size === 1 ? 'tema escolhido' : 'temas escolhidos'}, ${nGrupo} ${nGrupo === 1 ? 'cartão' : 'cartões'}.`}</p>
       <div class="chips fc-modos" role="group" aria-label="O que estudar">
         <button type="button" class="chip" data-modo="hoje" aria-pressed="${modo === 'hoje'}">Os de hoje</button>
-        <button type="button" class="chip" data-modo="tudo" aria-pressed="${modo === 'tudo'}">Estudar o grupo todo (${nGrupo})</button>
+        <button type="button" class="chip" data-modo="tudo" aria-pressed="${modo === 'tudo'}">Estudar tudo${todosEscolhidos() ? '' : ' o que escolhi'} (${nGrupo})</button>
       </div>`;
   }
 
@@ -116,8 +139,8 @@ export async function montar(el, dados) {
     const n = escolherCartoes().length;
     if (n === 0) {
       return `<div class="fc-palco fc-vazio">
-        <p><strong>Não há cartões para rever hoje${grupo === 'todos' ? '' : ' neste grupo'}.</strong></p>
-        <p class="nota">Volta amanhã, ou escolhe «Estudar o grupo todo» para treinar na mesma.</p>
+        <p><strong>Não há cartões para rever hoje${sufixoTemas()}.</strong></p>
+        <p class="nota">Volta amanhã, escolhe mais temas, ou usa «Estudar tudo» para treinar na mesma.</p>
       </div>`;
     }
     return `<div class="fc-palco fc-vazio">
@@ -196,9 +219,16 @@ export async function montar(el, dados) {
     const botao = e.target.closest('button');
     if (!botao || !raiz.contains(botao)) return;
     if (botao.dataset.grupo) {
-      grupo = botao.dataset.grupo;
+      if (botao.dataset.grupo === 'todos') {
+        escolhidos = new Set(idsGrupos);
+        P.guardar('flashcards-temas', [...escolhidos]);
+      } else {
+        alternarTema(botao.dataset.grupo);
+      }
       sessao = null;
       desenhar();
+      const mesmo = raiz.querySelector(`[data-grupo="${botao.dataset.grupo}"]`);
+      if (mesmo) mesmo.focus({ preventScroll: true }); // o desenho refaz os botões: devolve o foco ao mesmo
     } else if (botao.dataset.modo) {
       modo = botao.dataset.modo;
       sessao = null;

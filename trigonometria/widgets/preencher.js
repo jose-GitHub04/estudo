@@ -65,7 +65,7 @@ function htmlPista(graus) {
   }
   if (q === 0) {
     const eixo = { 0: 'semieixo positivo Ox', 90: 'semieixo positivo Oy', 180: 'semieixo negativo Ox', 270: 'semieixo negativo Oy' }[g];
-    partes.push(`Este ângulo fica sobre o ${eixo}. Lê as coordenadas do ponto ${tex('(\\cos,\\ \\sin)')} na circunferência trigonométrica e lembra-te de que ${tex('\\tan=\\frac{\\sin}{\\cos}')}.`);
+    partes.push(`Este ângulo fica sobre o ${eixo}. Lê as coordenadas do ponto ${tex('(\\cos,\\ \\sin)')} na circunferência trigonométrica e lembra-te de que ${tex('\\tan=\\frac{\\sin}{\\cos}')}.${g === 90 || g === 270 ? ' Se o cosseno for 0, o denominador é zero e a tangente não existe.' : ''}`);
   } else {
     const ref = [g, 180 - g, g - 180, 360 - g][q - 1];
     const sinal = (f) => (sinalNoQuadrante(f, q) > 0 ? 'positivo' : 'negativo');
@@ -202,7 +202,7 @@ export async function montar(el, dados) {
     } else if (r.estado === 'errado') {
       c.fb.replaceChildren(c.tex
         ? msg('pre-fb--errado', '✗', h('strong', {}, 'Errado'), '. O valor certo é ', valorCerto, '.')
-        : msg('pre-fb--errado', '✗', h('strong', {}, 'Errado'), '. Para este ângulo a tangente não está definida, escreve n.d.'));
+        : msg('pre-fb--errado', '✗', h('strong', {}, 'Errado'), '. Aqui o cosseno é 0 e está no denominador de tan = sin / cos. Como o denominador não pode ser zero, a tangente não está definida: escreve n.d.'));
       c.input.setAttribute('aria-invalid', 'true');
       fechar(c, false);
     } else if (r.estado === 'decimal') {

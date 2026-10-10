@@ -153,7 +153,7 @@ function valorExato(rng, dados) {
     passos.push(`Este ângulo fica sobre um eixo, no ponto $(${c.tex},\\ ${s.tex})$, que tem o cosseno por abcissa e o seno por ordenada.`);
     if (funcao === 'tan') {
       passos.push(ex === null
-        ? `Como o cosseno é 0, a tangente $\\frac{\\sin}{\\cos}$ não está definida.`
+        ? `A tangente é $\\tan=\\frac{\\sin}{\\cos}$ e aqui o cosseno é 0. O cosseno está no denominador e o denominador não pode ser zero, por isso a tangente não está definida.`
         : `$\\tan ${X}=\\frac{\\sin}{\\cos}=\\frac{${s.tex}}{${c.tex}}=${ex.tex}$.`);
     } else {
       passos.push(`Logo $${f}\\left(${X}\\right)=${ex.tex}$.`);

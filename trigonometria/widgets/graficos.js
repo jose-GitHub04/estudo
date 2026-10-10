@@ -254,13 +254,15 @@ export async function montar(el, dados) {
   }
   const notaConstante = h('p', { class: 'nota gra-constante', hidden: true },
     'Com b = 0 a função é constante: o gráfico é uma reta horizontal e não tem período.');
+  const notaTangente = h('p', { class: 'nota gra-explica-tan', hidden: true },
+    'Porque é que há assíntotas? A tangente é sin dividido por cos. Quando o cosseno é 0 o denominador é 0, e não se pode dividir por zero: esses valores de x ficam fora do domínio e o gráfico nunca lá chega.');
 
   const formula = h('p', { class: 'gra-formula' });
   formula.innerHTML = `Gráfico de ${tex('y=a+b\\,f\\bigl(c(x-d)\\bigr)')}, com f igual a sin, cos ou tan.`;
   const raiz = h('div', { class: 'widget gra' },
     h('p', { class: 'widget__titulo' }, 'Experimenta os parâmetros'),
     formula,
-    grupoFn, lienzo, legenda, controlos, opcoes, painel, leiturasEl, notaConstante);
+    grupoFn, lienzo, legenda, controlos, opcoes, painel, leiturasEl, notaConstante, notaTangente);
   el.replaceChildren(raiz);
 
   // --- geometria e desenho ---
@@ -394,6 +396,7 @@ export async function montar(el, dados) {
     }
     nos.eq.rot.textContent = modo ? 'A tua equação' : 'Equação';
     notaConstante.hidden = e.b !== 0;
+    notaTangente.hidden = !tan;
   }
 
   function refrescar() {

@@ -6,6 +6,8 @@
 
 .fc-grupos, .fc-modos { margin-top: 0.5rem; }
 .fc-modos { padding-bottom: 0.9rem; border-bottom: 1px solid var(--linha); }
+.fc-legenda { margin: 0.8rem 0 0; color: var(--tinta-suave); font-size: 0.88rem; }
+.fc-escolha { margin: 0.6rem 0 0; }
 
 .fc-palco { margin-top: 1rem; }
 .fc-vazio { padding: 1.2rem 0.2rem 0.6rem; text-align: center; }
