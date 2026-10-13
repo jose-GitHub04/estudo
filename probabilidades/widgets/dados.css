@@ -1,0 +1,51 @@
+/* dados: a soma de vários dados e a curva Normal. Classes com prefixo .dad- */
+
+.dad [hidden] { display: none !important; }
+.dad .chip { min-height: 2.5rem; }
+.dad .botao { min-height: 2.75rem; }
+
+.dad-controlos { grid-template-columns: 1fr; }
+.dad-controlos input[type="range"] { height: 2.5rem; margin: 0; width: 100%; }
+
+.dad-svg { max-width: 38rem; }
+.dad-svg text { font-size: 14px; }
+.dad-svg .dad-eixo-t { fill: var(--tinta-suave); font-size: 14px; }
+.dad-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
+.dad-tique { stroke: var(--c-eixo); stroke-width: 1.2; }
+.dad-grelha { stroke: var(--c-grelha); stroke-width: 1; }
+.dad-barra { fill: var(--c-curva); fill-opacity: 0.38; stroke: var(--c-curva); stroke-width: 0.8; }
+.dad-curva { stroke: var(--c-seno); stroke-width: 2.8; stroke-linejoin: round; }
+.dad-obs { fill: var(--c-cosseno); stroke: var(--papel); stroke-width: 1.2; }
+.dad-mu-linha { stroke: var(--c-ponto); stroke-width: 1.2; stroke-dasharray: 4 3; }
+
+.dad-legenda { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; margin: 0.4rem 0 0; font-size: 0.88rem; color: var(--tinta-suave); }
+.dad-leg { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dad-leg-s { width: 1.7rem; height: 1rem; flex: none; }
+
+.dad-frase { margin: 0.7rem 0 0; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
+.dad-opcoes { margin-top: 0.7rem; }
+.dad-caixa { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; cursor: pointer; }
+.dad-caixa input { width: 1.2rem; height: 1.2rem; accent-color: var(--castanho); }
+.dad-caixa input:focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; }
+
+.dad-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+
+.dad-faces { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.8rem; }
+.dad-dado { width: 1.9rem; height: 1.9rem; }
+.dad-dado-corpo { fill: var(--papel); stroke: var(--castanho); stroke-width: 2; }
+.dad-pip { fill: var(--tinta); }
+
+.dad-leituras-mu, .dad-leituras-sim { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.dad-estado { min-height: 1.3em; }
+
+.dad-tab { width: 100%; font-variant-numeric: tabular-nums; }
+.dad-tab th, .dad-tab td { padding: 0.35rem 0.6rem; text-align: left; }
+.dad-tab thead th { font-size: 0.85rem; }
+
+@media (min-width: 46em) {
+  .dad-controlos { grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dad *, .dad *::before, .dad *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

@@ -286,6 +286,30 @@ def verificar_probabilidades():
     ganho = Fr(5, 10) * 2 + Fr(2, 10) * (-5) + Fr(3, 10) * 0
     if ganho != 0:
         falha(f"jogo 5V/2A/3Az: ganho médio {ganho} (esperado 0, equitativo)")
+    # soma de n dados: μ = 3,5 n, σ² = 35 n / 12 e as proporções citadas na matéria
+    def dados(n):
+        d = {0: Fr(1)}
+        for _ in range(n):
+            e = {}
+            for t, q in d.items():
+                for f in range(1, 7):
+                    e[t + f] = e.get(t + f, 0) + q / 6
+            d = e
+        return d
+    for n, p1, p2 in ((6, 0.7107, 0.9606), (10, 0.6870, 0.9495)):
+        d = dados(n)
+        m = sum(t * q for t, q in d.items())
+        v = sum((t - m) ** 2 * q for t, q in d.items())
+        if sum(d.values()) != 1 or m != Fr(7 * n, 2) or v != Fr(35 * n, 12):
+            falha(f"dados n={n}: soma, μ ou σ² não batem")
+        sd = math.sqrt(v)
+        a1 = float(sum(q for t, q in d.items() if abs(t - m) < sd))
+        a2 = float(sum(q for t, q in d.items() if abs(t - m) < 2 * sd))
+        if abs(a1 - p1) > 5e-5 or abs(a2 - p2) > 5e-5:
+            falha(f"dados n={n}: proporções {a1:.4f}, {a2:.4f} (esperado {p1}, {p2})")
+    d6 = dados(6)
+    if abs(float(sum(q for t, q in d6.items() if 17 <= t <= 25)) - 0.71) > 0.005:
+        falha("materia.html: P(17 ≤ S ≤ 25) com 6 dados não é ≈ 0,71")
     html = (RAIZ / "probabilidades" / "materia.html").read_text(encoding="utf-8")
     if not all(t in html for t in ("frac47", "frac36=", "frac27")):
         falha("materia.html: falta o exemplo P(X=2) = 4/7 × 3/6 = 2/7")

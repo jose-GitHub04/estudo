@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="widgets/tabela.css">
   <link rel="stylesheet" href="widgets/urna.css">
   <link rel="stylesheet" href="widgets/normal.css">
+  <link rel="stylesheet" href="widgets/dados.css">
   <script defer src="../assets/katex/katex.min.js"></script>
   <script defer src="../assets/katex/auto-render.min.js"></script>
   <script type="module" src="app.js"></script>
@@ -34,6 +35,7 @@
           <a href="#tabela">Tabela de distribuição</a>
           <a href="#urna">Urna</a>
           <a href="#normal">Distribuição Normal</a>
+          <a href="#dados">Dados e Normal</a>
         </nav>
 
         <article class="modulo" id="tabela">
@@ -66,6 +68,19 @@
             <p>Exemplo: se $X\sim N(100,\,10)$, então $P(90&lt;X&lt;110)\approx 0{,}6827$. Para $P(X>120)$: $120=\mu+2\sigma$, as duas caudas juntas valem $1-0{,}9545=0{,}0455$ e, por simetria, cada uma vale $0{,}02275$. Logo $P(X>120)\approx 0{,}0228$.</p>
           </div>
           <div data-widget="normal"></div>
+        </article>
+
+        <article class="modulo" id="dados">
+          <h3>Onde aparece a Normal: somar dados</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Com um dado, os valores 1 a 6 têm todos a mesma probabilidade e a tabela é «plana». A <strong>soma de vários dados</strong> já não é plana: com dois dados o 7 é o mais provável (6 maneiras em 36), e as somas muito pequenas ou muito grandes são raras. Quantos mais dados somas, mais o gráfico se parece com uma <strong>curva Normal</strong>.</p>
+            <p>Um dado tem valor médio $3{,}5$ e variância $\frac{35}{12}$. Para a soma $S$ de $n$ dados (independentes):</p>
+            $$\mu=3{,}5\,n\qquad\qquad \sigma=\sqrt{\tfrac{35}{12}\,n}$$
+            <p>Exemplo: com $n=6$ dados, $\mu=21$ e $\sigma=\sqrt{17{,}5}\approx 4{,}18$. A soma mais provável é 21, e $P(17\le S\le 25)\approx 0{,}71$, perto dos $0{,}68$ da regra de $\mu\pm\sigma$ (a soma só toma valores inteiros, por isso não coincide exatamente). A <strong>média</strong> dos valores também fica em forma de sino, centrada em $3{,}5$, e cada vez mais estreita quando $n$ aumenta.</p>
+            <p>Isto não é só dos dados: a soma de muitas variáveis independentes e parecidas tende a ter distribuição Normal. É por isso que a Normal aparece tantas vezes nas medições.</p>
+          </div>
+          <div data-widget="dados"></div>
         </article>
       </div>
     </section>

@@ -52,6 +52,7 @@ function montarBarra(el, atual, tema) {
           <span class="marca__papel">${escapar(tema.rotulo)}</span>
         </span>
       </a>
+      <a class="barra__temas" href="../">← Todos os temas</a>
       <nav class="menu" aria-label="Secções">${links}</nav>
     </div>`;
 }
