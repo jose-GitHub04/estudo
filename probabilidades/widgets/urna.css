@@ -1,0 +1,91 @@
+/* urna: a urna e o jogo do saco. Classes com prefixo .urn- */
+
+.urn [hidden] { display: none !important; }
+.urn .chip { min-height: 2.5rem; min-width: 2.75rem; }
+.urn .botao { min-height: 2.75rem; }
+
+.urn-separadores { margin-top: 0; padding-bottom: 0.8rem; border-bottom: 1px solid var(--linha); }
+.urn-separadores .chip { padding-left: 1.2rem; padding-right: 1.2rem; font-size: 0.95rem; }
+
+.urn-grelha { display: grid; gap: 0.4rem; margin-top: 0.9rem; }
+.urn-bloco { min-width: 0; margin-bottom: 0.9rem; }
+.urn-bloco--largo { padding-top: 1rem; border-top: 1px solid var(--linha); }
+.urn-titulo { margin: 0 0 0.6rem; font-size: 1.15rem; }
+.urn-enunc { margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+@media (min-width: 52em) {
+  .urn-grelha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+}
+
+/* ---------- desenhos ---------- */
+
+.urn-svg { max-width: 26rem; }
+.urn-svg text { font-size: 12px; font-weight: 600; }
+.urn-taca { fill: var(--creme); stroke: var(--c-curva); stroke-width: 2.4; }
+.urn-borda { stroke: var(--c-curva); stroke-width: 3; stroke-linecap: round; }
+.urn-svg .urn-rotulo { fill: var(--tinta-suave); font-size: 12px; font-weight: 400; }
+.urn-slot { fill: none; stroke: var(--c-eixo); stroke-width: 1.4; stroke-dasharray: 4 4; opacity: 0.6; }
+
+.urn-bola circle { stroke: var(--c-ponto); stroke-width: 1.4; }
+.urn-bola--vermelha circle { fill: var(--c-cosseno); }
+.urn-bola--azul circle { fill: var(--c-seno); }
+.urn-bola--amarela circle { fill: var(--dourado); }
+.urn-svg .urn-bola-t { fill: var(--papel); font-size: 11px; font-weight: 700; pointer-events: none; }
+.urn-svg .urn-bola--amarela .urn-bola-t { fill: var(--castanho-fundo); }
+.urn-bola--ultima circle { stroke: var(--c-destaque); stroke-width: 4; }
+
+.urn-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.urn-resultado, .urn-resultado-jogo { min-height: 2.6em; }
+.urn-resultado { background: var(--creme); color: var(--tinta); }
+.urn-resultado-jogo { background: var(--creme); color: var(--tinta); }
+
+/* histograma */
+.urn-repetir { margin-top: 0; }
+.urn-hist { max-width: 30rem; }
+.urn-svg .urn-eixo-t { fill: var(--tinta-suave); font-size: 11px; font-weight: 400; }
+.urn-grade { stroke: var(--c-grelha); stroke-width: 1; }
+.urn-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
+.urn-barra { fill: var(--c-seno); fill-opacity: 0.8; }
+.urn-traco { stroke: var(--c-ponto); stroke-width: 2.6; stroke-linecap: round; }
+.urn-ponto { fill: var(--papel); stroke: var(--c-ponto); stroke-width: 2; }
+.urn-banda { fill: transparent; cursor: pointer; }
+.urn-banda:hover { fill: var(--dourado-fundo); }
+.urn-banda--sel { fill: var(--dourado-fundo); stroke: var(--dourado-texto); stroke-width: 1.6; }
+
+/* ---------- tabela ---------- */
+
+.urn-tabela { font-size: 0.95rem; }
+.urn-tabela .katex { font-size: 1em; }
+.urn-btn-linha {
+  min-width: 2.75rem; min-height: 2.5rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
+  border-radius: 0.4rem; background: var(--creme); color: var(--castanho); font: inherit; cursor: pointer;
+}
+.urn-btn-linha:hover { border-color: var(--castanho); }
+.urn-btn-linha[aria-pressed="true"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
+.urn-fila--sel > * { background: var(--dourado-fundo) !important; }
+.urn-soma { margin: 0.7rem 0 0; overflow-x: auto; overflow-y: hidden; }
+.urn-soma-t { color: var(--tinta-suave); font-size: 0.9rem; }
+
+@media (max-width: 34em) {
+  .urn-tabela { font-size: 0.8rem; }
+  .urn-tabela th, .urn-tabela td { padding: 0.3rem 0.25rem; }
+  .urn-soma { font-size: 0.85rem; }
+}
+
+/* ---------- leituras ---------- */
+
+.urn-leituras .leitura__rotulo, .urn-leituras-jogo .leitura__rotulo { font-size: 0.8rem; }
+.urn-larga { grid-column: 1 / -1; }
+.urn-formula { font-size: 0.95rem; overflow-x: auto; overflow-y: hidden; }
+.urn-un { color: var(--tinta-suave); font-size: 0.85rem; }
+.urn-frase { margin: 0.8rem 0 0; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
+
+/* ---------- jogo ---------- */
+
+.urn-controlo-premio { margin-top: 0.7rem; }
+.urn-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.urn-controlo-premio input[type="range"] { height: 2.75rem; margin: 0; }
+.urn-tab-jogo th { text-align: left; white-space: nowrap; }
+.urn-nota-eq { margin-top: 0; }
+.urn-feedback:empty { display: none; }
+.urn-feedback { margin: 0.7rem 0 0; padding: 0.55rem 0.8rem; border-radius: 0.4rem; font-size: 0.95rem; }

@@ -1,9 +1,10 @@
-// Cabeçalho, menu e rodapé partilhados pelas páginas do tema, e a lista de destinos
-// da página inicial. Cada página tem <header id="barra"> e <footer id="rodape"> vazios
-// e <body data-pagina="...">; isto preenche-os. Uma só fonte para o menu: para
-// acrescentar uma página, acrescenta-a aqui e cria o .html.
+// Cabeçalho, menu e rodapé partilhados pelas páginas de cada tema, e a lista de destinos
+// da página inicial do tema. Cada página tem <header id="barra"> e <footer id="rodape"> vazios
+// e <body data-pagina="..." data-tema="...">; isto preenche-os (sem data-tema, vale a
+// trigonometria). Uma só fonte para o menu: para acrescentar uma página, acrescenta-a
+// à lista do tema e cria o .html.
 
-export const PAGINAS = [
+const PAGINAS_TRIGONOMETRIA = [
   { id: 'materia', href: 'materia.html', rotulo: 'Matéria',
     resumo: 'Lê o essencial e experimenta: triângulo, circunferência trigonométrica, radianos e gráficos.' },
   { id: 'cartoes', href: 'cartoes.html', rotulo: 'Cartões',
@@ -18,10 +19,26 @@ export const PAGINAS = [
     resumo: 'Todas as fórmulas e valores numa folha A4, pronta a imprimir.' },
 ];
 
+const PAGINAS_PROBABILIDADES = [
+  { id: 'materia', href: 'materia.html', rotulo: 'Matéria',
+    resumo: 'Tabela de distribuição, valor médio e desvio-padrão, com desenhos para mexer.' },
+  { id: 'exercicios', href: 'exercicios.html', rotulo: 'Exercícios',
+    resumo: 'Quatro exercícios com resolução passo a passo e desenhos para mexer.' },
+  { id: 'vf', href: 'verdadeiro-falso.html', rotulo: 'Verdadeiro ou falso',
+    resumo: 'Afirmações para decidires se são verdadeiras ou falsas, com a explicação de cada uma.' },
+];
+
+export const TEMAS = {
+  trigonometria: { rotulo: 'Trigonometria', paginas: PAGINAS_TRIGONOMETRIA },
+  probabilidades: { rotulo: 'Probabilidades', paginas: PAGINAS_PROBABILIDADES },
+};
+
+export const PAGINAS = PAGINAS_TRIGONOMETRIA;
+
 const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-function montarBarra(el, atual) {
-  const links = PAGINAS.map((p) => {
+function montarBarra(el, atual, tema) {
+  const links = tema.paginas.map((p) => {
     const corrente = p.id === atual ? ' aria-current="page"' : '';
     return `<a href="${p.href}"${corrente}>${escapar(p.rotulo)}</a>`;
   }).join('');
@@ -32,7 +49,7 @@ function montarBarra(el, atual) {
         <img class="marca__logo" src="../assets/mat100_logo.png" alt="" width="44" height="38">
         <span>
           <span class="marca__nome">Mat100limites</span>
-          <span class="marca__papel">Trigonometria</span>
+          <span class="marca__papel">${escapar(tema.rotulo)}</span>
         </span>
       </a>
       <nav class="menu" aria-label="Secções">${links}</nav>
@@ -50,9 +67,9 @@ function montarRodape(el) {
     </div>`;
 }
 
-function montarDestinos(el) {
+function montarDestinos(el, tema) {
   el.className = 'destinos';
-  el.innerHTML = PAGINAS.map((p, i) => `
+  el.innerHTML = tema.paginas.map((p, i) => `
     <a class="destino" href="${p.href}">
       <span class="destino__numero" aria-hidden="true">${i + 1}</span>
       <span class="destino__texto">
@@ -63,11 +80,12 @@ function montarDestinos(el) {
 }
 
 /** Preenche barra, rodapé e (na página inicial) a grelha de destinos. */
-export function montarEstrutura(atual) {
+export function montarEstrutura(atual, idTema = 'trigonometria') {
+  const tema = TEMAS[idTema] || TEMAS.trigonometria;
   const barra = document.getElementById('barra');
-  if (barra) montarBarra(barra, atual);
+  if (barra) montarBarra(barra, atual, tema);
   const rodape = document.getElementById('rodape');
   if (rodape) montarRodape(rodape);
   const destinos = document.getElementById('destinos');
-  if (destinos) montarDestinos(destinos);
+  if (destinos) montarDestinos(destinos, tema);
 }

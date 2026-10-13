@@ -1,0 +1,114 @@
+/* ex-urna: exercício 3 (a caixa até sair vermelha). Classes com prefixo .exu- */
+
+.exu [hidden] { display: none !important; }
+.exu .botao { min-height: 2.75rem; }
+.exu .chip { min-height: 2.5rem; }
+
+.exu-enunciado p { margin: 0 0 0.6rem; }
+.exu-alineas { margin: 0 0 0.4rem; padding: 0; list-style: none; }
+.exu-alineas li { margin: 0 0 0.45rem; padding-left: 2.4rem; text-indent: -2.4rem; }
+.exu-num { display: inline-block; width: 2.4rem; text-indent: 0; font-weight: 600; color: var(--castanho); }
+
+.exu-bloco { min-width: 0; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--linha); }
+.exu-titulo { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.exu-nota { margin-top: 0; }
+.exu-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.exu-modos { margin-top: 0; }
+.exu-estado { min-height: 2.6em; background: var(--creme); color: var(--tinta); }
+
+/* ---------- desenhos ---------- */
+
+.exu-svg { max-width: 30rem; }
+.exu-svg text { font-size: 12px; }
+.exu-aresta { stroke: var(--c-eixo); stroke-width: 2; stroke-linecap: round; }
+.exu-fr { fill: var(--castanho); font-size: 12px; font-weight: 600; }
+.exu-no { stroke: var(--c-ponto); stroke-width: 1.6; }
+.exu-no--v { fill: var(--c-cosseno); }
+.exu-no--b { fill: var(--papel); }
+.exu-no--raiz { fill: var(--c-ponto); }
+.exu-svg .exu-letra { fill: var(--c-ponto); font-size: 11px; font-weight: 700; pointer-events: none; }
+.exu-svg .exu-letra--v { fill: var(--papel); font-size: 12px; }
+.exu-svg .exu-x { font-size: 12px; font-weight: 700; }
+.exu-svg .exu-prod { fill: var(--tinta-suave); font-size: 11.5px; }
+
+.exu-folha { cursor: pointer; }
+.exu-fundo { fill: transparent; stroke: none; }
+.exu-folha:hover .exu-fundo { fill: var(--dourado-fundo); }
+.exu-folha:focus { outline: none; }
+.exu-folha:focus-visible .exu-fundo { stroke: var(--dourado-texto); stroke-width: 2.4; stroke-dasharray: 5 3; fill: var(--dourado-fundo); }
+.exu-folha[aria-pressed="true"] .exu-fundo { fill: var(--dourado-fundo); stroke: var(--dourado-texto); stroke-width: 1.6; }
+.exu-sel .exu-aresta { stroke: var(--dourado-texto); stroke-width: 3.4; }
+.exu-ativo .exu-aresta { stroke: var(--c-destaque); stroke-width: 3.4; }
+.exu-ativo .exu-no { stroke: var(--c-destaque); stroke-width: 3; }
+
+/* barras e faixa */
+.exu-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
+.exu-barra { fill: var(--c-seno); fill-opacity: 0.8; }
+.exu-seg { fill: var(--c-seno); fill-opacity: 0.8; stroke: var(--papel); stroke-width: 1.6; }
+.exu-barra.exu-alvo, .exu-seg.exu-alvo { fill: var(--c-destaque); fill-opacity: 0.95; }
+.exu-barra.exu-fora, .exu-seg.exu-fora { fill: var(--c-grelha); fill-opacity: 1; stroke: var(--c-eixo); stroke-width: 1; stroke-dasharray: 4 3; }
+.exu-svg .exu-t { fill: var(--tinta); font-size: 12px; font-weight: 600; }
+.exu-svg .exu-t--eixo { fill: var(--tinta-suave); font-weight: 400; font-size: 11.5px; }
+.exu-svg .exu-t--seg { fill: var(--papel); font-size: 12px; pointer-events: none; }
+.exu-svg .exu-t--todo { fill: var(--castanho); }
+.exu-colchete { fill: none; stroke: var(--castanho); stroke-width: 1.8; stroke-linejoin: round; }
+
+/* valor médio */
+.exu-haste { stroke: var(--c-seno); stroke-width: 3; stroke-linecap: round; }
+.exu-haste.exu-sel { stroke: var(--dourado-texto); stroke-width: 5; }
+.exu-ponto { fill: var(--papel); stroke: var(--c-seno); stroke-width: 2.4; }
+.exu-mu-linha { stroke: var(--c-destaque); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.exu-mu-tri { fill: var(--c-destaque); }
+.exu-svg .exu-t--mu { fill: var(--c-destaque); font-size: 13px; font-weight: 700; }
+.exu-desvio { stroke: var(--dourado-texto); stroke-width: 2.6; }
+.exu-svg .exu-t--desvio { fill: var(--dourado-texto); font-size: 12px; font-weight: 700; }
+
+/* ---------- tabelas ---------- */
+
+.exu-tab { font-size: 0.95rem; }
+.exu-tab .katex { font-size: 1em; }
+.exu-tab-lugar { margin-top: 0.8rem; }
+.exu-btn-x {
+  min-width: 2.75rem; min-height: 2.5rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
+  border-radius: 0.4rem; background: var(--creme); color: var(--castanho); font: inherit; cursor: pointer;
+}
+.exu-btn-x:hover { border-color: var(--castanho); }
+.exu-btn-x[aria-pressed="true"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
+.exu-sel-col { background: var(--dourado-fundo); }
+.exu-fila-sel > * { background: var(--dourado-fundo) !important; }
+.exu-tabela-mu:not(.exu-mostrar) .exu-oc { visibility: hidden; }
+.exu-linha-soma th, .exu-linha-soma td { background: var(--creme); }
+.exu-tabela-mu { margin-top: 0.8rem; }
+.exu-soma { margin: 0.6rem 0 0; font-size: 0.92rem; }
+.exu-soma:empty { display: none; }
+
+/* ---------- textos ---------- */
+
+.exu-leitura, .exu-leitura-mu { margin: 0.6rem 0 0; min-height: 2.6em; }
+.exu-frase { margin: 0.8rem 0 0; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
+
+/* ---------- respostas ---------- */
+
+.exu-resposta { margin-top: 1rem; padding: 0.7rem 0.8rem; border: 1px dashed #cdbfae; border-radius: 0.4rem; background: var(--creme); }
+.exu-resp-t { margin: 0 0 0.4rem; color: var(--tinta-suave); font-size: 0.85rem; font-weight: 600; }
+.exu-campo + .exu-campo { margin-top: 0.7rem; }
+.exu-campo label { display: block; margin-bottom: 0.25rem; font-size: 0.92rem; }
+.exu-linha-campo { display: flex; gap: 0.5rem; align-items: stretch; }
+.exu-linha-campo .campo { flex: 1 1 auto; min-width: 0; }
+.exu-fb:empty { display: none; }
+.exu-fb { margin: 0.5rem 0 0; padding: 0.5rem 0.75rem; border-radius: 0.4rem; font-size: 0.92rem; }
+
+/* ---------- resolução ---------- */
+
+.exu-passos { margin-top: 0.8rem; }
+.exu-passo { margin-bottom: 0.7rem; padding: 0.2rem 0.8rem 0.3rem; border-left: 3px solid var(--dourado); background: var(--creme); border-radius: 0 0.4rem 0.4rem 0; overflow-x: auto; overflow-y: hidden; }
+.exu-passo p { margin: 0.5rem 0; }
+.exu-passo .katex-display { margin: 0.5rem 0; overflow-x: auto; overflow-y: hidden; }
+.exu-alinea { margin: 0.6rem 0 0; font-size: 1.02rem; color: var(--castanho); }
+
+@media (max-width: 34em) {
+  .exu-tab { font-size: 0.8rem; }
+  .exu-tab th, .exu-tab td { padding: 0.3rem 0.25rem; }
+  .exu-linha-campo { flex-wrap: wrap; }
+  .exu-linha-campo .botao { flex: 1 1 100%; }
+}

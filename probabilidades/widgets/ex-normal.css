@@ -1,0 +1,85 @@
+/* ex-normal: exercício 4, distribuição Normal. Classes com prefixo .exn- */
+
+.exn [hidden] { display: none !important; }
+.exn .chip { min-height: 2.5rem; }
+.exn .botao { min-height: 2.75rem; }
+
+.exn-enunc p { margin: 0 0 0.6rem; }
+.exn-alineas { margin: 0 0 0.4rem; padding: 0; list-style: none; }
+.exn-alineas li { margin: 0 0 0.45rem; padding-left: 2.6rem; text-indent: -2.6rem; }
+.exn-num { display: inline-block; width: 2.6rem; text-indent: 0; font-weight: 600; color: var(--castanho); }
+
+.exn-bloco { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--linha); }
+.exn-titulo { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.exn-intro { margin-top: 0; }
+
+/* figura */
+.exn-svg { max-width: 36rem; touch-action: pan-y; }
+.exn-svg text { font-size: 13px; }
+.exn-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
+.exn-tique { stroke: var(--c-eixo); stroke-width: 1.2; }
+.exn-svg .exn-eixo-t { fill: var(--tinta-suave); font-size: 13px; }
+.exn-curva { stroke: var(--c-curva); stroke-width: 2.6; stroke-linejoin: round; }
+.exn-area { fill: var(--c-seno); fill-opacity: 0.3; }
+.exn-cauda { fill: var(--c-cosseno); fill-opacity: 0.45; }
+.exn-marca { stroke: var(--c-eixo); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.exn-marca--mu { stroke: var(--c-ponto); stroke-width: 1.6; }
+.exn-svg .exn-marca-t { fill: var(--castanho-escuro); font-size: 13px; font-weight: 600; }
+.exn-svg .exn-area-t { fill: var(--c-ponto); font-size: 13px; font-weight: 700; stroke: var(--papel); stroke-width: 3px; paint-order: stroke; }
+
+.exn-pega-g { cursor: grab; }
+.exn-pega-hit { fill: transparent; }
+.exn-pega { fill: var(--papel); stroke: var(--c-destaque); stroke-width: 3; }
+.exn-pega-g:hover .exn-pega { fill: var(--dourado-fundo); }
+.exn-pega-g:focus { outline: none; }
+.exn-pega-g:focus-visible .exn-pega { stroke: var(--c-ponto); stroke-width: 4; }
+.exn-pega-g:focus-visible .exn-pega-hit { stroke: var(--dourado-texto); stroke-width: 3; }
+
+.exn-marcas { margin: 0.5rem 0 0; color: var(--tinta-suave); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.exn-sliders { grid-template-columns: 1fr; }
+.exn-sliders input[type="range"] { height: 2.5rem; margin: 0; }
+.exn-sliders input:disabled { opacity: 0.5; }
+
+.exn-modos { margin-top: 0.9rem; }
+.exn-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.7rem; }
+
+/* leituras */
+.exn-leitura { margin-top: 0.8rem; }
+.exn-lido { margin: 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem; background: var(--creme); font-variant-numeric: tabular-nums; }
+.exn-lido--grande { font-size: 1.15rem; font-weight: 600; }
+.exn-tres { margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.exn-tres .leitura__rotulo { font-size: 0.74rem; }
+.exn-tres .leitura__valor { font-size: 1rem; }
+.exn-tres .leitura--cauda { border-color: var(--c-cosseno); }
+.exn-tres .leitura--centro { border-color: var(--c-seno); }
+.exn-frase { margin: 0.7rem 0 0.5rem; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
+.exn-nota-modo { margin-top: 0.7rem; }
+
+/* resolução */
+.exn-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+.exn-resolucao { margin-top: 0.8rem; }
+.exn-passos { margin: 0; padding: 0; list-style: none; }
+.exn-passo { margin: 0 0 0.8rem; padding: 0.6rem 0.8rem; border-left: 3px solid var(--linha); border-radius: 0 0.4rem 0.4rem 0; background: var(--creme); }
+.exn-passo:last-child { border-left-color: var(--dourado); }
+.exn-passo-alinea { margin: 0 0 0.3rem; color: var(--dourado-texto); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.exn-porque { margin: 0 0 0.3rem; font-size: 0.95rem; }
+.exn-conta { overflow-x: auto; overflow-y: hidden; }
+.exn-conta .katex-display { margin: 0.4rem 0; }
+
+/* respostas */
+.exn-respostas { display: grid; gap: 0.9rem; }
+.exn-resp label { display: block; margin-bottom: 0.25rem; font-size: 0.9rem; color: var(--tinta-suave); }
+.exn-resp-linha { display: flex; gap: 0.5rem; align-items: stretch; }
+.exn-resp-linha .campo { flex: 1 1 auto; min-width: 0; }
+.exn-resp-linha .botao { flex: 0 0 auto; }
+.exn-fb:empty { display: none; }
+.exn-resp .campo[aria-invalid="true"] { border-color: var(--erro); }
+
+@media (max-width: 34em) {
+  .exn-tres { grid-template-columns: 1fr; }
+  .exn-tres .leitura { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+}
+
+@media (min-width: 46em) {
+  .exn-sliders { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+}

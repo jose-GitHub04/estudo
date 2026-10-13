@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matéria · Probabilidades · Mat100limites</title>
+  <meta name="description" content="Matéria de Probabilidades, Matemática A, 12.º ano: tabela de distribuição, valor médio, variância e desvio-padrão, com desenhos para mexer.">
+  <link rel="icon" href="../assets/mat100_logo.png">
+  <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  <link rel="stylesheet" href="../assets/estilo.css">
+  <link rel="stylesheet" href="widgets/tabela.css">
+  <link rel="stylesheet" href="widgets/urna.css">
+  <script defer src="../assets/katex/katex.min.js"></script>
+  <script defer src="../assets/katex/auto-render.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body data-pagina="materia">
+  <a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+  <header id="barra"></header>
+
+  <main id="conteudo">
+    <section class="hero hero--pagina">
+      <div class="envolve">
+        <p class="hero__etiqueta">Probabilidades · 12.º ano</p>
+        <h1>Matéria</h1>
+      </div>
+    </section>
+
+    <section class="seccao">
+      <div class="envolve">
+        <nav class="indice" aria-label="Nesta página">
+          <span class="indice__rotulo">Nesta página:</span>
+          <a href="#tabela">Tabela de distribuição</a>
+          <a href="#urna">Urna</a>
+        </nav>
+
+        <article class="modulo" id="tabela">
+          <h3>Tabela de distribuição, valor médio e desvio-padrão</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Uma variável aleatória $X$ dá um número a cada resultado de uma experiência. A <strong>tabela de distribuição</strong> (função massa de probabilidade) diz, para cada valor $x_i$, qual é a probabilidade $P(X=x_i)$. Há duas regras: cada probabilidade está entre 0 e 1, e a <strong>soma de todas dá 1</strong>.</p>
+            <p>O <strong>valor médio</strong> é $\mu=\sum p_i x_i$: o valor à volta do qual a média fica quando repetes a experiência muitas vezes. A <strong>variância</strong> é $\sigma^2=\sum p_i(x_i-\mu)^2$ e o <strong>desvio-padrão</strong> é $\sigma=\sqrt{\sigma^2}$: diz quanto os valores se afastam, em média, de $\mu$.</p>
+          </div>
+          <div data-widget="tabela"></div>
+        </article>
+
+        <article class="modulo" id="urna">
+          <h3>De onde vem a tabela: a urna</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Uma urna tem 7 bolas: 3 vermelhas e 4 azuis. Tiras bolas uma a uma, sem repor, até sair uma vermelha. $X$ é o número de bolas que tiraste, por isso $X$ toma os valores 1, 2, 3, 4 e 5. Para $P(X=2)$, a primeira bola é azul e a segunda é vermelha: $\frac47\times\frac36=\frac27$.</p>
+          </div>
+          <div data-widget="urna"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

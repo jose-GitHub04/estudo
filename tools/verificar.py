@@ -5,10 +5,13 @@
 3. cartoes.json: ids únicos, campos obrigatórios, $ equilibrados e, nos cartões que
    trazem `verifica`, cada afirmação confrontada numericamente.
 4. Texto: nenhum travessão «—» em ficheiros que o aluno possa ler.
+5. Probabilidades: a urna e o jogo recalculados com frações exatas e confrontados com os
+   números escritos na página (assets/motor/probabilidade.js faz o mesmo no browser).
 
 Sai com código 1 se algo falhar.
 """
 import json
+from fractions import Fraction as Fr
 import math
 import random
 import re
@@ -256,11 +259,85 @@ def verificar_perguntas():
         falha(f"perguntas: só {pct:.0f}% têm `ref` ou `verifica` (mínimo 55%)")
 
 
+# ---------- 6. probabilidades ----------
+def _urna(v, o):
+    """X = bolas tiradas, sem repor, até sair vermelha: {k: P(X=k)}."""
+    t = v + o
+    tab = {}
+    for k in range(1, o + 2):
+        p = Fr(1)
+        for i in range(k - 1):
+            p *= Fr(o - i, t - i)
+        tab[k] = p * Fr(v, t - (k - 1))
+    return tab
+
+
+def verificar_probabilidades():
+    tab = _urna(3, 4)
+    esperado = {1: Fr(3, 7), 2: Fr(2, 7), 3: Fr(6, 35), 4: Fr(3, 35), 5: Fr(1, 35)}
+    if tab != esperado:
+        falha(f"urna 3V+4A: tabela {tab} != {esperado}")
+    if sum(tab.values()) != 1:
+        falha("urna 3V+4A: a soma não dá 1")
+    mu = sum(k * p for k, p in tab.items())
+    var = sum(p * (k - mu) ** 2 for k, p in tab.items())
+    if (mu, var) != (2, Fr(6, 5)):
+        falha(f"urna 3V+4A: mu={mu}, var={var} (esperado 2 e 6/5)")
+    ganho = Fr(5, 10) * 2 + Fr(2, 10) * (-5) + Fr(3, 10) * 0
+    if ganho != 0:
+        falha(f"jogo 5V/2A/3Az: ganho médio {ganho} (esperado 0, equitativo)")
+    html = (RAIZ / "probabilidades" / "materia.html").read_text(encoding="utf-8")
+    if not all(t in html for t in ("frac47", "frac36=", "frac27")):
+        falha("materia.html: falta o exemplo P(X=2) = 4/7 × 3/6 = 2/7")
+    print("probabilidades: urna 3V+4A (soma 1, μ = 2, σ² = 6/5) e jogo equitativo confirmados")
+
+
+def verificar_exercicios():
+    """Soluções dos 4 exercícios e do verdadeiro ou falso, recalculadas de forma independente."""
+    # Ex. 1: k = 1
+    k = Fr(1)
+    t1 = [(-1, k / 4), (0, Fr(1, 6)), (1, k / 3), (2, Fr(1, 4))]
+    if sum(p for _, p in t1) != 1 or sum(x * p for x, p in t1) != Fr(7, 12):
+        falha("ex. 1: k = 1 e μ = 7/12 não batem")
+    # Ex. 2: a = 0,35, b = 0,40, μ = 1,9
+    a, b = Fr(35, 100), Fr(40, 100)
+    if a + b + Fr(1, 4) != 1 or a + 2 * b + Fr(3, 4) != Fr(19, 10):
+        falha("ex. 2: a = 0,35, b = 0,40 e μ = 1,9 não batem")
+    # Ex. 3: caixa 2V + 3B
+    u = _urna(2, 3)
+    if list(u.values()) != [Fr(2, 5), Fr(3, 10), Fr(1, 5), Fr(1, 10)]:
+        falha(f"ex. 3: tabela {u}")
+    mu = sum(k_ * p_ for k_, p_ in u.items())
+    var = sum(p_ * (k_ - mu) ** 2 for k_, p_ in u.items())
+    cond = u[3] / sum(p_ for k_, p_ in u.items() if k_ >= 2)
+    if (mu, var, cond) != (2, 1, Fr(1, 3)):
+        falha(f"ex. 3: μ={mu}, σ²={var}, P(X=3|X≥2)={cond}")
+    # Ex. 4: Normal(20; 2)
+    phi = lambda z: 0.5 * (1 + math.erf(z / math.sqrt(2)))
+    if abs((phi(1) - phi(-1)) - 0.6827) > 5e-5 or abs((1 - phi(2)) - 0.02275) > 5e-6             or round(400 * (1 - phi(2))) != 9:
+        falha("ex. 4: valores da Normal não batem")
+    # Verdadeiro ou falso
+    d = json.loads((RAIZ / "probabilidades" / "dados" / "verdadeiro-falso.json").read_text(encoding="utf-8"))
+    afs = d["afirmacoes"]
+    ids = [x["id"] for x in afs]
+    if len(ids) != len(set(ids)):
+        falha("verdadeiro-falso.json: ids repetidos")
+    if sum(x["verdadeira"] for x in afs) != 7 or len(afs) != 14:
+        falha("verdadeiro-falso.json: esperadas 14 afirmações, 7 verdadeiras")
+    for x in afs:
+        for campo in ("texto", "explicacao"):
+            if x[campo].count("$") % 2:
+                falha(f"verdadeiro-falso.json: {x['id']}.{campo} com $ desequilibrados")
+    print("exercícios: soluções dos 4 exercícios e 14 afirmações de verdadeiro ou falso confirmadas")
+
+
 if __name__ == "__main__":
     verificar_valores()
     verificar_reducao()
     verificar_cartoes()
     verificar_perguntas()
+    verificar_probabilidades()
+    verificar_exercicios()
     verificar_travessoes()
     if erros:
         print(f"\n{len(erros)} falha(s).")

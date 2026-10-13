@@ -1,0 +1,119 @@
+{
+  "temas": [
+    { "id": "tabela", "nome": "Tabela" },
+    { "id": "normal", "nome": "Normal" }
+  ],
+  "afirmacoes": [
+    {
+      "id": "t-soma",
+      "tema": "tabela",
+      "texto": "Numa tabela de distribuição de probabilidades de uma variável $X$, a soma de todas as probabilidades é 1.",
+      "verdadeira": true,
+      "explicacao": "A tabela lista todos os valores que $X$ pode tomar, e em cada experiência sai exatamente um deles. Por isso, juntando as probabilidades, tens o acontecimento certo, que tem probabilidade 1.",
+      "figura": { "tipo": "barras", "x": [1, 2, 3, 4], "p": [0.4, 0.3, 0.2, 0.1] }
+    },
+    {
+      "id": "t-media-valor",
+      "tema": "tabela",
+      "texto": "O valor médio de $X$ é sempre um dos valores que $X$ pode tomar.",
+      "verdadeira": false,
+      "explicacao": "Lança uma moeda e seja $X=1$ se sair cara e $X=0$ se sair coroa. Então $\\mu = 0\\times 0{,}5 + 1\\times 0{,}5 = 0{,}5$, que não é nenhum dos valores possíveis. O valor médio é uma média ponderada, não um resultado que tenha de sair.",
+      "erroComum": "Pensar que o valor médio é o resultado «mais provável». Essa ideia é a da moda, não a do valor médio.",
+      "figura": { "tipo": "barras", "x": [0, 1], "p": [0.5, 0.5], "media": true }
+    },
+    {
+      "id": "t-var-negativa",
+      "tema": "tabela",
+      "texto": "A variância de uma variável $X$ nunca é negativa.",
+      "verdadeira": true,
+      "explicacao": "A variância é a soma de parcelas do tipo $p_i\\,(x_i-\\mu)^2$. Cada $p_i$ é maior ou igual a 0 e cada quadrado também, por isso a soma não pode ser negativa. Só dá 0 quando $X$ toma sempre o mesmo valor."
+    },
+    {
+      "id": "t-unidades",
+      "tema": "tabela",
+      "texto": "Se $X$ é medida em metros, o desvio-padrão também vem em metros e a variância em metros quadrados.",
+      "verdadeira": true,
+      "explicacao": "A variância usa $(x_i-\\mu)^2$, e elevar ao quadrado metros dá metros quadrados. O desvio-padrão é a raiz quadrada da variância, por isso volta às unidades de $X$. É por isso que o desvio-padrão se compara diretamente com os valores de $X$."
+    },
+    {
+      "id": "t-media-zero",
+      "tema": "tabela",
+      "texto": "Se o valor médio de $X$ é $\\mu = 0$, então todos os valores de $X$ são iguais a 0.",
+      "verdadeira": false,
+      "explicacao": "Seja $X=-1$ ou $X=1$, cada um com probabilidade $\\tfrac12$. Então $\\mu = (-1)\\times\\tfrac12 + 1\\times\\tfrac12 = 0$, e nenhum valor de $X$ é 0. Os valores negativos e positivos podem compensar-se.",
+      "erroComum": "Confundir «a média é 0» com «os valores são 0». Aqui a média é 0 e a variância é 1.",
+      "figura": { "tipo": "barras", "x": [-1, 1], "p": [0.5, 0.5], "media": true }
+    },
+    {
+      "id": "t-equitativo",
+      "tema": "tabela",
+      "texto": "Um jogo é equitativo quando o valor médio do ganho (já descontada a aposta) é 0.",
+      "verdadeira": true,
+      "explicacao": "Se o valor médio do ganho é 0, então, a longo prazo, nem o jogador ganha nem perde dinheiro em média, e o jogo não favorece ninguém. Se for positivo, favorece o jogador; se for negativo, favorece quem organiza."
+    },
+    {
+      "id": "t-condicionada",
+      "tema": "tabela",
+      "texto": "A variável $X$ toma os valores 1, 2, 3 e 4 com probabilidades $\\frac{2}{5}$, $\\frac{3}{10}$, $\\frac{1}{5}$ e $\\frac{1}{10}$, respetivamente. Então $P(X=3\\mid X\\ge 2)=P(X=3)$.",
+      "verdadeira": false,
+      "explicacao": "Temos $P(X=3)=\\tfrac15$ e $P(X\\ge 2)=\\tfrac35$, por isso $P(X=3\\mid X\\ge 2)=\\dfrac{1/5}{3/5}=\\tfrac13$. Divides por $P(X\\ge 2)$, que é menor do que 1, e por isso a probabilidade condicionada fica maior do que $\\tfrac15$.",
+      "erroComum": "Esquecer de dividir por $P(X\\ge 2)$, isto é, tratar a condição como se não mudasse o espaço de casos.",
+      "figura": { "tipo": "barras", "x": [1, 2, 3, 4], "p": [0.4, 0.3, 0.2, 0.1], "destaque": [2, 3, 4] }
+    },
+    {
+      "id": "t-k",
+      "tema": "tabela",
+      "texto": "Numa tabela em que uma probabilidade depende de um valor desconhecido $k$, para o descobrires igualas cada probabilidade a 1.",
+      "verdadeira": false,
+      "explicacao": "O que tem de valer 1 é a soma. Por exemplo, com probabilidades $k$, $2k$ e $0{,}4$, escreves $k+2k+0{,}4=1$, logo $3k=0{,}6$ e $k=0{,}2$. Se igualasses cada uma a 1, ficavas com $k=1$ e $2k=1$ ao mesmo tempo, o que é impossível.",
+      "erroComum": "Igualar a 1 cada probabilidade em vez da soma de todas."
+    },
+    {
+      "id": "n-area",
+      "tema": "normal",
+      "texto": "A área total entre a curva de uma distribuição Normal e o eixo horizontal é 1.",
+      "verdadeira": true,
+      "explicacao": "Numa variável contínua, as probabilidades são áreas sob a curva. Como $X$ toma sempre algum valor, a área total é a probabilidade do acontecimento certo, isto é, 1. Isto vale para qualquer $\\mu$ e qualquer $\\sigma$."
+    },
+    {
+      "id": "n-sigma",
+      "tema": "normal",
+      "texto": "Quando aumentas o desvio-padrão $\\sigma$ de uma Normal, a curva fica mais alta e mais estreita.",
+      "verdadeira": false,
+      "explicacao": "Fica mais baixa e mais larga. Os valores espalham-se mais, mas a área total continua a ser 1, e uma curva mais larga só mantém a mesma área se for mais baixa. Na figura, a curva de $\\sigma=2$ tem metade da altura da de $\\sigma=1$.",
+      "figura": { "tipo": "normal", "mu": 0, "sigma": [1, 2] }
+    },
+    {
+      "id": "n-mu",
+      "tema": "normal",
+      "texto": "Mudar o valor médio $\\mu$ de uma Normal desloca a curva na horizontal, sem alterar a sua forma.",
+      "verdadeira": true,
+      "explicacao": "O valor $\\mu$ é a posição do eixo de simetria da curva, e é $\\sigma$ que controla a largura. Com o mesmo $\\sigma$, a curva de $\\mu=3$ é a de $\\mu=0$ deslocada 3 unidades para a direita.",
+      "figura": { "tipo": "normal", "mu": [0, 3], "sigma": 1 }
+    },
+    {
+      "id": "n-dois-sigma",
+      "tema": "normal",
+      "texto": "Se $X$ tem distribuição Normal de valor médio $\\mu$ e desvio-padrão $\\sigma$, então $P(\\mu-2\\sigma<X<\\mu+2\\sigma)\\approx 0{,}6827$.",
+      "verdadeira": false,
+      "explicacao": "Com dois desvios-padrão para cada lado o valor é cerca de 0,9545. O valor 0,6827 corresponde a um desvio-padrão para cada lado, $P(\\mu-\\sigma<X<\\mu+\\sigma)$. Uma faixa mais larga apanha mais área.",
+      "erroComum": "Trocar os valores 0,6827, 0,9545 e 0,9973, que correspondem a $\\sigma$, $2\\sigma$ e $3\\sigma$ respetivamente.",
+      "figura": { "tipo": "normal-intervalo", "mu": 0, "sigma": 1, "k": 2 }
+    },
+    {
+      "id": "n-simetria",
+      "tema": "normal",
+      "texto": "Numa distribuição Normal, $P(X<\\mu)=P(X>\\mu)=0{,}5$.",
+      "verdadeira": true,
+      "explicacao": "A curva é simétrica em relação à reta vertical $x=\\mu$, por isso a área à esquerda de $\\mu$ é igual à área à direita. Como a área total é 1, cada lado fica com 0,5."
+    },
+    {
+      "id": "n-ponto",
+      "tema": "normal",
+      "texto": "Se $X\\sim N(10,\\,3)$, então $P(X=10)=0{,}5$.",
+      "verdadeira": false,
+      "explicacao": "Numa variável contínua, a probabilidade de um valor isolado é 0, porque um segmento de reta não tem área. O valor 0,5 é o de $P(X>10)$ (ou o de $P(X<10)$), que é a área de um dos lados de $\\mu$.",
+      "erroComum": "Pensar que o ponto mais alto da curva dá a probabilidade desse valor. A altura da curva não é uma probabilidade."
+    }
+  ]
+}

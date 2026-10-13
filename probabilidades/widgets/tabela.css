@@ -1,0 +1,92 @@
+/* tabela: tabela de distribuição viva e modo «Descobre o k» */
+
+.tab [hidden] { display: none !important; }
+
+/* alvos de toque de pelo menos 40 px */
+.tab .chip, .tab .botao, .tab .campo { min-height: 2.5rem; }
+.tab .chip { padding-inline: 1rem; }
+.tab .tab-chips { margin: 0 0 0.9rem; }
+
+/* disposição: figura e controlos lado a lado em ecrã largo */
+.tab-topo { display: grid; gap: 0.8rem 1.5rem; }
+.tab-coluna, .tab-lado { min-width: 0; }
+.tab-lado { display: grid; gap: 0.6rem; align-content: start; }
+.tab-contas { display: grid; gap: 0.8rem; margin-top: 0.9rem; }
+
+@media (min-width: 52em) {
+  .tab-topo { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .tab-contas { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+
+/* figura */
+.tab .tab-fig { max-width: 34rem; cursor: pointer; }
+.tab-fig text { font-size: 12px; }
+.tab-fig .tab-grelha { stroke: var(--c-grelha); stroke-width: 1; }
+.tab-fig .tab-eixo { stroke: var(--c-eixo); stroke-width: 1.5; }
+.tab-fig .tab-eixo-y { fill: var(--tinta-suave); font-size: 11px; }
+.tab-fig .tab-marca { fill: var(--tinta-suave); }
+.tab-fig .tab-barra { fill: var(--c-seno); opacity: 0.85; }
+.tab-fig .tab-valor { fill: var(--tinta); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tab-fig .tab-bola { fill: var(--papel); stroke: var(--c-seno); stroke-width: 3; }
+.tab-fig .tab-anel { fill: transparent; stroke: none; }
+.tab-fig .tab-pega { outline: none; cursor: ns-resize; }
+.tab-fig .tab-pega:focus-visible .tab-anel { fill: var(--dourado-fundo); stroke: var(--c-destaque); stroke-width: 3; }
+.tab-fig .tab-mu-linha { stroke: var(--c-destaque); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.tab-fig .tab-mu-tri { fill: var(--c-destaque); }
+.tab-fig .tab-mu-texto { fill: var(--c-destaque); font-size: 13px; font-weight: 700; }
+
+/* campos das probabilidades */
+.tab-campos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+.tab-campo__caixa { display: grid; gap: 0.15rem; min-width: 0; }
+.tab-campo__rotulo { color: var(--tinta-suave); font-size: 0.85rem; white-space: nowrap; }
+.tab .tab-campo { padding-inline: 0.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+.tab .campo[aria-invalid="true"] { border-color: var(--erro); background: var(--erro-fundo); }
+.tab-msg { min-height: 0; margin: 0; color: var(--erro); font-size: 0.88rem; }
+.tab-msg:empty { display: none; }
+
+/* soma em direto */
+.tab-soma {
+  margin: 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.tab-soma--ok { background: var(--certo-fundo); color: var(--certo); }
+.tab-soma--mal { background: var(--erro-fundo); color: var(--erro); }
+.tab-aviso { margin: 0; color: var(--erro); font-size: 0.92rem; }
+.tab-aviso:empty { display: none; }
+.tab-acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tab .nota { margin: 0; }
+
+/* contas passo a passo */
+.tab-calculo { padding: 0.6rem 0.8rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); min-width: 0; }
+.tab-calculo__titulo { margin: 0 0 0.3rem; color: var(--c-destaque); font-size: 0.82rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.tab-espera { margin: 0; color: var(--tinta-suave); }
+.tab-linha { overflow-x: auto; overflow-y: hidden; padding: 0.1rem 0; }
+.tab-linha .katex { font-size: 1.02em; }
+.tab-linha--final { font-weight: 600; }
+.tab-linha--parcela .katex { font-size: 0.95em; }
+
+/* modo «Descobre o k» */
+.tab-enunciado__texto { margin: 0 0 0.7rem; }
+.tab-enunciado th, .tab-enunciado td { min-width: 3.2rem; }
+.tab-passo { margin-top: 1rem; }
+.tab-passo__titulo { margin: 0 0 0.5rem; font-weight: 600; }
+.tab-opcoes { display: grid; gap: 0.5rem; }
+.tab-opcao {
+  display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: 3rem; padding: 0.4rem 0.7rem;
+  border: 1px solid #cdbfae; border-radius: 0.4rem; background: var(--creme); color: var(--tinta);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.tab-opcao:hover:not(:disabled) { border-color: var(--castanho); background: var(--dourado-fundo); }
+.tab-opcao:disabled { cursor: default; }
+.tab-opcao__letra { flex: none; color: var(--tinta-suave); font-weight: 700; }
+.tab-opcao__tex { min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.tab-opcao--certa { border-color: var(--certo); background: var(--certo-fundo); }
+.tab-opcao--errada { border-color: var(--erro); background: var(--erro-fundo); }
+.tab-form-k { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.tab-form-k__rotulo { font-weight: 600; }
+.tab .tab-campo-k { flex: 1 1 10rem; width: auto; max-width: 16rem; }
+.tab-feedback .botao { margin-top: 0.6rem; }
+.tab-resolucao { margin-top: 0.7rem; padding: 0.6rem 0.8rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); }
+.tab-resolucao p { margin: 0.5rem 0 0.2rem; font-size: 0.95rem; }
+.tab-resolucao p:first-child { margin-top: 0; }
+.tab-passo--b + .tab-acoes, .tab-k > .tab-acoes { margin-top: 1rem; }
