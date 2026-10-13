@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/estilo.css">
   <link rel="stylesheet" href="widgets/tabela.css">
   <link rel="stylesheet" href="widgets/urna.css">
+  <link rel="stylesheet" href="widgets/normal.css">
   <script defer src="../assets/katex/katex.min.js"></script>
   <script defer src="../assets/katex/auto-render.min.js"></script>
   <script type="module" src="app.js"></script>
@@ -32,6 +33,7 @@
           <span class="indice__rotulo">Nesta página:</span>
           <a href="#tabela">Tabela de distribuição</a>
           <a href="#urna">Urna</a>
+          <a href="#normal">Distribuição Normal</a>
         </nav>
 
         <article class="modulo" id="tabela">
@@ -51,6 +53,19 @@
             <p>Uma urna tem 7 bolas: 3 vermelhas e 4 azuis. Tiras bolas uma a uma, sem repor, até sair uma vermelha. $X$ é o número de bolas que tiraste, por isso $X$ toma os valores 1, 2, 3, 4 e 5. Para $P(X=2)$, a primeira bola é azul e a segunda é vermelha: $\frac47\times\frac36=\frac27$.</p>
           </div>
           <div data-widget="urna"></div>
+        </article>
+
+        <article class="modulo" id="normal">
+          <h3>Distribuição Normal</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Muitas medições (alturas, tempos, durações) distribuem-se em forma de sino. Escreve-se $X\sim N(\mu,\sigma)$, onde $\mu$ é o valor médio e $\sigma$ o desvio-padrão. A curva é simétrica em relação à reta $x=\mu$ e a área entre a curva e o eixo horizontal é 1: nesta distribuição, <strong>as probabilidades são áreas</strong>. Por isso $P(X<\mu)=P(X>\mu)=0{,}5$, e a probabilidade de um valor isolado é 0.</p>
+            <p>Mudar $\mu$ desloca a curva na horizontal, sem a deformar. Aumentar $\sigma$ espalha os valores: a curva fica mais baixa e mais larga, porque a área continua a ser 1.</p>
+            <p>Valores de referência, para qualquer $\mu$ e qualquer $\sigma$:</p>
+            $$\begin{gathered}P(\mu-\sigma&lt;X&lt;\mu+\sigma)\approx 0{,}6827\\[0.3em] P(\mu-2\sigma&lt;X&lt;\mu+2\sigma)\approx 0{,}9545\\[0.3em] P(\mu-3\sigma&lt;X&lt;\mu+3\sigma)\approx 0{,}9973\end{gathered}$$
+            <p>Exemplo: se $X\sim N(100,\,10)$, então $P(90&lt;X&lt;110)\approx 0{,}6827$. Para $P(X>120)$: $120=\mu+2\sigma$, as duas caudas juntas valem $1-0{,}9545=0{,}0455$ e, por simetria, cada uma vale $0{,}02275$. Logo $P(X>120)\approx 0{,}0228$.</p>
+          </div>
+          <div data-widget="normal"></div>
         </article>
       </div>
     </section>

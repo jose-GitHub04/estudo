@@ -1,0 +1,72 @@
+/* normal: explorador da distribuição Normal. Classes com prefixo .nor- */
+
+.nor [hidden] { display: none !important; }
+.nor .chip { min-height: 2.5rem; }
+.nor .botao { min-height: 2.75rem; }
+
+.nor-svg { max-width: 38rem; touch-action: pan-y; }
+.nor-svg text { font-size: 14px; }
+.nor-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
+.nor-tique { stroke: var(--c-eixo); stroke-width: 1.2; }
+.nor-grelha { stroke: var(--c-grelha); stroke-width: 1; }
+.nor-svg .nor-eixo-t { fill: var(--tinta-suave); font-size: 14px; }
+.nor-curva { stroke: var(--c-curva); stroke-width: 2.8; stroke-linejoin: round; }
+.nor-curva--padrao { stroke: var(--c-destaque); stroke-width: 2.4; stroke-dasharray: 7 4; }
+.nor-area { fill: var(--c-seno); fill-opacity: 0.3; }
+.nor-cauda { fill: var(--c-cosseno); fill-opacity: 0.45; }
+.nor-padrao-area { fill: var(--c-destaque); fill-opacity: 0.2; }
+.nor-marca { stroke: var(--c-eixo); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.nor-marca--mu { stroke: var(--c-ponto); stroke-width: 1.6; }
+.nor-svg .nor-marca-t { fill: var(--castanho-escuro); font-size: 14px; font-weight: 600; }
+.nor-pico-linha { stroke: var(--c-eixo); stroke-width: 1; stroke-dasharray: 2 3; }
+.nor-pico { fill: var(--c-ponto); stroke: var(--papel); stroke-width: 2; }
+
+.nor-pega-g { cursor: grab; }
+.nor-pega-hit { fill: transparent; }
+.nor-pega { fill: var(--papel); stroke: var(--c-destaque); stroke-width: 3; }
+.nor-pega-g:hover .nor-pega { fill: var(--dourado-fundo); }
+.nor-pega-g:focus { outline: none; }
+.nor-pega-g:focus-visible .nor-pega { stroke: var(--c-ponto); stroke-width: 4; }
+.nor-pega-g:focus-visible .nor-pega-hit { stroke: var(--dourado-texto); stroke-width: 3; }
+
+.nor-legenda { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; margin: 0.4rem 0 0; font-size: 0.88rem; color: var(--tinta-suave); }
+.nor-leg { display: inline-flex; align-items: center; gap: 0.4rem; }
+.nor-leg-traco { display: inline-block; width: 1.8rem; height: 0; border-top: 3px solid var(--c-curva); }
+.nor-leg-traco--b { border-top: 3px dashed var(--c-destaque); }
+
+.nor-leituras { margin-top: 0.6rem; }
+.nor-sliders { grid-template-columns: 1fr; }
+.nor-sliders input[type="range"] { height: 2.5rem; margin: 0; }
+.nor-modos { margin-top: 0.9rem; }
+
+.nor-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin-top: 0.7rem; max-width: 22rem; }
+.nor-campos .controlo[hidden] { display: none; }
+
+.nor-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.nor-botoes .botao[aria-pressed="true"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
+
+.nor-leitura { margin-top: 0.8rem; }
+.nor-lido { margin: 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem; background: var(--creme); font-variant-numeric: tabular-nums; }
+.nor-lido--grande { font-size: 1.15rem; font-weight: 600; }
+.nor-lido--sec { margin-top: 0.4rem; font-size: 0.92rem; color: var(--tinta-suave); }
+.nor-tres { margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nor-tres .leitura__rotulo { font-size: 0.74rem; }
+.nor-tres .leitura__valor { font-size: 1rem; }
+.nor-tres .leitura--cauda { border-color: var(--c-cosseno); }
+.nor-tres .leitura--centro { border-color: var(--c-seno); }
+.nor-soma { margin: 0.6rem 0 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.nor-frase { margin: 0.5rem 0 0; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
+.nor-marcas { margin: 0.5rem 0 0; color: var(--tinta-suave); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 34em) {
+  .nor-tres { grid-template-columns: 1fr; }
+  .nor-tres .leitura { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+}
+
+@media (min-width: 46em) {
+  .nor-sliders { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nor *, .nor *::before, .nor *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
