@@ -92,7 +92,7 @@ function criarFigura({ nomes, fixas, maxSoma, mu = null, alvo = null }) {
   const px = (i) => X_INI + (i + 0.5) * passo;
   const larg = Math.min(54, passo * 0.56);
   const yMu = BASE + 30;
-  const ySoma = mu ? BASE + 78 : BASE + 48;
+  const ySoma = mu ? BASE + 98 : BASE + 48;
   const VH = ySoma + 52;
 
   const el = [];
@@ -122,7 +122,7 @@ function criarFigura({ nomes, fixas, maxSoma, mu = null, alvo = null }) {
   if (mu) {
     if (alvo !== null) {
       const xa = xDeValor(alvo);
-      linhaAlvo = criar('line', { class: 'exa-alvo', x1: xa, x2: xa, y1: BASE - ALT - 6, y2: yMu + 16 });
+      linhaAlvo = criar('line', { class: 'exa-alvo', x1: xa, x2: xa, y1: BASE - ALT - 6, y2: BASE + 4 });
       el.push(linhaAlvo, criar('text', { class: 'exa-alvo-texto', x: xa, y: BASE - ALT - 10, 'text-anchor': 'middle' }, [`μ = ${dec(alvo, 1)} é o objetivo`]));
     }
     tri = criar('path', { class: 'exa-mu-tri' });

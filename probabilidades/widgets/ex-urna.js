@@ -94,6 +94,11 @@ export async function montar(el) {
 
     <section class="exu-bloco" aria-labelledby="${uid}-a2">
       <h4 id="${uid}-a2" class="exu-titulo">3.2. Parte de um todo mais pequeno</h4>
+      <div class="exu-trava" data-al="2">
+        <p class="nota">Tenta primeiro no caderno e escreve a tua resposta mais abaixo. O desenho abre depois de carregares em «Verificar», ou aqui se já tentaste.</p>
+        <button type="button" class="botao botao--suave exu-abrir" data-al="2">Já tentei, abrir o desenho</button>
+      </div>
+      <div class="exu-conteudo" data-al="2" hidden>
       <div class="chips exu-modos" role="group" aria-label="Escolhe o todo">
         <button type="button" class="chip" data-modo="todos" aria-pressed="true">Todos os casos</button>
         <button type="button" class="chip" data-modo="ge2" aria-pressed="false">Só ${T('X \\geq 2')}</button>
@@ -102,11 +107,17 @@ export async function montar(el) {
       <p class="exu-leitura" aria-live="polite"></p>
       <p class="exu-frase">Aqui o todo já não é a caixa inteira: é só o que sobra depois de saberes que ${T('X \\geq 2')}.</p>
       <p class="nota exu-nota">Não confundas ${T('P(A \\cap B)')} com ${T('P(A \\mid B)')}. Em ${T('P(A \\cap B)')} o todo é tudo (vale 1). Em ${T('P(A \\mid B)')} o todo é só ${T('B')}.</p>
+      </div>
       <div class="exu-resposta" data-al="2"></div>
     </section>
 
     <section class="exu-bloco" aria-labelledby="${uid}-a3">
       <h4 id="${uid}-a3" class="exu-titulo">3.3. Valor médio e desvio-padrão</h4>
+      <div class="exu-trava" data-al="3">
+        <p class="nota">Tenta primeiro no caderno e escreve a tua resposta mais abaixo. O desenho abre depois de carregares em «Verificar», ou aqui se já tentaste.</p>
+        <button type="button" class="botao botao--suave exu-abrir" data-al="3">Já tentei, abrir o desenho</button>
+      </div>
+      <div class="exu-conteudo" data-al="3" hidden>
       <div class="chips exu-modos" role="group" aria-label="O que mostrar">
         <button type="button" class="chip exu-t-mu" aria-pressed="false">Mostrar ${T('\\mu')} no eixo</button>
         <button type="button" class="chip exu-t-parc" aria-pressed="false">Mostrar as parcelas</button>
@@ -114,6 +125,7 @@ export async function montar(el) {
       <div class="exu-lugar-mu"></div>
       <div class="exu-tabela-mu tabela-rolante"></div>
       <p class="exu-leitura-mu" aria-live="polite"></p>
+      </div>
       <div class="exu-resposta" data-al="3"></div>
     </section>
 
@@ -502,6 +514,8 @@ export async function montar(el) {
       fb.textContent = txt;
     };
     const verificar = () => {
+      const al = contentor.dataset.al;
+      if (al === '2' || al === '3') abrirDesenho(al);
       const txt = inp.value.trim();
       if (!txt) return dizer('aviso-erro', 'Escreve primeiro a tua resposta.');
       const r = M.corrigir(txt, { expr });
@@ -520,6 +534,14 @@ export async function montar(el) {
       }
     });
   }
+  /** Abre o desenho de 3.2 ou 3.3 (fica escondido até o aluno tentar ou pedir). */
+  function abrirDesenho(n) {
+    const c = raiz.querySelector(`.exu-conteudo[data-al="${n}"]`);
+    const t = raiz.querySelector(`.exu-trava[data-al="${n}"]`);
+    if (c) c.hidden = false;
+    if (t) t.hidden = true;
+  }
+  raiz.querySelectorAll('.exu-abrir').forEach((b) => b.addEventListener('click', () => abrirDesenho(b.dataset.al)));
   const cx = (n) => raiz.querySelector(`.exu-resposta[data-al="${n}"]`);
   for (const n of [1, 2, 3]) {
     const t = document.createElement('p');
@@ -599,6 +621,10 @@ export async function montar(el) {
   }
   botVer.addEventListener('click', () => {
     est.resolucao = !est.resolucao;
+    if (est.resolucao) {
+      abrirDesenho(2);
+      abrirDesenho(3);
+    }
     if (est.resolucao && est.nPassos === 0) {
       mostrarPasso(0);
       est.nPassos = 1;

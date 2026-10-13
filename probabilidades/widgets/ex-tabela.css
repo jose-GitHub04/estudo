@@ -19,25 +19,25 @@
   .exa-figura__corpo { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
 }
 .exa .exa-fig { max-width: 34rem; }
-.exa-fig text { font-size: 12px; }
+.exa-fig text { font-size: 14px; }
 .exa-fig .exa-grelha { stroke: var(--c-grelha); stroke-width: 1; }
 .exa-fig .exa-eixo { stroke: var(--c-eixo); stroke-width: 1.5; }
-.exa-fig .exa-eixo-y { fill: var(--tinta-suave); font-size: 11px; }
-.exa-fig .exa-eixo-titulo { fill: var(--tinta-suave); font-size: 11px; }
+.exa-fig .exa-eixo-y { fill: var(--tinta-suave); font-size: 13px; }
+.exa-fig .exa-eixo-titulo { fill: var(--tinta-suave); font-size: 13px; }
 .exa-fig .exa-marca { fill: var(--tinta-suave); }
 .exa-fig .exa-barra { fill: var(--c-seno); opacity: 0.88; }
 .exa-fig .exa-barra--fixa { fill: var(--c-eixo); opacity: 0.6; }
-.exa-fig .exa-valor { fill: var(--tinta); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.exa-fig .exa-valor { fill: var(--tinta); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .exa-fig .exa-mu-tri { fill: var(--c-destaque); }
-.exa-fig .exa-mu-texto { fill: var(--c-destaque); font-size: 13px; font-weight: 700; }
+.exa-fig .exa-mu-texto { fill: var(--c-destaque); font-size: 15px; font-weight: 700; }
 .exa-fig .exa-alvo { stroke: var(--c-destaque); stroke-width: 1.2; stroke-dasharray: 4 4; opacity: 0.7; }
-.exa-fig .exa-alvo-texto { fill: var(--c-destaque); font-size: 11px; }
+.exa-fig .exa-alvo-texto { fill: var(--c-destaque); font-size: 13px; }
 .exa-fig .exa-seg { stroke: var(--papel); stroke-width: 1; }
 .exa-fig .exa-seg-var { fill: var(--c-seno); opacity: 0.88; }
 .exa-fig .exa-seg-fixa { fill: var(--c-eixo); opacity: 0.6; }
 .exa-fig .exa-seg-moldura { fill: none; stroke: var(--c-eixo); stroke-width: 1; }
 .exa-fig .exa-um { stroke: var(--tinta); stroke-width: 2; }
-.exa-fig .exa-um-texto { fill: var(--tinta); font-size: 12px; font-weight: 700; }
+.exa-fig .exa-um-texto { fill: var(--tinta); font-size: 14px; font-weight: 700; }
 
 /* sliders */
 .exa-slider { display: grid; gap: 0.2rem; }
