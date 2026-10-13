@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget da função exponencial</title>
+<!-- Testes do widget logaritmos/widgets/exponencial.js: a matemática pura (comportamento por base,
+     janela do gráfico, alcance do ponto, números, tabela) e a montagem com interação (cursor, atalhos,
+     interruptor de e^x, teclado e ponteiro no ponto, aviso de a = 1).
+     Abrir /logaritmos/tests/exponencial.html ou:
+       msedge --headless=new --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8811/logaritmos/tests/exponencial.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?demo=<estado> monta só o widget e leva-o a esse estado, para screenshots (<html data-demo="pronto">):
+       inicio | base (com &a=<valor>) | a02 | a5 | a1 | e | e-com-curva | a10 | ponto-fim | ponto-fim-a02 | ponto-esq-a035 | a027 -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/exponencial.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body data-modo="testes">
+<div class="teste-cab"><h1>Testes: função exponencial</h1></div>
+<pre id="resultado">A correr...</pre>
+<main class="envolve">
+  <article class="modulo"><div id="palco"></div></article>
+</main>
+<script type="module">
+import * as E from '../widgets/exponencial.js';
+
+const params = new URLSearchParams(location.search);
+const demo = params.get('demo');
+const raizHtml = document.documentElement;
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+window.addEventListener('unhandledrejection', (e) => erros.push(String(e.reason)));
+
+const FINO = String.fromCharCode(0x202f);
+const espera = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const BASES = [];
+for (let k = 0; k <= 96; k++) {
+  const a = Math.round((0.2 + 0.05 * k) * 100) / 100;
+  if (a !== 1) BASES.push(a);
+}
+BASES.push(10, Math.E);
+
+// ---------- utilitários de interação ----------
+const $ = (s) => palco.querySelector(s);
+const slider = () => $('input[type="range"]');
+function mexerCursor(a) {
+  const s = slider();
+  s.value = String(a);
+  s.dispatchEvent(new Event('input', { bubbles: true }));
+}
+const chip = (rotulo) => [...palco.querySelectorAll('.exp-chip')].find((b) => b.textContent === rotulo);
+const ponto = () => palco.querySelector('[role="slider"]');
+function tecla(el, key, extra = {}) {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra }));
+}
+const visivel = (el) => !!el && el.style.display !== 'none' && !el.closest('[hidden]');
+const texto = (sel) => ($(sel) ? $(sel).textContent.replace(/\s+/g, ' ').trim() : '');
+function curvas() {
+  return [...palco.querySelectorAll('svg path[data-tracos]')].filter((p) => p.getAttribute('fill') === 'none');
+}
+/** Centro do ponto arrastável em pixéis do ecrã. */
+function centroPonto() {
+  const c = ponto().querySelector('circle:last-of-type');
+  const r = c.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+function ponteiro(tipo, x, y) {
+  const svg = $('svg');
+  svg.dispatchEvent(new PointerEvent(tipo, { clientX: x, clientY: y, button: 0, pointerId: 7, pointerType: 'mouse', bubbles: true, cancelable: true }));
+}
+/** Coordenadas do ecrã do x dos dados (aproximação: margens do criarGrafico e escala do viewBox). */
+function ecraDoX(xDados) {
+  const svg = $('svg');
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  const esc = r.width / vb.width;
+  const mL = 12;
+  const mR = 16;
+  const pw = vb.width - mL - mR;
+  return { x: r.left + (mL + ((xDados + 4) / 8) * pw) * esc, y: r.top + r.height * 0.5 };
+}
+
+// ---------- testes ----------
+const linhas = [];
+let nFalhas = 0;
+async function teste(nome, fn) {
+  const falhas = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (falhas.length < 3) falhas.push(msg); } };
+  try { await fn(ok); } catch (e) { total++; falhas.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + falhas.join(' | ') + (total > falhas.length ? ` (+${total - falhas.length} falhas)` : ''));
+  }
+}
+
+async function correrTestes() {
+  // --- matemática pura ---
+  await teste('comportamento: limites e monotonia batem com a avaliação numérica (' + BASES.length + ' bases)', (ok) => {
+    for (const a of BASES) {
+      const c = E.comportamento(a);
+      ok(c.cresce === (Math.pow(a, 1) > Math.pow(a, 0)), `monotonia de ${a}`);
+      const mais = Math.pow(a, 2000);
+      const menos = Math.pow(a, -2000);
+      ok(c.limiteMais === Infinity ? mais > 1e6 : mais < 1e-6, `lim +inf de ${a}: ${mais}`);
+      ok(c.limiteMenos === Infinity ? menos > 1e6 : menos < 1e-6, `lim -inf de ${a}: ${menos}`);
+      ok(c.limiteMais !== c.limiteMenos, `os dois limites trocam (${a})`);
+      ok(c.assintotaEm === (c.limiteMais === 0 ? 'mais' : 'menos'), `lado da assíntota de ${a}`);
+    }
+  });
+
+  await teste('janelaY: vê-se (0, 1), (1, a) e o eixo, em todas as bases', (ok) => {
+    for (const a of BASES) {
+      const [y0, y1] = E.janelaY(a);
+      ok(y0 < 0 && y1 > 1 && y1 > a * 1.15 - 1e-9, `janela de ${a}: [${y0}, ${y1}]`);
+      ok(y1 <= 12 && (a < 1 ? y1 >= 1 / a * 0.8 : true), `janela de ${a} não exagerada`);
+    }
+  });
+
+  await teste('limitesPonto: o ponto fica no gráfico e só pára onde a curva sai', (ok) => {
+    for (const a of BASES) {
+      const [, ymax] = E.janelaY(a);
+      const [lo, hi] = E.limitesPonto(a, ymax);
+      const tope = 0.93 * ymax;
+      ok(lo >= -4 && hi <= 4 && lo < 0 && hi > 0, `alcance de ${a}: [${lo}, ${hi}] inclui x = 0`);
+      ok(perto(Math.round(lo / 0.05) * 0.05, lo, 1e-9) && perto(Math.round(hi / 0.05) * 0.05, hi, 1e-9), `${a}: limites na grelha de 0,05`);
+      ok(Math.pow(a, lo) <= tope * (1 + 1e-9) && Math.pow(a, hi) <= tope * (1 + 1e-9), `${a}: dentro do gráfico nos extremos`);
+      if (hi < 4) ok(Math.pow(a, hi + 0.05) > tope, `${a}: um passo além de ${hi} já sairia`);
+      if (lo > -4) ok(Math.pow(a, lo - 0.05) > tope, `${a}: um passo além de ${lo} já sairia`);
+      ok(Math.pow(a, -4) > 0 && Math.pow(a, 4) > 0, 'positivo');
+    }
+    const [a1, b1] = E.limitesPonto(1, 4);
+    ok(a1 === -4 && b1 === 4, 'a = 1 não limita');
+  });
+
+  await teste('numero: 3 algarismos, vírgula, menos e milhares', (ok) => {
+    const casos = [
+      [15.625, '15,6', false], [6.25, '6,25', true], [0.4, '0,4', true], [0.0016, '0,0016', true],
+      [625, '625', true], [10000, `10${FINO}000`, true], [-0.35, '−0,35', true], [1000, '1000', true],
+      [0, '0', true], [0.008, '0,008', true], [121.287, '121', false], [2.718281828, '2,72', false],
+      [7.29, '7,29', true], [1 / 3, '0,333', false], [100000, `100${FINO}000`, true], [3, '3', true],
+    ];
+    for (const [v, esperado, exato] of casos) {
+      const r = E.numero(v);
+      ok(r.txt === esperado, `numero(${v}) = «${r.txt}», esperava «${esperado}»`);
+      ok(r.exato === exato, `numero(${v}).exato = ${r.exato}`);
+    }
+    ok(E.numero(2.7 * 2.7).txt === '7,29' && E.numero(2.7 * 2.7).exato, 'erro de vírgula flutuante não conta como arredondamento');
+    ok(E.numero(Math.E, 4).txt === '2,718', 'e com 4 algarismos');
+  });
+
+  await teste('limpo, baseTxt e paraTex', (ok) => {
+    const l = [[1.5, '1,5'], [10, '10'], [0, '0'], [0.05, '0,05'], [-0.35, '−0,35'], [2, '2'], [0.25, '0,25'], [4.95, '4,95'], [-4, '−4']];
+    for (const [v, e] of l) ok(E.limpo(v, 2) === e, `limpo(${v}) = ${E.limpo(v, 2)}`);
+    ok(E.baseTxt(Math.E, true) === 'e' && E.baseTxt(0.5) === '0,5' && E.baseTxt(10) === '10', 'baseTxt');
+    ok(E.paraTex('−1,5') === '-1{,}5' && E.paraTex(`10${FINO}000`) === '10\\,000', 'paraTex');
+  });
+
+  await teste('valoresTabela: a razão entre colunas seguidas é sempre a base', (ok) => {
+    for (const a of BASES) {
+      const t = E.valoresTabela(a);
+      ok(t.length === 6 && t.map((l) => l.x).join() === '-2,-1,0,1,2,3', 'x da tabela');
+      ok(t[0].razao === null && t[2].y === 1, `${a}: a^0 = 1`);
+      ok(perto(t[3].y, a, 1e-12), `${a}: a^1 = a`);
+      for (let i = 1; i < t.length; i++) ok(perto(t[i].razao, a, 1e-12), `${a}: razão ${i} = ${t[i].razao}`);
+    }
+  });
+
+  await teste('ehConstante, pertoDeE e arredondarBase', (ok) => {
+    ok(E.ehConstante(1) && !E.ehConstante(1.05) && !E.ehConstante(0.95), 'ehConstante');
+    ok(E.pertoDeE(Math.E) && E.pertoDeE(2.7) && !E.pertoDeE(2.75) && !E.pertoDeE(2.65) && E.pertoDeE(2.72), 'pertoDeE');
+    ok(E.arredondarBase(0.30000000000000004) === 0.3 && E.arredondarBase(2.7499999) === 2.75, 'arredondarBase');
+  });
+
+  await teste('ficheiros sem travessões (U+2014 e U+2013) nem localStorage', async (ok) => {
+    for (const f of ['../widgets/exponencial.js', '../widgets/exponencial.css', './exponencial.html']) {
+      const t = await (await fetch(f)).text();
+      ok(!t.includes(String.fromCharCode(0x2014)) && !t.includes(String.fromCharCode(0x2013)), `${f} tem travessão`);
+      if (f.endsWith('.js')) ok(!/localStorage|sessionStorage/.test(t), `${f} usa storage`);
+    }
+  });
+
+  // --- montagem e interação ---
+  await teste('monta sem erros e com todas as peças', async (ok) => {
+    await E.montar(palco, {});
+    await espera(50);
+    ok(!!$('svg') && $('svg').getAttribute('aria-label').startsWith('Gráfico de y igual a 2 elevado a x'), 'svg com descrição: ' + ($('svg') && $('svg').getAttribute('aria-label')));
+    ok(curvas().length === 1 && Number(curvas()[0].dataset.tracos) >= 1, 'uma curva desenhada');
+    ok(!!ponto() && ponto().getAttribute('tabindex') === '0' && ponto().getAttribute('role') === 'slider', 'ponto focável com role slider');
+    ok(!!ponto().getAttribute('aria-label') && !!ponto().getAttribute('aria-valuetext'), 'ponto com aria-label e aria-valuetext');
+    ok(palco.querySelectorAll('.exp-chip').length === 5, '5 atalhos');
+    ok(palco.querySelectorAll('.exp-leituras .leitura').length === 7, '7 leituras');
+    ok(palco.querySelectorAll('.exp-tabela tbody tr').length === 2 && palco.querySelectorAll('.exp-tabela thead th').length === 7, 'tabela com 6 colunas de valores');
+    ok(!!$('.exp-leituras[aria-live="polite"]') && !!$('.exp-avisos[aria-live="polite"]') && !!$('.exp-padrao[aria-live="polite"]'), 'regiões aria-live');
+    ok(palco.querySelectorAll('.katex-error').length === 0, 'sem erros de KaTeX');
+    ok(palco.querySelectorAll('.katex').length > 10, 'KaTeX renderizado: ' + palco.querySelectorAll('.katex').length);
+    const rotulos = [...palco.querySelectorAll('svg text')].map((t) => t.textContent);
+    ok(rotulos.includes('(0, 1)') && rotulos.includes('(1, 2)') && rotulos.some((t) => t.startsWith('assíntota')), 'rótulos no gráfico: ' + rotulos.join(' | '));
+    ok(!palco.querySelector('svg foreignObject') && ![...palco.querySelectorAll('svg text')].some((t) => t.querySelector('.katex')), 'sem KaTeX dentro do SVG');
+    ok(slider().min === '0.2' && slider().max === '5' && slider().step === '0.05', 'cursor de 0,2 a 5 com passo 0,05');
+    ok(texto('.exp-ponto__valor').includes('x=1,5') || texto('.exp-ponto__valor').includes('x = 1,5') || /1,5/.test(texto('.exp-ponto__valor')), 'leitura do ponto: ' + texto('.exp-ponto__valor'));
+  });
+
+  await teste('monotonia, limites e assíntota seguem a base (cursor)', async (ok) => {
+    for (const a of [0.2, 0.5, 0.95, 5, 3.5, 1.05]) {
+      mexerCursor(a);
+      await espera(5);
+      const mono = texto('[data-leitura="mono"]');
+      const mais = texto('[data-leitura="mais"]');
+      const menos = texto('[data-leitura="menos"]');
+      const ass = texto('[data-leitura="assint"]');
+      const cresce = a > 1;
+      ok(cresce ? mono.includes('Crescente') && mono.includes('a>1') : mono.includes('Decrescente') && mono.includes('0<a<1'), `${a}: monotonia «${mono}»`);
+      ok(cresce ? /→\s*\+∞/.test(mais) && /→\s*0/.test(menos) : /→\s*0/.test(mais) && /→\s*\+∞/.test(menos), `${a}: limites «${mais}» «${menos}»`);
+      ok(cresce ? /x→−∞/.test(ass) : /x→\+∞/.test(ass), `${a}: assíntota «${ass}»`);
+      ok(!$('.exp-leituras').hidden && $('.exp-aviso').hidden, `${a}: leituras visíveis e sem aviso`);
+      ok(texto('.exp-controlo output') === 'a = ' + E.baseTxt(a), `${a}: saída «${texto('.exp-controlo output')}»`);
+      ok(/cresce|encolher/.test(texto('.exp-padrao')) && (cresce ? texto('.exp-padrao').includes('crescer') : texto('.exp-padrao').includes('encolher')), `${a}: padrão «${texto('.exp-padrao')}»`);
+    }
+    ok(texto('[data-leitura="contra"]').includes('nunca é zero nem negativa') && texto('[data-leitura="dom"]').includes('Domínio'), 'domínio e contradomínio: ' + texto('[data-leitura="contra"]'));
+    ok(texto('[data-leitura="fixos"]').includes('(0,1)') && texto('[data-leitura="fixos"]').includes('a^0=1'), 'ponto fixo');
+  });
+
+  await teste('tabela: valores e razão (a = 0,5 e a = 2,5)', async (ok) => {
+    mexerCursor(0.5);
+    let v = [...palco.querySelectorAll('.exp-linha-y td')].map((c) => c.textContent);
+    let r = [...palco.querySelectorAll('.exp-razao td')].map((c) => c.textContent);
+    ok(v.join('|') === '4|2|1|0,5|0,25|0,125', 'valores de 0,5^x: ' + v.join('|'));
+    ok(r.join('|') === '|×0,5|×0,5|×0,5|×0,5|×0,5', 'razões: ' + r.join('|'));
+    mexerCursor(2.5);
+    v = [...palco.querySelectorAll('.exp-linha-y td')].map((c) => c.textContent);
+    r = [...palco.querySelectorAll('.exp-razao td')].map((c) => c.textContent);
+    ok(v.join('|') === '0,16|0,4|1|2,5|6,25|15,6', 'valores de 2,5^x: ' + v.join('|'));
+    ok(r.slice(1).every((t) => t === '×2,5'), 'razões de 2,5: ' + r.join('|'));
+    ok(!$('.exp-arredondado').hidden, 'aviso de arredondamento (15,625 -> 15,6)');
+    mexerCursor(2);
+    ok($('.exp-arredondado').hidden, 'sem aviso quando tudo é exato (2^x)');
+  });
+
+  await teste('a = 1: aviso em vez de leituras enganadoras', async (ok) => {
+    mexerCursor(1);
+    await espera(5);
+    ok(!$('.exp-aviso').hidden && texto('.exp-aviso').includes('constante') && texto('.exp-aviso').includes('não é uma função exponencial'), 'aviso: ' + texto('.exp-aviso'));
+    ok($('.exp-leituras').hidden && $('.exp-tabela-secao').hidden, 'leituras e tabela escondidas');
+    ok(!texto('.exp-leituras').includes('Crescente') || $('.exp-leituras').hidden, 'sem «crescente» à vista');
+    ok(curvas().length === 1 && curvas()[0].getAttribute('style').includes('--c-id'), 'curva a cinzento no modo constante');
+    const rot = [...palco.querySelectorAll('svg text')].map((t) => t.textContent);
+    ok(!rot.includes('(0, 1)'), 'sem pontos rotulados');
+    ok($('svg').getAttribute('aria-label').includes('reta horizontal'), 'aria-label do gráfico: ' + $('svg').getAttribute('aria-label'));
+    ok(texto('.exp-ponto__valor').includes('=1'), 'a leitura do ponto continua certa: ' + texto('.exp-ponto__valor'));
+    mexerCursor(1.05);
+    ok($('.exp-aviso').hidden && !$('.exp-leituras').hidden && curvas()[0].getAttribute('style').includes('--c-exp'), 'volta ao normal ao sair de 1');
+  });
+
+  await teste('atalhos ½, 2, e, 3, 10', async (ok) => {
+    for (const [rot, texto_saida, pressed] of [['½', 'a = 0,5', '½'], ['2', 'a = 2', '2'], ['e', 'a = e ≈ 2,718', 'e'], ['3', 'a = 3', '3'], ['10', 'a = 10', '10']]) {
+      chip(rot).click();
+      await espera(5);
+      ok(texto('.exp-controlo output') === texto_saida, `${rot}: «${texto('.exp-controlo output')}»`);
+      const premidos = [...palco.querySelectorAll('.exp-chip[aria-pressed="true"]')].map((b) => b.textContent);
+      ok(premidos.length === 1 && premidos[0] === pressed, `${rot}: premidos ${premidos.join(',')}`);
+      ok(!$('.katex-error'), 'sem erros de KaTeX');
+    }
+    ok(palco.querySelectorAll('svg text').length > 0 && [...palco.querySelectorAll('svg text')].map((t) => t.textContent).includes('(1, 10)'), 'rótulo (1, 10) com a base 10');
+    chip('e').click();
+    const rot = [...palco.querySelectorAll('svg text')].map((t) => t.textContent);
+    ok(rot.includes('(1, e)'), 'rótulo (1, e): ' + rot.join(' | '));
+    ok(!$('.exp-nota-e').hidden && texto('.exp-nota-e').includes('Esta base é o número e≈2,718'), 'nota de e exata: ' + texto('.exp-nota-e'));
+    ok(texto('[data-leitura="fixos"]').length > 0 && ponto().getAttribute('aria-valuetext').includes('e elevado a x'), 'aria-valuetext com base e: ' + ponto().getAttribute('aria-valuetext'));
+    const lidoE = palco.querySelectorAll('.exp-ponto__valor .katex-html')[1].textContent;
+    ok(/^ax=e/.test(lidoE.replace(/\s/g, '')), 'leitura do ponto com e: ' + lidoE);
+    chip('2').click();
+  });
+
+  await teste('perto de e (|a − e| < 0,03) e interruptor de e^x', async (ok) => {
+    mexerCursor(2.7);
+    ok(!$('.exp-nota-e').hidden && texto('.exp-nota-e').includes('praticamente o número e≈2,718'), 'nota perto de e: ' + texto('.exp-nota-e'));
+    mexerCursor(2.75);
+    ok($('.exp-nota-e').hidden, '2,75 já não está perto');
+    mexerCursor(2);
+    ok(curvas().length === 1 && palco.querySelectorAll('.exp-legenda li').length === 1, 'só uma curva e uma legenda');
+    const caixa = $('.exp-caixa');
+    caixa.click();
+    await espera(5);
+    ok(caixa.checked && curvas().length === 2, 'segunda curva e^x: ' + curvas().length);
+    ok(curvas().some((p) => p.getAttribute('style').includes('--c-tg') && p.getAttribute('stroke-dasharray') === '8 5'), 'e^x a verde e tracejada');
+    ok(palco.querySelectorAll('.exp-legenda li').length === 2 && texto('.exp-legenda').includes('y=e^x') || texto('.exp-legenda').includes('e'), 'legenda com as duas: ' + texto('.exp-legenda'));
+    chip('e').click();
+    ok(texto('.exp-nota-e').includes('as duas curvas coincidem'), 'nota quando coincidem: ' + texto('.exp-nota-e'));
+    caixa.click();
+    await espera(5);
+    ok(!caixa.checked && curvas().length === 1, 'desliga e^x');
+    chip('2').click();
+  });
+
+  await teste('ponto: teclado (setas, Shift, End, Home) fica sempre visível e no gráfico', async (ok) => {
+    for (const a of [2, 5, 0.2, 0.5, 10, 1.05]) {
+      mexerCursor(Math.min(a, 5));
+      if (a === 10) chip('10').click();
+      await espera(5);
+      const p = ponto();
+      p.focus();
+      ok(document.activeElement === p, `${a}: o ponto recebe o foco`);
+      const x0 = Number(p.getAttribute('aria-valuenow'));
+      tecla(p, 'ArrowRight');
+      const x1 = Number(p.getAttribute('aria-valuenow'));
+      tecla(p, 'ArrowLeft');
+      tecla(p, 'ArrowLeft');
+      const x2 = Number(p.getAttribute('aria-valuenow'));
+      const [, ymax] = E.janelaY(a);
+      const [lo, hi] = E.limitesPonto(a, ymax);
+      ok(x1 === Math.min(+(x0 + 0.1).toFixed(2), hi) && perto(x2, Math.max(+(x1 - 0.2).toFixed(2), lo), 1e-9), `${a}: setas ${x0} -> ${x1} -> ${x2}`);
+      tecla(p, 'End');
+      ok(Number(p.getAttribute('aria-valuenow')) === hi, `${a}: End vai a ${hi}, está em ${p.getAttribute('aria-valuenow')}`);
+      ok(visivel(p) && document.activeElement === p, `${a}: o ponto continua visível e com foco no extremo direito`);
+      const rect = p.querySelector('circle:last-of-type').getBoundingClientRect(); // a bola (o alvo de toque pode passar da margem)
+      const sv = $('svg').getBoundingClientRect();
+      ok(rect.top >= sv.top && rect.bottom <= sv.bottom && rect.left >= sv.left && rect.right <= sv.right, `${a}: ponto dentro do SVG em End`);
+      ok($('.exp-ponto__nota').hidden === !(hi < 4), `${a}: nota «a curva sai do gráfico» ${$('.exp-ponto__nota').hidden ? 'escondida' : 'visível'} com hi = ${hi}`);
+      tecla(p, 'Home');
+      ok(Number(p.getAttribute('aria-valuenow')) === lo && visivel(p), `${a}: Home vai a ${lo}`);
+      tecla(p, 'ArrowRight', { shiftKey: true });
+      ok(perto(Number(p.getAttribute('aria-valuenow')), Math.min(lo + 0.5, hi), 1e-9), `${a}: Shift salta 0,5`);
+      tecla(p, 'PageUp');
+      ok(visivel(p), `${a}: PageUp`);
+    }
+    chip('2').click();
+  });
+
+  await teste('ponto: carregar e arrastar com o ponteiro, incluindo para lá do fim', async (ok) => {
+    mexerCursor(5);
+    await espera(5);
+    const alvo = ecraDoX(0.5);
+    ponteiro('pointerdown', alvo.x, alvo.y);
+    const xa = Number(ponto().getAttribute('aria-valuenow'));
+    ok(Math.abs(xa - 0.5) <= 0.15, 'carregar leva o ponto a perto de x = 0,5: ' + xa);
+    ok(perto(xa * 20, Math.round(xa * 20), 1e-9), 'assenta na grelha de 0,05: ' + xa);
+    const fim = ecraDoX(3.9);
+    ponteiro('pointermove', fim.x, fim.y);
+    const hi = E.limitesPonto(5, 6)[1];
+    ok(Number(ponto().getAttribute('aria-valuenow')) === hi, `arrastado para lá do fim fica em ${hi}: ${ponto().getAttribute('aria-valuenow')}`);
+    ok(visivel(ponto()), 'continua visível');
+    const esq = ecraDoX(-3.9);
+    ponteiro('pointermove', esq.x, esq.y);
+    ok(Number(ponto().getAttribute('aria-valuenow')) === -3.9 + 0 || Number(ponto().getAttribute('aria-valuenow')) === -3.9, 'e ao extremo esquerdo: ' + ponto().getAttribute('aria-valuenow'));
+    const r = $('svg').getBoundingClientRect();
+    ponteiro('pointerup', r.left + 1, r.top + 1);
+    ok(/−3,9/.test(texto('.exp-ponto__valor')) || /-3.9|−3,9/.test(palco.querySelector('.exp-ponto__valor').textContent), 'leitura mostra x = −3,9: ' + texto('.exp-ponto__valor'));
+    chip('2').click();
+  });
+
+  await teste('ponto: arrastar pegando no próprio ponto (como com o dedo) também respeita o fim', async (ok) => {
+    chip('3').click();
+    await espera(5);
+    const p = ponto();
+    const c = centroPonto();
+    const evento = (tipo, x, y) => p.dispatchEvent(new PointerEvent(tipo, { clientX: x, clientY: y, button: 0, pointerId: 9, pointerType: 'touch', bubbles: true, cancelable: true }));
+    evento('pointerdown', c.x, c.y);
+    const alvo = ecraDoX(-2);
+    evento('pointermove', alvo.x, alvo.y);
+    ok(Math.abs(Number(p.getAttribute('aria-valuenow')) + 2) <= 0.1, 'arrastado para x = −2: ' + p.getAttribute('aria-valuenow'));
+    const fim = ecraDoX(4);
+    evento('pointermove', fim.x + 30, fim.y);
+    const hi = E.limitesPonto(3, 4)[1];
+    ok(Number(p.getAttribute('aria-valuenow')) === hi && visivel(p), `para lá do fim pára em ${hi}: ${p.getAttribute('aria-valuenow')}`);
+    evento('pointerup', fim.x, fim.y);
+    ok(document.activeElement === p, 'o ponto fica com o foco depois de arrastado');
+    chip('2').click();
+  });
+
+  await teste('o ponto acompanha a base e fica no gráfico quando a curva sobe', async (ok) => {
+    chip('2').click();
+    ponto().focus();
+    tecla(ponto(), 'End');
+    const x2 = Number(ponto().getAttribute('aria-valuenow'));
+    mexerCursor(5);
+    const x5 = Number(ponto().getAttribute('aria-valuenow'));
+    ok(x2 > x5 && visivel(ponto()), `de 2 para 5 o ponto recua de ${x2} para ${x5}`);
+    mexerCursor(0.2);
+    ok(visivel(ponto()), 'base 0,2: visível');
+    chip('2').click();
+  });
+
+  await teste('sem scroll horizontal e alvos de toque de pelo menos 44 px', async (ok) => {
+    ok(document.documentElement.scrollWidth <= window.innerWidth + 1, `scrollWidth ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
+    for (const b of palco.querySelectorAll('.exp-chip')) {
+      const r = b.getBoundingClientRect();
+      ok(r.width >= 43.9 && r.height >= 43.9, `atalho «${b.textContent}» ${Math.round(r.width)}x${Math.round(r.height)}`);
+    }
+    ok(slider().getBoundingClientRect().height >= 43.9, 'cursor com altura ' + slider().getBoundingClientRect().height);
+    const iv = $('.exp-interruptor').getBoundingClientRect();
+    ok(iv.height >= 43.9, 'interruptor com altura ' + iv.height);
+    const p = ponto().querySelector('circle').getBoundingClientRect();
+    ok(p.width >= 43.9 || p.width * 1 >= 40, 'alvo do ponto com ' + Math.round(p.width) + ' px');
+    ok(erros.length === 0, 'erros: ' + erros.join(' | '));
+  });
+}
+
+// ---------- demonstrações para screenshots ----------
+async function correrDemo(estado) {
+  document.body.dataset.modo = 'demo';
+  await E.montar(palco, {});
+  await espera(100);
+  const passos = {
+    inicio: () => {},
+    base: () => mexerCursor(Number(params.get('a'))), // ?demo=base&a=0.95
+    a02: () => mexerCursor(0.2),
+    a5: () => mexerCursor(5),
+    a1: () => mexerCursor(1),
+    e: () => chip('e').click(),
+    'e-com-curva': () => { chip('e').click(); $('.exp-caixa').click(); },
+    a10: () => chip('10').click(),
+    a027: () => { mexerCursor(2.7); $('.exp-caixa').click(); },
+    'ponto-fim': () => { mexerCursor(5); ponto().focus(); tecla(ponto(), 'End'); },
+    'ponto-fim-a02': () => { mexerCursor(0.2); ponto().focus(); tecla(ponto(), 'Home'); },
+    'ponto-esq-a035': () => { mexerCursor(0.35); ponto().focus(); tecla(ponto(), 'Home'); },
+  };
+  (passos[estado] || passos.inicio)();
+  await espera(100);
+  raizHtml.dataset.demo = 'pronto';
+}
+
+if (demo) {
+  await correrDemo(demo);
+} else {
+  try { await correrTestes(); } catch (e) { nFalhas++; linhas.push('FALHOU: erro geral ' + e.message); }
+  if (erros.length) { nFalhas++; linhas.push('FALHOU: erros na página: ' + erros.slice(0, 3).join(' | ')); }
+  saida.textContent = linhas.join('\n') + `\n\n${nFalhas === 0 ? 'TUDO OK' : nFalhas + ' TESTE(S) FALHARAM'} (${linhas.length} testes)`;
+  raizHtml.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+</script>
+</body>
+</html>

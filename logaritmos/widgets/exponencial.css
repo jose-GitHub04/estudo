@@ -1,0 +1,77 @@
+/* exponencial: a função a^x (gráfico, base, ponto na curva, leituras e tabela). Prefixo exp-.
+   As cores vêm de tema.css: --c-exp (a^x), --c-tg (e^x) e --c-assint (assíntota). */
+
+.exp [hidden] { display: none !important; }
+.exp .widget__titulo { margin-bottom: 0.2rem; }
+.exp-intro { margin: 0 0 0.9rem; }
+
+/* uma coluna em telemóvel; gráfico à esquerda e controlos à direita num ecrã largo */
+.exp-grelha { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.exp-col { min-width: 0; }
+
+.exp-lienzo { width: 100%; margin: 0 auto; }
+.exp .figura { max-width: none; }
+
+/* legenda por baixo do gráfico */
+.exp-legenda {
+  display: flex; flex-wrap: wrap; gap: 0.2rem 1.2rem; margin: 0.4rem 0 0; padding: 0;
+  list-style: none; color: var(--tinta-suave); font-size: 0.9rem;
+}
+.exp-legenda li { display: inline-flex; align-items: center; gap: 0.45rem; }
+.exp-amostra { flex: none; }
+
+/* leitura do ponto arrastável */
+.exp-ponto { margin-top: 0.6rem; }
+.exp-ponto__rotulo { display: flex; justify-content: space-between; gap: 0.6rem; }
+.exp-ponto__nota { text-align: right; font-style: italic; }
+.exp-ponto__par { display: block; white-space: nowrap; }
+.exp-ajuda { margin-top: 0.5rem; }
+
+/* controlos: cursor da base, atalhos e interruptor de e^x */
+.exp-controlos { margin-top: 0; gap: 0.9rem; }
+.exp-controlo__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.exp .controlo input[type="range"] { height: 2.75rem; margin: 0; accent-color: var(--c-exp); }
+.exp-chips { gap: 0.5rem; margin-top: 0.3rem; }
+.exp .chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2.75rem; min-height: 2.75rem; padding: 0 1rem; font-size: 1.05rem;
+}
+.exp .chip[aria-pressed="true"] { border-color: var(--c-exp); background: var(--c-exp); }
+.exp-chip--e { font-family: var(--serif); font-style: italic; }
+.exp-interruptor { display: flex; align-items: center; gap: 0.7rem; min-height: 2.75rem; font-size: 0.95rem; cursor: pointer; }
+.exp-caixa { flex: none; width: 1.4rem; height: 1.4rem; margin: 0; accent-color: var(--c-tg); }
+
+/* aviso de a = 1 e nota de que a base é (quase) e */
+.exp-avisos { margin-top: 0.9rem; }
+.exp-aviso, .exp-nota-e {
+  margin: 0.6rem 0 0; padding: 0.55rem 0.8rem; border-radius: 0 0.4rem 0.4rem 0; font-size: 0.95rem;
+}
+.exp-avisos > :first-child { margin-top: 0; }
+.exp-aviso { border-left: 3px solid var(--dourado); background: var(--dourado-fundo); }
+.exp-nota-e { border-left: 3px solid var(--c-exp); background: var(--creme); }
+
+/* leituras */
+.exp-leituras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.exp-leitura { min-width: 0; }
+.exp-leitura--larga { grid-column: 1 / -1; }
+.exp .leitura__valor { font-size: 1rem; }
+.exp .katex { font-size: 1.05em; }
+.exp .leitura__rotulo .katex { font-size: 1em; }
+.exp-junto { white-space: nowrap; }
+.exp-leitura__nota { display: block; margin-top: 0.1rem; color: var(--tinta-suave); font-size: 0.85rem; line-height: 1.35; }
+
+/* tabela de valores */
+.exp-tabela-secao { margin-top: 1.2rem; }
+.exp-tabela { font-size: 0.88rem; }
+.exp-tabela th, .exp-tabela td { padding: 0.35rem 0.15rem; }
+.exp-tabela tbody th { white-space: nowrap; }
+.exp-razao th, .exp-razao td { color: var(--tinta-suave); font-size: 0.82rem; }
+.exp-arredondado { margin-top: 0.4rem; }
+.exp-padrao { margin: 0.7rem 0 0; font-size: 0.95rem; }
+
+@media (min-width: 46em) {
+  .exp-grelha { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+  .exp-tabela { table-layout: fixed; font-size: 0.95rem; }
+  .exp-tabela thead th:first-child { width: 5.2rem; }
+  .exp-tabela th, .exp-tabela td { padding: 0.4rem 0.4rem; }
+}

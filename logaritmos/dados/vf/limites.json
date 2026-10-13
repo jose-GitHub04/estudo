@@ -1,0 +1,122 @@
+{
+ "tema": "limites",
+ "afirmacoes": [
+  {
+   "id": "lim-vf-exp-potencia",
+   "tema": "limites",
+   "texto": "$\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{e^{x}}{x^{100}}=+\\infty$.",
+   "verdadeira": true,
+   "explicacao": "A exponencial vence qualquer potência, por maior que seja o expoente. Para $x$ pequeno parece o contrário: com $x=10$, $x^{100}=10^{100}$ é gigantesca ao lado de $e^{10}\\approx22\\,026$. Mas $e^x$ cresce multiplicando por $e$ a cada passo de 1 e, a partir de $x\\approx647$, passa à frente de $x^{100}$ e nunca mais volta atrás: com $x=700$, $\\dfrac{e^{700}}{700^{100}}\\approx3\\times10^{19}$.",
+   "verifica": [
+    "exp(700)/700**100>1e19",
+    "exp(10)/10**100<1e-90"
+   ]
+  },
+  {
+   "id": "lim-vf-ln-zero",
+   "tema": "limites",
+   "texto": "O gráfico de $f(x)=\\ln(x+3)$ tem a reta $x=0$ como assíntota vertical, tal como o gráfico de $\\ln x$.",
+   "verdadeira": false,
+   "explicacao": "O domínio de $f$ é $]-3,+\\infty[$ e o 0 pertence-lhe. Como $f$ é contínua em 0, $\\lim_{x\\to0}f(x)=f(0)=\\ln3\\approx1{,}10$, um número, e não há assíntota aí. A assíntota vertical é $x=-3$, a fronteira do domínio, onde $\\ln(x+3)\\to-\\infty$.",
+   "erroComum": "Decorar «o logaritmo tem assíntota em $x=0$». A assíntota está onde o argumento do $\\ln$ se anula; só é $x=0$ quando o argumento é o próprio $x$.",
+   "verifica": [
+    "ig(lim(lambda s: ln(s+3), 0), ln(3))",
+    "ln((-3+1e-9)+3)<-18"
+   ],
+   "figura": {
+    "tipo": "grafico",
+    "x": [
+     -4,
+     4
+    ],
+    "y": [
+     -4,
+     3
+    ],
+    "curvas": [
+     {
+      "expr": "ln(x+3)",
+      "rotulo": "y = ln(x+3)"
+     }
+    ],
+    "pontos": [
+     {
+      "x": 0,
+      "y": 1.0986,
+      "rotulo": "(0 ; 1,10)"
+     }
+    ],
+    "retasH": [],
+    "retasV": [
+     -3
+    ]
+   }
+  },
+  {
+   "id": "lim-vf-zero-infinito",
+   "tema": "limites",
+   "texto": "Se $f(x)\\to+\\infty$ e $g(x)\\to0$ quando $x\\to+\\infty$, então $f(x)\\times g(x)\\to0$.",
+   "verdadeira": false,
+   "explicacao": "O 0 não «engole» o infinito: $\\infty\\times0$ é uma indeterminação. Os três produtos seguintes são desse tipo e dão resultados diferentes: $x\\cdot\\dfrac1x=1$; $x\\cdot\\dfrac1{x^2}=\\dfrac1x\\to0$; $x^2\\cdot\\dfrac1x=x\\to+\\infty$. Em $x\\,e^{-x}$ o limite até é 0, mas porque $\\dfrac{x}{e^{x}}\\to0$ (a exponencial vence a potência), e não por ser «$\\infty\\times0$».",
+   "erroComum": "Pensar que o fator que tende para 0 ganha sempre. Quem ganha depende de quem tende mais depressa.",
+   "verifica": [
+    "ig(x*(1/x), 1)",
+    "100*exp(-100)<1e-40"
+   ]
+  },
+  {
+   "id": "lim-vf-xlnx",
+   "tema": "limites",
+   "texto": "O gráfico de $f(x)=x\\ln x$, de domínio $\\mathbb{R}^+$, não tem assíntota vertical.",
+   "verdadeira": true,
+   "explicacao": "A única candidata é $x=0$, a fronteira do domínio. Aí $x\\ln x$ é do tipo $0\\times(-\\infty)$, mas $\\lim_{x\\to0^+}x\\ln x=0$: o limite é finito e não há assíntota. É a potência a vencer o logaritmo: $x$ vai para 0 mais depressa do que $\\ln x$ vai para $-\\infty$. Por exemplo, $10^{-6}\\ln10^{-6}\\approx-0{,}000014$.",
+   "verifica": [
+    "abs(1e-100*ln(1e-100))<1e-97",
+    "abs(1e-6*ln(1e-6)+1.38155e-5)<1e-9"
+   ],
+   "figura": {
+    "tipo": "grafico",
+    "x": [
+     -0.5,
+     3
+    ],
+    "y": [
+     -1,
+     3
+    ],
+    "curvas": [
+     {
+      "expr": "x*ln(x)",
+      "rotulo": "y = x ln x"
+     }
+    ],
+    "pontos": [],
+    "retasH": [],
+    "retasV": []
+   }
+  },
+  {
+   "id": "lim-vf-declive",
+   "tema": "limites",
+   "texto": "Se $\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{f(x)}{x}=3$, então a reta $y=3x$ é assíntota do gráfico de $f$ quando $x\\to+\\infty$.",
+   "verdadeira": false,
+   "explicacao": "Falta o $b=\\lim\\left(f(x)-3x\\right)$, que tem de ser um número real. Com $f(x)=3x+\\ln x$: $\\dfrac{f(x)}{x}=3+\\dfrac{\\ln x}{x}\\to3$, mas $f(x)-3x=\\ln x\\to+\\infty$. O gráfico afasta-se cada vez mais da reta $y=3x$, devagar mas sem parar: com $x=10^{9}$ a distância já é $\\ln10^{9}\\approx20{,}7$.",
+   "erroComum": "Parar no $m$. A assíntota oblíqua precisa dos dois limites, $m$ e $b$, e os dois têm de ser números reais.",
+   "verifica": [
+    "abs((3*1e9+ln(1e9))/1e9-3)<1e-7",
+    "(3*1e9+ln(1e9))-3*1e9>20"
+   ]
+  },
+  {
+   "id": "lim-vf-exp-menos-3",
+   "tema": "limites",
+   "texto": "O gráfico de $g(x)=e^{x}-3$ tem a assíntota horizontal $y=-3$ quando $x\\to-\\infty$, mas não tem assíntota horizontal quando $x\\to+\\infty$.",
+   "verdadeira": true,
+   "explicacao": "Quando $x\\to-\\infty$, $e^{x}\\to0$ e $g(x)\\to-3$: a reta $y=-3$ é assíntota. Quando $x\\to+\\infty$, $e^{x}\\to+\\infty$ e $g(x)\\to+\\infty$: não há horizontal (nem oblíqua, porque $m=\\lim\\dfrac{e^{x}-3}{x}=+\\infty$). Os dois sentidos estudam-se à parte e podem dar resultados diferentes.",
+   "verifica": [
+    "0<exp(-100)<1e-40",
+    "exp(100)-3>1e40"
+   ]
+  }
+ ]
+}

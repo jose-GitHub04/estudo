@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes dos geradores de análise (logaritmos)</title>
+<!-- Abrir /logaritmos/tests/geradores-analise.html ou: msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8825/logaritmos/tests/geradores-analise.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. Só testa os tipos que existem em TIPOS_ANALISE. -->
+<style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body>
+<h1>Testes dos geradores de análise (logaritmos)</h1>
+<pre id="resultado">A correr...</pre>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+import { TIPOS_ANALISE } from '../geradores-analise.js';
+
+const SEMENTES = Number(new URLSearchParams(location.search).get('n')) || 2000;
+const TRACO = new RegExp('[' + String.fromCharCode(0x2014, 0x2013) + ']');
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (erros.length < 3) erros.push(msg); } };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else { nFalhas++; linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : '')); }
+}
+
+const dolaresPares = (t) => (t.match(/\$/g) || []).length % 2 === 0;
+const semFormulas = (t) => t.replace(/\$[^$]*\$/g, '');
+const jaRenderizadas = new Set();
+const errosKatex = [];
+function renderiza(src) {
+  if (jaRenderizadas.has(src)) return;
+  jaRenderizadas.add(src);
+  try { window.katex.renderToString(src, { throwOnError: true, strict: () => 'ignore' }); } catch (e) { errosKatex.push(`${src} -> ${e.message}`); }
+}
+
+// classifica o limite a partir da função, sem usar `alvo`
+function classeLimite(v) {
+  const f = v.funcao;
+  if (v.x0 === 0 && !v.lado) {
+    const a = f(1e-7);
+    const b = f(-1e-7);
+    if (Math.abs(a - b) < 1e-3) return Math.abs(a - 1) < 1e-3 ? 'um' : (Math.abs(a) < 1e-3 ? 'zero' : '?');
+    return 'nao';
+  }
+  const xs = v.x0 === 'inf' ? [1e6, 1e8] : v.x0 === '-inf' ? [-1e6, -1e8] : [1e-8, 1e-12];
+  const [a, b] = xs.map(f);
+  if (Math.abs(b) < 1e-6 && Math.abs(a) < 1e-1) return 'zero';
+  if (b > 1e6 && b >= a) return 'inf';
+  if (b < -20 && b <= a) return 'menosInf';
+  return '?';
+}
+const TEX_DE = { inf: '+\\infty', zero: '0', um: '1', menosInf: '-\\infty', nao: '\\text{não existe}' };
+
+await teste('lista de tipos completa', (ok) => {
+  ok(TIPOS_ANALISE.length >= 1, 'sem tipos');
+  ok(TIPOS_ANALISE.every((t) => t.id && t.nome && t.tema && typeof t.gerar === 'function'), 'tipo incompleto');
+});
+
+for (const tipo of TIPOS_ANALISE) {
+  const vistos = new Set();
+  await teste(`${tipo.id}: estrutura, texto, KaTeX, determinismo (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = tipo.gerar(M.criarRng(s), {});
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 80)}]`);
+      vistos.add(p.enunciado);
+      aqui(p.tipo === tipo.id && (p.modo === 'escolha' || p.modo === 'escrita'), 'tipo ou modo');
+      aqui(typeof p.explicacao === 'string' && p.explicacao.length > 10 && p.verificacao && typeof p.verificacao === 'object', 'explicação ou verificacao');
+      for (const campo of ['enunciado', 'explicacao']) {
+        aqui(dolaresPares(p[campo]), `$ desemparelhados em ${campo}`);
+        aqui(!TRACO.test(p[campo]), `travessão em ${campo}`);
+        aqui(!/[\\^_{}]/.test(semFormulas(p[campo])), `LaTeX solto fora de $ em ${campo}`);
+        for (const m of p[campo].matchAll(/\$([^$]+)\$/g)) renderiza(m[1]);
+      }
+      if (p.modo === 'escolha') {
+        aqui(p.opcoes.length === 4, `${p.opcoes.length} opções`);
+        aqui(p.opcoes.filter((o) => o.correta === true).length === 1, 'não há exatamente 1 correta');
+        aqui(new Set(p.opcoes.map((o) => o.tex)).size === 4, 'opções com o mesmo texto');
+        for (const o of p.opcoes) renderiza(o.tex);
+      }
+      if (s <= 100) aqui(JSON.stringify(tipo.gerar(M.criarRng(s), {}), (k, v) => (typeof v === 'function' ? 'fn' : v)) === JSON.stringify(p, (k, v) => (typeof v === 'function' ? 'fn' : v)), 'mesma semente, perguntas diferentes');
+    }
+  });
+  await teste(`${tipo.id}: variedade de enunciados (>= 30 em ${SEMENTES} sementes)`, (ok) => {
+    ok(vistos.size >= 30, `só ${vistos.size} enunciados distintos`);
+  });
+}
+
+await teste('KaTeX sem erros em ' + jaRenderizadas.size + ' fórmulas distintas', (ok) => {
+  ok(jaRenderizadas.size > 20, 'poucas fórmulas: ' + jaRenderizadas.size);
+  ok(errosKatex.length === 0, errosKatex.slice(0, 3).join(' ; '));
+});
+
+if (TIPOS_ANALISE.some((t) => t.id === 'limite')) {
+  const gerar = TIPOS_ANALISE.find((t) => t.id === 'limite').gerar;
+  await teste('limite: recálculo independente da opção certa (valores muito grandes ou muito pequenos)', (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = gerar(M.criarRng(s), {});
+      const c = classeLimite(p.verificacao);
+      ok(TEX_DE[c] === p.opcoes.find((o) => o.correta).tex, `semente ${s}: recalculado ${c} mas a certa é ${p.opcoes.find((o) => o.correta).tex} [${p.verificacao.f}]`);
+      ok(c === p.verificacao.alvo, `semente ${s}: alvo ${p.verificacao.alvo} != ${c}`);
+    }
+  });
+}
+
+linhas.push('');
+linhas.push(nFalhas === 0 ? 'TUDO OK' : `${nFalhas} TESTE(S) FALHARAM`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demonstração do módulo de gráficos</title>
+<!-- Página de desenvolvimento: mostra assets/motor/grafico.js em ação (6 gráficos e 2 pontos
+     arrastáveis). Abrir /logaritmos/tests/grafico-demo.html; <html data-pronto="sim"> no fim. -->
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<style>
+  body { padding: 1rem 16px 3rem; }
+  .demo { max-width: 40rem; margin: 0 auto; }
+  .demo h2 { margin: 1.4rem 0 0.3rem; font-size: 1rem; }
+  .demo p { margin: 0.2rem 0 0.4rem; color: var(--tinta-suave); font-size: 0.9rem; }
+  .demo output { display: block; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main class="demo" id="demo">
+  <h1>Gráficos</h1>
+</main>
+<script type="module">
+import { criarGrafico, arrastarNaCurva } from '../../assets/motor/grafico.js';
+import { criarFuncao, fmt } from '../../assets/motor/matematica.js';
+
+const demo = document.getElementById('demo');
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+
+function bloco(titulo, nota) {
+  const w = document.createElement('section');
+  w.className = 'widget';
+  const h = document.createElement('h2');
+  h.textContent = titulo;
+  const p = document.createElement('p');
+  p.textContent = nota;
+  w.append(h, p);
+  demo.append(w);
+  return w;
+}
+
+try {
+  // 1. 2^x com a assíntota y = 0 e dois pontos
+  {
+    const w = bloco('y = 2^x', 'Assíntota horizontal y = 0 e os pontos (0, 1) e (1, 2).');
+    const g = criarGrafico({ x: [-4, 4], y: [-1, 9], aria: 'Gráfico de y igual a 2 elevado a x' });
+    g.retaHorizontal(0, { rotulo: 'y = 0' });
+    g.curva('2^x', { cor: 'exp', id: 'f', rotulo: '2^x' });
+    g.ponto(0, 1, { rotulo: '(0, 1)', posRotulo: 'esq' });
+    g.ponto(1, 2, { rotulo: '(1, 2)' });
+    w.append(g.svg);
+  }
+
+  // 2. ln x com x = 0, mais y = x e a exponencial (inversas)
+  {
+    const w = bloco('y = ln x', 'Assíntota vertical x = 0, ponto (1, 0) e (e, 1). Escala igual, com a recta y = x e e^x.');
+    const g = criarGrafico({ x: [-2, 6], y: [-3, 4], igual: true, aria: 'Gráfico de ln x' });
+    g.retaVertical(0, { rotulo: 'x = 0', posRotulo: 'baixo' });
+    g.reta(1, 0, { cor: 'id', tracejado: true, rotulo: 'y = x' });
+    g.curva('exp(x)', { cor: 'exp', rotulo: 'e^x' });
+    g.curva('ln(x)', { cor: 'log', id: 'ln', rotulo: 'ln x' });
+    g.ponto(1, 0);
+    g.ponto(Math.E, 1, { rotulo: '(e, 1)' });
+    w.append(g.svg);
+  }
+
+  // 3. x ln x
+  {
+    const w = bloco('y = x ln x', 'Tende para 0 quando x tende para 0 por valores positivos (ponto aberto em (0, 0)).');
+    const g = criarGrafico({ x: [-0.5, 3], y: [-1, 3], marcasX: [0.5, 1, 1.5, 2, 2.5, 3], aria: 'Gráfico de x ln x' });
+    g.curva('x*ln(x)', { cor: 'log' });
+    g.ponto(0, 0, { oco: true });
+    g.ponto(Math.exp(-1), -Math.exp(-1), { rotulo: 'mínimo', posRotulo: 'baixo', cor: 'der' });
+    w.append(g.svg);
+  }
+
+  // 4. e^-x · x com o ponto arrastável na curva
+  {
+    const w = bloco('y = x e^(-x) (arrasta o ponto)', 'Arrasta o ponto, ou carrega no gráfico, ou usa as setas depois de o focares.');
+    const g = criarGrafico({ x: [-1, 6], y: [-0.5, 0.6], aria: 'Gráfico de x vezes e elevado a menos x' });
+    g.retaHorizontal(0, { rotulo: 'y = 0', posRotulo: 'dir' });
+    g.curva('x*e^-x', { cor: 'exp' });
+    const saida = document.createElement('output');
+    saida.setAttribute('aria-live', 'polite');
+    const f = criarFuncao('x*e^-x');
+    const c = arrastarNaCurva(g, f, {
+      x0: 2, xmin: -1, xmax: 6,
+      aoMover: (x, y) => { saida.textContent = `x = ${fmt(x, 2)}   f(x) = ${fmt(y, 3)}`; },
+    });
+    c.mover(2);
+    w.append(g.svg, saida);
+  }
+
+  // 5. tan x: quebra nas assíntotas
+  {
+    const w = bloco('y = tan x', 'Cinco ramos; as assíntotas partem o traço.');
+    const g = criarGrafico({ x: [-2 * Math.PI, 2 * Math.PI], y: [-4, 4], marcasX: [-6.283, -3.1416, 3.1416, 6.283].map((v, i) => ({ valor: v, texto: ['−2π', '−π', 'π', '2π'][i] })) });
+    for (const k of [-3, -1, 1, 3]) g.retaVertical((k * Math.PI) / 2);
+    g.curva((x) => Math.tan(x), { cor: 'tg', id: 'tan' });
+    w.append(g.svg);
+  }
+
+  // 6. área sombreada e tangente
+  {
+    const w = bloco('Área sob 1/x', 'ln 2 é a área sob 1/x entre 1 e 2. Ponto livre (arrastável nos dois sentidos).');
+    const g = criarGrafico({ x: [0, 4], y: [0, 3], aria: 'Área sob o gráfico de 1 sobre x entre 1 e 2' });
+    g.area((x) => 1 / x, 1, 2);
+    g.curva('1/x', { cor: 'log' });
+    g.segmento(1, 0, 1, 1, { cor: 'assint', tracejado: true });
+    g.segmento(2, 0, 2, 0.5, { cor: 'assint', tracejado: true });
+    g.rotulo(2.1, 1.4, 'área = ln 2', { ancora: 'start' });
+    g.segmento(2.05, 1.35, 1.5, 0.45, { cor: 'assint', espessura: 1 });
+    const p = g.ponto(3, 2, { arrastavel: true, rotulo: 'P', cor: 'der', guias: true, aria: 'Ponto livre P' });
+    w.append(g.svg);
+  }
+  demo.dataset.n = String(demo.querySelectorAll('svg.figura').length);
+} catch (e) {
+  erros.push(String(e && e.stack || e));
+}
+const aviso = document.createElement('pre');
+aviso.id = 'erros';
+aviso.textContent = erros.length ? 'ERROS: ' + erros.join(' | ') : '';
+demo.append(aviso);
+document.documentElement.dataset.pronto = erros.length ? 'erro' : 'sim';
+</script>
+</body>
+</html>

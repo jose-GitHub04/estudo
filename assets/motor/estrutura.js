@@ -28,9 +28,27 @@ const PAGINAS_PROBABILIDADES = [
     resumo: 'Afirmações para decidires se são verdadeiras ou falsas, com a explicação de cada uma.' },
 ];
 
+const PAGINAS_LOGARITMOS = [
+  { id: 'materia', href: 'materia.html', rotulo: 'Matéria',
+    resumo: 'Da exponencial ao logaritmo: propriedades, equações, derivadas e limites, com desenhos para mexer.' },
+  { id: 'cartoes', href: 'cartoes.html', rotulo: 'Cartões',
+    resumo: 'Memoriza definições, regras e derivadas com repetição espaçada. Escolhes os temas que quiseres.' },
+  { id: 'perguntas', href: 'perguntas.html', rotulo: 'Perguntas',
+    resumo: 'Banco de perguntas de escolha múltipla. Respondes e vês logo a resposta e a explicação.' },
+  { id: 'treino', href: 'treino.html', rotulo: 'Treino',
+    resumo: 'Perguntas geradas na hora, com a correção explicada passo a passo.' },
+  { id: 'exercicios', href: 'exercicios.html', rotulo: 'Exercícios',
+    resumo: 'Tenta cada exercício primeiro e confere depois com a resolução passo a passo.' },
+  { id: 'vf', href: 'verdadeiro-falso.html', rotulo: 'Verdadeiro ou falso',
+    resumo: 'Afirmações para decidires se são verdadeiras ou falsas, com a explicação de cada uma.' },
+  { id: 'folha', href: 'folha.html', rotulo: 'Folha',
+    resumo: 'Todas as fórmulas e propriedades numa folha A4, pronta a imprimir.' },
+];
+
 export const TEMAS = {
   trigonometria: { rotulo: 'Trigonometria', paginas: PAGINAS_TRIGONOMETRIA },
   probabilidades: { rotulo: 'Probabilidades', paginas: PAGINAS_PROBABILIDADES },
+  logaritmos: { rotulo: 'Exponenciais e logaritmos', paginas: PAGINAS_LOGARITMOS },
 };
 
 export const PAGINAS = PAGINAS_TRIGONOMETRIA;

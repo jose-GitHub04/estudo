@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do estudo de funções (logaritmos)</title>
+<!-- Testes do widget widgets/estudo.js e dos dados dados/estudos.json: monta cada uma das 4 funções, avança
+     os 7 passos e confere, em cada um, os passos revelados, o gráfico (pontos, assíntotas, troços), as tabelas
+     (linhas, cabeçalhos, setas com aria-label), o cursor (teclado), «Mostrar tudo», «Recomeçar» e os saltos.
+     Confere ainda que todas as fórmulas compilam no KaTeX. Os números exatos são verificados em Python
+     (tools/verificar_estudos.py). Abrir /logaritmos/tests/estudo.html ou:
+       msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8818/logaritmos/tests/estudo.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/estudo.css">
+<style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; } #palco { max-width: 34rem; }</style>
+<script defer src="../../assets/katex/katex.min.js"></script>
+<script defer src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<h1>Testes do estudo de funções (logaritmos)</h1>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import { montar } from '../widgets/estudo.js';
+import { criarFuncao, avaliar } from '../../assets/motor/matematica.js';
+
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+
+/** Corre um teste. `fn(ok)` chama ok(condicao, mensagem); a primeira exceção também conta. */
+async function teste(nome, fn) {
+  const falhas = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (falhas.length < 4) falhas.push(msg); }
+  };
+  try { await fn(ok); } catch (e) { total++; falhas.push('exceção: ' + (e && e.stack || e)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + falhas.join(' | ') + (total > falhas.length ? ` (+${total - falhas.length} falhas)` : ''));
+  }
+}
+
+const dados = await fetch('../dados/estudos.json').then((r) => r.json());
+const D = { estudos: dados };
+const N = 7;
+const $ = (s, raiz = palco) => raiz.querySelector(s);
+const $$ = (s, raiz = palco) => [...raiz.querySelectorAll(s)];
+const clique = (b) => b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const num = (v) => (v === '+inf' ? Infinity : v === '-inf' ? -Infinity : typeof v === 'number' ? v : avaliar(String(v)).valor);
+
+async function novoWidget() {
+  palco.replaceChildren();
+  const el = document.createElement('div');
+  el.dataset.widget = 'estudo';
+  palco.append(el);
+  await montar(el, D);
+  return el;
+}
+const botao = (txt) => $$('.es-botoes button').find((b) => b.textContent.trim().startsWith(txt));
+const escolher = (i) => clique($$('.es-chip')[i]);
+const passoSeg = () => clique(botao('Passo seguinte'));
+const cartoes = () => $$('.es-passo');
+
+// ---------- dados: fórmulas ----------
+await teste('dados: todas as fórmulas compilam no KaTeX', async (ok) => {
+  const k = window.katex;
+  ok(!!k, 'katex não carregou');
+  const conferir = (texto, onde) => {
+    const re = /\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g;
+    let m;
+    while ((m = re.exec(texto))) {
+      const f = m[1] ?? m[2];
+      try { k.renderToString(f, { throwOnError: true, displayMode: m[1] !== undefined }); } catch (e) { ok(false, `${onde}: ${e.message.slice(0, 80)}`); }
+    }
+    ok((texto.match(/\$/g) || []).length % 2 === 0, `${onde}: $ desemparelhados`);
+  };
+  const soTex = (t, onde) => { try { k.renderToString(t, { throwOnError: true }); } catch (e) { ok(false, `${onde}: ${e.message.slice(0, 80)}`); } };
+  dados.roteiro.forEach((r, i) => { conferir(r.titulo, `roteiro ${i + 1}`); conferir(r.porque, `roteiro ${i + 1} porque`); });
+  for (const F of dados.funcoes) {
+    soTex(F.chip, `${F.id} chip`);
+    soTex(F.d1Tex, `${F.id} d1Tex`);
+    soTex(F.d2Tex, `${F.id} d2Tex`);
+    F.passos.forEach((p, i) => {
+      for (const c of ['texto', 'depois', 'resumo', 'cuidado']) if (p[c]) conferir(p[c], `${F.id} passo ${i + 1} ${c}`);
+      if (p.tabela) {
+        for (const c of p.tabela.x) soTex(c.tex, `${F.id} passo ${i + 1} tabela x`);
+        for (const v of p.tabela.valores) if (v) soTex(v.tex, `${F.id} passo ${i + 1} tabela valor`);
+      }
+    });
+  }
+});
+
+// ---------- dados: expressões e derivadas (no avaliador do site) ----------
+await teste('dados: expr, d1 e d2 no avaliador do motor coincidem com diferenças finitas', async (ok) => {
+  for (const F of dados.funcoes) {
+    const f = criarFuncao(F.expr);
+    const d1 = criarFuncao(F.d1);
+    const d2 = criarFuncao(F.d2);
+    for (let i = 0; i <= 20; i++) {
+      const x = F.cursor.min + ((F.cursor.max - F.cursor.min) * (i + 0.5)) / 21;
+      const h = 1e-4;
+      const num1 = (f(x + h) - f(x - h)) / (2 * h);
+      const num2 = (d1(x + h) - d1(x - h)) / (2 * h);
+      ok(perto(d1(x), num1, 1e-5), `${F.id}: d1(${x}) = ${d1(x)} contra ${num1}`);
+      ok(perto(d2(x), num2, 1e-5), `${F.id}: d2(${x}) = ${d2(x)} contra ${num2}`);
+    }
+    for (const e of Object.values(F.elementos)) {
+      if (e.tipo !== 'ponto') continue;
+      ok(perto(f(num(e.x)), num(e.y), 1e-9), `${F.id}: ponto ${e.rotulo}: f(${e.x}) = ${f(num(e.x))} e y = ${num(e.y)}`);
+    }
+  }
+});
+
+// ---------- um percurso completo, função a função ----------
+for (let i = 0; i < dados.funcoes.length; i++) {
+  const F = dados.funcoes[i];
+  await teste(`${F.nome}(x) = ${F.expr}: percurso dos 7 passos`, async (ok) => {
+    const el = await novoWidget();
+    escolher(i);
+    const chips = $$('.es-chip');
+    ok(chips.length === dados.funcoes.length, `chips: ${chips.length}`);
+    ok(chips[i].getAttribute('aria-pressed') === 'true', 'o chip escolhido devia estar premido');
+    ok(chips.filter((c) => c.getAttribute('aria-pressed') === 'true').length === 1, 'só um chip premido');
+    ok(!!$('.es-fig svg.figura'), 'sem gráfico');
+    ok(cartoes().length === 0, 'devia começar sem passos');
+    ok($$('.es-ponto').length === N && $$('.es-ponto').every((b) => b.disabled), 'os 7 números do roteiro devem começar desativados');
+    ok($('.es-passos').getAttribute('aria-live') === 'polite', 'a lista de passos devia ser aria-live polite');
+    const f = criarFuncao(F.expr);
+    const d1 = criarFuncao(F.d1);
+    const d2 = criarFuncao(F.d2);
+    ok($$('svg [data-id]').filter((n) => n.dataset.id !== 'curva').length === 0 || F.faixas, 'no passo 0 não devia haver nada descoberto');
+
+    for (let n = 1; n <= N; n++) {
+      const antes = document.activeElement;
+      passoSeg();
+      const p = F.passos[n - 1];
+      const cs = cartoes();
+      ok(cs.length === n, `passo ${n}: ${cs.length} cartões`);
+      const novo = cs[n - 1];
+      ok(novo && novo.querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'true', `passo ${n}: o novo cartão devia estar aberto`);
+      ok(cs.slice(0, n - 1).every((c) => c.querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'false'), `passo ${n}: os anteriores devem ficar fechados`);
+      ok(document.activeElement === antes, `passo ${n}: o foco foi roubado`);
+      ok($('.es-estado').textContent.includes(`Passo ${n} de 7`), `passo ${n}: estado "${$('.es-estado').textContent}"`);
+      ok($('.es-legenda').textContent.trim() === p.legenda, `passo ${n}: legenda do gráfico`);
+      ok(!!novo.querySelector('.es-passo__texto .katex'), `passo ${n}: texto sem fórmulas renderizadas`);
+      ok($$('.katex-error', palco).length === 0, `passo ${n}: há .katex-error`);
+      ok(!!novo.querySelector('.es-passo__res .katex') || !/\$/.test(p.resumo), `passo ${n}: resumo sem KaTeX`);
+      if (p.cuidado) ok(!!novo.querySelector('.es-cuidado'), `passo ${n}: falta a nota de atenção`);
+      ok(!novo.textContent.includes('\u2014'), `passo ${n}: tem um travessão`);
+
+      // gráfico: o que já foi descoberto
+      const dev = Object.entries(F.elementos).filter(([k]) => F.passos.slice(0, n).some((q) => q.descobre.includes(k))).map(([k]) => k);
+      const ids = $$('.es-fig [data-id]').map((x) => x.dataset.id);
+      for (const k of dev) ok(ids.includes(k), `passo ${n}: falta no gráfico ${k}`);
+      for (const k of Object.keys(F.elementos)) if (!dev.includes(k)) ok(!ids.includes(k), `passo ${n}: ${k} aparece antes do tempo`);
+      const caminho = $('.es-fig [data-id="curva"]');
+      ok(!!caminho, `passo ${n}: sem curva`);
+      const path = caminho && (caminho.tagName === 'path' ? caminho : caminho.querySelector('path'));
+      ok(path && (path.getAttribute('d') || '').length > 20, `passo ${n}: curva vazia`);
+      if (path) ok((n === N) === (Number(path.getAttribute('stroke-opacity') || 1) === 1), `passo ${n}: a curva só fica em destaque no passo 7 (opacidade ${path.getAttribute('stroke-opacity')})`);
+      const troços = $$('.es-fig [data-id^="troco-"]').length;
+      ok((n === 3 || n === 4 || n === 5) ? troços === (n === 5 ? p.tabela.sinais.length : F.passos[2].tabela.sinais.length) : troços === 0, `passo ${n}: ${troços} troços coloridos`);
+      ok($$('.es-fig [data-id="faixa"]').length === (F.faixas ? F.faixas.length : 0), `passo ${n}: faixa fora do domínio`);
+
+      // tabela
+      const tab = novo.querySelector('table.es-tabela');
+      if (p.tabela) {
+        ok(!!tab, `passo ${n}: devia ter tabela`);
+        if (tab) {
+          const T = p.tabela;
+          const lin = [...tab.querySelectorAll('tr')];
+          ok(lin.length === (T.tipo === 'sinal' ? 2 : 3), `passo ${n}: ${lin.length} linhas na tabela`);
+          const colunas = 2 * T.x.length;
+          ok(lin.every((l) => l.children.length === colunas), `passo ${n}: colunas ${lin.map((l) => l.children.length)} em vez de ${colunas}`);
+          ok(!!tab.querySelector('caption.sr-only'), `passo ${n}: falta <caption>`);
+          ok([...tab.querySelectorAll('th')].every((c) => c.hasAttribute('scope')), `passo ${n}: <th> sem scope`);
+          ok(lin.slice(1).every((l) => l.firstElementChild.tagName === 'TH' && l.firstElementChild.getAttribute('scope') === 'row'), `passo ${n}: linhas sem cabeçalho de linha`);
+          ok(lin[0].querySelectorAll('th').length === colunas, `passo ${n}: a linha do x devia ser toda de cabeçalhos`);
+          const sinais = [...lin[1].querySelectorAll('.es-sinal')].map((c) => c.textContent);
+          ok(sinais.join('') === T.sinais.map((s) => (s === '+' ? '+' : '−')).join(''), `passo ${n}: sinais ${sinais}`);
+          const zeros = [...lin[1].querySelectorAll('.es-zero')].map((c) => c.textContent);
+          ok(zeros.length === T.x.length && zeros.every((z, k) => z === (k > 0 && k < T.x.length - 1 ? '0' : '')), `passo ${n}: zeros ${JSON.stringify(zeros)}`);
+          if (T.tipo !== 'sinal') {
+            const icones = [...lin[2].querySelectorAll('svg.es-icone')];
+            ok(icones.length === T.sinais.length, `passo ${n}: ${icones.length} ícones`);
+            ok(icones.every((s) => s.getAttribute('role') === 'img' && (s.getAttribute('aria-label') || '').length > 5), `passo ${n}: ícones sem aria-label`);
+            const esperados = T.sinais.map((s) => (T.tipo === 'variacao' ? (s === '+' ? 'crescente' : 'decrescente') : (s === '+' ? 'cima' : 'baixo')));
+            ok(icones.every((s, k) => s.getAttribute('aria-label').includes(esperados[k])), `passo ${n}: ícones ${icones.map((s) => s.getAttribute('aria-label'))}`);
+            const tags = [...lin[2].querySelectorAll('.es-tag')].map((c) => c.textContent);
+            const tagsEsperadas = T.valores.filter((v) => v && v.tag).map((v) => ({ max: 'máx.', min: 'mín.', pi: 'P.I.' }[v.tag]));
+            ok(tags.join() === tagsEsperadas.join(), `passo ${n}: tags ${tags}`);
+            const lims = [...lin[2].querySelectorAll('.es-lim')].length;
+            ok(lims === T.valores.filter((v) => v && v.limite !== undefined).length, `passo ${n}: ${lims} limites`);
+            ok(!!lin[2].querySelector('.es-f .katex') || T.valores.every((v) => !v), `passo ${n}: valores da tabela sem KaTeX`);
+          }
+        }
+      } else {
+        ok(!tab, `passo ${n}: não devia ter tabela`);
+      }
+      if (n === 7) ok(!!novo.querySelector('.es-passo__depois'), 'passo 7: falta o texto do contradomínio');
+
+      // stepper
+      const pontos = $$('.es-ponto');
+      ok(pontos.every((b, k) => b.disabled === (k + 1 > n)), `passo ${n}: números do roteiro (${pontos.map((b) => (b.disabled ? 0 : 1)).join('')})`);
+      ok(pontos[n - 1].getAttribute('aria-current') === 'step', `passo ${n}: aria-current`);
+    }
+    // depois do passo 7
+    ok(botao('Estudo completo') && botao('Estudo completo').getAttribute('aria-disabled') === 'true', 'no fim o botão devia dizer «Estudo completo» e estar desligado');
+    clique(botao('Estudo completo'));
+    ok(cartoes().length === N, 'carregar no botão desligado não devia mudar nada');
+
+    // saltar para um passo já revelado
+    clique($$('.es-ponto')[2]);
+    ok(cartoes()[2].querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'true', 'saltar: o passo 3 devia abrir');
+    ok(cartoes().filter((c) => c.querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'true').length === 1, 'saltar: só um passo aberto');
+    ok($('.es-estado').textContent.includes('Passo 3 de 7'), 'saltar: estado');
+    ok($('.es-legenda').textContent.trim() === F.passos[2].legenda, 'saltar: o gráfico devia voltar ao estado do passo 3');
+    ok($$('.es-fig [data-id^="troco-"]').length > 0, 'saltar: troços do passo 3');
+    ok(!$('.es-fig [data-id="pi"]') || F.passos.slice(0, 3).some((q) => q.descobre.includes('pi')), 'saltar: a inflexão do passo 5 ainda não devia estar');
+    // abrir um cartão pelo cabeçalho também leva o gráfico para esse passo
+    clique(cartoes()[5].querySelector('.es-passo__cab'));
+    ok($('.es-estado').textContent.includes('Passo 6 de 7'), 'cabeçalho: estado');
+    clique(cartoes()[5].querySelector('.es-passo__cab'));
+    ok(cartoes()[5].querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'false', 'cabeçalho: devia fechar');
+
+    // Mostrar tudo e Recomeçar
+    clique(botao('Recomeçar'));
+    ok(cartoes().length === 0, 'Recomeçar: devia limpar');
+    ok($$('.es-ponto').every((b) => b.disabled), 'Recomeçar: roteiro desativado');
+    ok(botao('Passo seguinte').textContent.trim() === 'Passo seguinte', 'Recomeçar: botão');
+    clique(botao('Mostrar tudo'));
+    ok(cartoes().length === N, `Mostrar tudo: ${cartoes().length} cartões`);
+    ok(cartoes().every((c) => c.querySelector('.es-passo__cab').getAttribute('aria-expanded') === 'true'), 'Mostrar tudo: todos abertos');
+    ok($('.es-estado').textContent.includes('Passo 7 de 7'), 'Mostrar tudo: estado');
+    ok(!!$('.es-fig [data-id="curva"]'), 'Mostrar tudo: curva');
+    ok(Object.keys(F.elementos).every((k) => $(`.es-fig [data-id="${k}"]`)), 'Mostrar tudo: todos os elementos no gráfico');
+    ok($$('.katex-error', palco).length === 0, 'Mostrar tudo: .katex-error');
+    ok(el.scrollWidth <= el.clientWidth + 1, `scroll horizontal: ${el.scrollWidth} > ${el.clientWidth}`);
+    ok(!el.textContent.includes('\u2014'), 'travessão no texto');
+  });
+}
+
+// ---------- o cursor ----------
+await teste('cursor: teclado, leituras e sinais de f′ e f″', async (ok) => {
+  for (let i = 0; i < dados.funcoes.length; i++) {
+    const F = dados.funcoes[i];
+    const f = criarFuncao(F.expr);
+    const d1 = criarFuncao(F.d1);
+    const d2 = criarFuncao(F.d2);
+    await novoWidget();
+    escolher(i);
+    const cur = $('.es-fig [role="slider"]');
+    ok(!!cur, `${F.id}: sem cursor`);
+    ok(cur.getAttribute('tabindex') === '0', `${F.id}: cursor sem tabindex`);
+    ok((cur.getAttribute('aria-label') || '').length > 10, `${F.id}: cursor sem aria-label`);
+    const leit = (c) => $(`.es-leitura--${c} .leitura__valor`).textContent;
+    ok(leit('d1').startsWith('passo 3') && leit('d2').startsWith('passo 5'), `${F.id}: leituras de f′ e f″ antes do tempo: ${leit('d1')} | ${leit('d2')}`);
+    for (let n = 1; n <= 7; n++) passoSeg();
+    const x1 = Number($('.es-fig [role="slider"]').getAttribute('aria-valuenow'));
+    ok(perto(x1, F.cursor.x0, 1e-6), `${F.id}: cursor começa em ${x1}, devia ser ${F.cursor.x0}`);
+    const tecla = (key, shift = false) => $('.es-fig [role="slider"]').dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: shift, bubbles: true, cancelable: true }));
+    // percorre o intervalo de ponta a ponta e confere cada leitura com o cálculo
+    tecla('Home');
+    let ant = Number($('.es-fig [role="slider"]').getAttribute('aria-valuenow'));
+    ok(perto(ant, F.cursor.min, 1e-6), `${F.id}: Home foi para ${ant}`);
+    let n = 0;
+    for (let k = 0; k < 90; k++) {
+      tecla('ArrowRight');
+      const x = Number($('.es-fig [role="slider"]').getAttribute('aria-valuenow'));
+      if (x <= ant) break;
+      ant = x;
+      n++;
+      const y = f(x); // o aria-valuenow tem 4 casas, por isso a leitura de f(x) só bate até 1e-4 vezes f′
+      const t = $('.es-fig [role="slider"]').getAttribute('aria-valuetext');
+      ok(t.includes('f') || t.includes(F.nome), `${F.id}: aria-valuetext "${t}"`);
+      ok(Math.abs(Number($(`.es-leitura--y .leitura__valor`).textContent.replace('−', '-').replace(',', '.')) - y) < 6e-4 + Math.abs(d1(x)) * 1e-4,  `${F.id}: f(x) lido ${$('.es-leitura--y .leitura__valor').textContent} em x=${x}, devia ser ${y}`);
+      const s1 = Math.sign(d1(x));
+      const s2 = Math.sign(d2(x));
+      const l1 = leit('d1');
+      const l2 = leit('d2');
+      if (Math.abs(d1(x)) > 1e-5) ok(l1.startsWith(s1 > 0 ? '+' : '−'), `${F.id}: x=${x} f′ lido "${l1}" mas f′ = ${d1(x)}`);
+      if (Math.abs(d2(x)) > 1e-5) ok(l2.startsWith(s2 > 0 ? '+' : '−'), `${F.id}: x=${x} f″ lido "${l2}" mas f″ = ${d2(x)}`);
+      ok(t.includes('sobe') || t.includes('desce') || t.includes('zero'), `${F.id}: aria-valuetext sem o sinal de f′: "${t}"`);
+    }
+    ok(n > 60, `${F.id}: só deu ${n} passos de teclado`);
+    tecla('End');
+    const fim = Number($('.es-fig [role="slider"]').getAttribute('aria-valuenow'));
+    ok(perto(fim, F.cursor.max, 1e-6), `${F.id}: End foi para ${fim}`);
+  }
+});
+
+// ---------- dados em falta ----------
+await teste('montar sem dados.estudos lança erro (a página mostra o aviso)', async (ok) => {
+  let falhou = false;
+  try { await montar(document.createElement('div'), {}); } catch { falhou = true; }
+  ok(falhou, 'devia lançar');
+});
+
+await teste('sem erros de JavaScript durante os testes', async (ok) => {
+  ok(erros.length === 0, 'erros: ' + erros.slice(0, 3).join(' | '));
+});
+
+const dt = Math.round(performance.now() - t0);
+saida.textContent = linhas.join('\n') + `\n\n${nFalhas === 0 ? 'TUDO OK' : nFalhas + ' TESTE(S) FALHARAM'} (${dt} ms)`;
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

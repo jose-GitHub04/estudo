@@ -1,6 +1,7 @@
-// Matemática pura, sem DOM: frações de π, avaliador de expressões, correção de
-// respostas e tabela de valores exatos. É usada pelos widgets, pelo treino e
-// por tests.html, por isso não pode tocar em document nem em window.
+// Matemática pura, sem DOM: frações de π, avaliador de expressões (com ln, log, logb,
+// exp, abs, e, π), criarFuncao (x => número, para os gráficos), correção de respostas e
+// tabela de valores exatos. É usada pelos widgets, pelo treino e por tests.html e
+// logaritmos/tests/motor.html, por isso não pode tocar em document nem em window.
 
 export const PI = Math.PI;
 
@@ -100,25 +101,88 @@ export function baralhar(rng, lista) {
 }
 
 // ---------- Avaliador de expressões (sem eval) ----------
-// Aceita: números (3,5 ou 3.5), pi/π, sqrt(x)/√x/raiz(x), + - * / ^, parênteses,
-// multiplicação implícita (2π, 3√2, (1/2)(3)) e variáveis dadas em `vars`.
+// Aceita: números (3,5 ou 3.5), pi/π, e, + - * / ^, parênteses (e chavetas), variáveis
+// dadas em `vars`, multiplicação implícita (2π, 3√2, 2ln3, (1/2)(3)) e as funções
+//   sqrt x · √x · raiz(x)   ln x   log x (base 10)   exp x   abs x
+//   logb(base, x)           log_2(5) · log_2 5 · log2(5) · log2 5 · log_{0,5}(x)
+//
+// Regras de leitura (iguais para todas as funções):
+//  - função com parênteses: o argumento acaba no parêntese, por isso ln(x)^2 = (ln x)^2.
+//  - função sem parênteses: o argumento é o número ou símbolo seguinte COM o seu expoente,
+//    sem multiplicação implícita: ln x^2 = ln(x²), ln 2x = (ln 2)·x, √3/2 = (√3)/2.
+//    O normal é escrever ln(2x). Depois de função não se aceita um sinal: escreve ln(-2).
+//  - «^» é associativo à direita e o expoente pode ter sinal: 2^3^2 = 2^9, e^-x, x^-2,
+//    -2^2 = -4. O expoente acaba antes de uma multiplicação implícita: e^2x = (e²)·x.
+//  - log2(5), log_2 5 e log_{0,5}(x) têm base; log2 sozinho (sem argumento) é log(2) e
+//    log 2 (com espaço) é sempre o logaritmo decimal de 2. Dentro de logb( ) a vírgula
+//    separa os argumentos (decimais com ponto), ou então separa o «;» e a vírgula é decimal.
+//  - e e pi são constantes, mas uma variável com o mesmo nome em `vars` tem prioridade.
+//  - letras coladas separam-se pelos nomes conhecidos: xlnx = x·ln x, 2lnx, pie = π·e.
 
-function tokenizar(s) {
+const FUNCOES = new Set(['ln', 'log', 'logb', 'exp', 'abs', 'sqrt', 'raiz']);
+const tem = (obj, k) => Object.prototype.hasOwnProperty.call(obj, k);
+
+/** «xlnx» -> ['x', 'ln', 'x']; null se não der para partir só com nomes conhecidos. */
+function dividirLetras(palavra, conhecido) {
+  if (conhecido(palavra)) return [palavra];
+  if (palavra.length > 24) return null;
+  for (let n = palavra.length - 1; n >= 1; n--) {
+    if (!conhecido(palavra.slice(0, n))) continue;
+    const cauda = dividirLetras(palavra.slice(n), conhecido);
+    if (cauda) return [palavra.slice(0, n), ...cauda];
+  }
+  return null;
+}
+
+/** Há um «;» no nível do parêntese que abre em s[i]? Então a vírgula de logb é decimal. */
+function temPontoEVirgula(s, i) {
+  let prof = 0;
+  for (let j = i; j < s.length; j++) {
+    if (s[j] === '(') prof++;
+    else if (s[j] === ')') { prof--; if (prof === 0) return false; }
+    else if (s[j] === ';' && prof === 1) return true;
+  }
+  return false;
+}
+
+function tokenizar(s, vars = {}) {
+  const conhecido = (p) => FUNCOES.has(p) || p === 'pi' || p === 'e' || tem(vars, p);
   const toks = [];
+  const pilha = []; // contexto de cada «(» aberto: null, 'logb' (a vírgula separa) ou 'logb;'
   let i = 0;
+  let sp = false; // havia espaço antes do token?
+  const juntar = (tok) => { toks.push({ ...tok, sp }); sp = false; };
   while (i < s.length) {
     const c = s[i];
-    if (c === ' ') { i++; continue; }
+    if (c === ' ') { i++; sp = true; continue; }
     const resto = s.slice(i);
-    let m = /^(\d+[.,]\d+|\d+|[.,]\d+)/.exec(resto);
+    const ctx = pilha[pilha.length - 1];
+    let m = (ctx === 'logb' ? /^(\d+\.\d+|\d+|\.\d+)/ : /^(\d+[.,]\d+|\d+|[.,]\d+)/).exec(resto);
     if (m) {
-      toks.push({ t: 'n', v: parseFloat(m[1].replace(',', '.')), dec: /[.,]/.test(m[1]) });
+      juntar({ t: 'n', v: parseFloat(m[1].replace(',', '.')), dec: /[.,]/.test(m[1]) });
       i += m[1].length;
       continue;
     }
     m = /^[a-zA-Z]+/.exec(resto);
-    if (m) { toks.push({ t: 'i', v: m[0].toLowerCase() }); i += m[0].length; continue; }
-    if ('+-*/^()'.includes(c)) { toks.push({ t: 'o', v: c }); i++; continue; }
+    if (m) {
+      const partes = dividirLetras(m[0].toLowerCase(), conhecido) || [m[0].toLowerCase()];
+      for (const p of partes) juntar({ t: 'i', v: p });
+      i += m[0].length;
+      continue;
+    }
+    if (c === '(') {
+      const ant = toks[toks.length - 1];
+      pilha.push(ant && ant.t === 'i' && ant.v === 'logb' ? (temPontoEVirgula(s, i) ? 'logb;' : 'logb') : null);
+      juntar({ t: 'o', v: '(' });
+      i++;
+      continue;
+    }
+    if (c === ')') { pilha.pop(); juntar({ t: 'o', v: ')' }); i++; continue; }
+    if ('+-*/^_'.includes(c) || (ctx === 'logb' && c === ',') || (ctx && c === ';')) {
+      juntar({ t: 'o', v: c === ';' ? ',' : c });
+      i++;
+      continue;
+    }
     return null;
   }
   return toks;
@@ -175,20 +239,55 @@ function analisar(toks, vars) {
     return base;
   }
 
+  /** Argumento de uma função: «(…)» acaba no parêntese; senão, átomo com o seu expoente. */
+  function argumento() {
+    const t = ver();
+    if (eOp(t, '(')) return atomo();
+    if (t && (t.t === 'n' || t.t === 'i')) return potencia();
+    throw new Error('falta o argumento da função');
+  }
+
+  function fechar() {
+    if (!eOp(toks[k++], ')')) throw new Error('parêntese por fechar');
+  }
+
   function atomo() {
     const t = toks[k++];
     if (!t) throw new Error('expressão incompleta');
     if (t.t === 'n') return { t: 'num', v: t.v, dec: t.dec };
     if (eOp(t, '(')) {
       const x = expr();
-      const f = toks[k++];
-      if (!eOp(f, ')')) throw new Error('parêntese por fechar');
+      fechar();
       return x;
     }
     if (t.t === 'i') {
+      if (tem(vars, t.v)) return { t: 'var', n: t.v };
       if (t.v === 'pi') return { t: 'pi' };
-      if (t.v === 'sqrt' || t.v === 'raiz') return { t: 'sqrt', x: atomo() };
-      if (Object.prototype.hasOwnProperty.call(vars, t.v)) return { t: 'var', n: t.v };
+      if (t.v === 'e') return { t: 'num', v: Math.E, dec: false, e: true };
+      if (t.v === 'sqrt' || t.v === 'raiz') return { t: 'sqrt', x: argumento() };
+      if (t.v === 'ln' || t.v === 'exp' || t.v === 'abs') return { t: 'fn', f: t.v, x: argumento() };
+      if (t.v === 'logb') {
+        if (!eOp(toks[k++], '(')) throw new Error('logb pede parênteses: logb(base, x)');
+        const base = expr();
+        if (!eOp(toks[k++], ',')) throw new Error('logb pede dois argumentos: logb(base, x)');
+        const x = expr();
+        fechar();
+        return { t: 'logb', a: base, b: x };
+      }
+      if (t.v === 'log') {
+        let base = null;
+        const p = ver();
+        if (eOp(p, '_')) {
+          k++;
+          base = atomo();
+        } else if (p && p.t === 'n' && !p.sp && comecaFator(toks[k + 1])) {
+          // log2(5), log2 5: o número colado é a base; log2 sozinho fica log(2)
+          k++;
+          base = { t: 'num', v: p.v, dec: p.dec };
+        }
+        const x = argumento();
+        return base ? { t: 'logb', a: base, b: x } : { t: 'fn', f: 'log', x };
+      }
       throw new Error(`símbolo desconhecido: ${t.v}`);
     }
     throw new Error('símbolo inesperado');
@@ -199,25 +298,53 @@ function analisar(toks, vars) {
   return raiz;
 }
 
-function valorDe(n, vars) {
+// Em modo estrito (avaliar) um valor fora do domínio é um erro; senão (criarFuncao) dá NaN.
+const falha = (estrito, msg) => {
+  if (estrito) throw new Error(msg);
+  return NaN;
+};
+
+// resultados que são inteiros a menos do erro de arredondamento (log10 de 1000, log2 de 8)
+const colar = (r) => {
+  const q = Math.round(r);
+  return Math.abs(r - q) < 1e-12 * Math.max(1, Math.abs(r)) ? q : r;
+};
+
+function logaritmo(base, x, estrito) {
+  if (!(base > 0) || base === 1) return falha(estrito, 'base de logaritmo inválida');
+  if (!(x > 0)) return falha(estrito, 'logaritmo de número não positivo');
+  if (base === Math.E) return Math.log(x);
+  if (base === 10) return colar(Math.log10(x));
+  if (base === 2) return colar(Math.log2(x));
+  return colar(Math.log(x) / Math.log(base));
+}
+
+function valorDe(n, vars, estrito = true) {
+  const v = (no) => valorDe(no, vars, estrito);
   switch (n.t) {
     case 'num': return n.v;
     case 'pi': return PI;
     case 'var': return vars[n.n];
-    case 'neg': return -valorDe(n.x, vars);
+    case 'neg': return -v(n.x);
     case 'sqrt': {
-      const v = valorDe(n.x, vars);
-      if (v < 0) throw new Error('raiz de negativo');
-      return Math.sqrt(v);
+      const x = v(n.x);
+      return x < 0 ? falha(estrito, 'raiz de negativo') : Math.sqrt(x);
     }
-    case 'pow': return Math.pow(valorDe(n.a, vars), valorDe(n.b, vars));
+    case 'fn': {
+      const x = v(n.x);
+      if (n.f === 'exp') return Math.exp(x);
+      if (n.f === 'abs') return Math.abs(x);
+      return logaritmo(n.f === 'ln' ? Math.E : 10, x, estrito);
+    }
+    case 'logb': return logaritmo(v(n.a), v(n.b), estrito);
+    case 'pow': return n.a.e ? Math.exp(v(n.b)) : Math.pow(v(n.a), v(n.b));
     case 'bin': {
-      const a = valorDe(n.a, vars);
-      const b = valorDe(n.b, vars);
+      const a = v(n.a);
+      const b = v(n.b);
       if (n.op === '+') return a + b;
       if (n.op === '-') return a - b;
       if (n.op === '*') return a * b;
-      if (b === 0) throw new Error('divisão por zero');
+      if (b === 0) return falha(estrito, 'divisão por zero');
       return a / b;
     }
     default: throw new Error('nó desconhecido');
@@ -241,7 +368,7 @@ const raizNoDenominador = (n) => {
   return raizNoDenominador(n.x) || raizNoDenominador(n.a) || raizNoDenominador(n.b);
 };
 
-// U+2212 (menos), U+2013 e U+2014; por código para não pôr o travessão no ficheiro
+// U+2212 (menos), U+2013 e U+2014; por código para não juntar o travessão no ficheiro
 const TRACOS = new RegExp('[' + String.fromCharCode(0x2212, 0x2013, 0x2014) + ']', 'g');
 
 function normalizarTexto(s) {
@@ -251,16 +378,20 @@ function normalizarTexto(s) {
     .replace(/[×·]/g, '*')
     .replace(/÷/g, '/')
     .replace(/[πΠ]/g, 'pi')
+    .replace(/[₀-₉]+/g, (m) => '_' + [...m].map((c) => c.charCodeAt(0) - 0x2080).join('')) // log₂
+    .replace(/\{/g, '(')
+    .replace(/\}/g, ')')
     .replace(/√/g, 'sqrt ');
 }
 
 /**
  * avaliar('√3/2') -> { ok: true, valor: 0.866…, dec: false, raizDenominador: false }
  * avaliar('pi-a', { a: 0.5 }) usa variáveis. Em erro: { ok: false, erro }.
+ * avaliar('ln5/ln2') -> 2,3219…; avaliar('ln(0)') -> { ok: false } (fora do domínio).
  */
 export function avaliar(texto, vars = {}) {
   try {
-    const toks = tokenizar(normalizarTexto(texto));
+    const toks = tokenizar(normalizarTexto(texto), vars);
     if (!toks || toks.length === 0) return { ok: false, erro: 'vazio ou com símbolos que não conheço' };
     const ast = analisar(toks, vars);
     const valor = valorDe(ast, vars);
@@ -269,6 +400,30 @@ export function avaliar(texto, vars = {}) {
   } catch (e) {
     return { ok: false, erro: e.message };
   }
+}
+
+/**
+ * criarFuncao('x*ln(x)') -> x => número. A expressão é lida UMA vez (lança Error se for
+ * ilegível: símbolo desconhecido, parêntese por fechar...); depois a função nunca lança:
+ * devolve NaN fora do domínio (ln de x ≤ 0, raiz de negativo, divisão por zero,
+ * logb com base inválida) e quando o resultado não é finito. Aceita a mesma escrita de
+ * `avaliar`. `params` são constantes extra: criarFuncao('a^x', 'x', { a: 2 }).
+ */
+export function criarFuncao(expr, nomeVar = 'x', params = {}) {
+  const nome = String(nomeVar).toLowerCase();
+  const vars = { ...params, [nome]: 0 };
+  const toks = tokenizar(normalizarTexto(expr), vars);
+  if (!toks || toks.length === 0) throw new Error(`expressão ilegível: ${expr}`);
+  const ast = analisar(toks, vars);
+  return (x) => {
+    vars[nome] = Number(x);
+    try {
+      const r = valorDe(ast, vars, false);
+      return Number.isFinite(r) ? r : NaN;
+    } catch {
+      return NaN;
+    }
+  };
 }
 
 // ---------- Correção de respostas ----------

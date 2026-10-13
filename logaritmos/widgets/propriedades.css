@@ -1,0 +1,122 @@
+/* propriedades: régua das propriedades dos logaritmos. Classes com prefixo .pro- */
+
+.pro [hidden] { display: none !important; }
+
+/* alvos de toque de pelo menos 44 px */
+.pro .chip { min-height: 2.75rem; padding: 0.4rem 0.9rem; }
+.pro .botao--mini { min-height: 2.75rem; }
+.pro-abas { margin: 0 0 0.9rem; }
+.pro-aba { padding-inline: 0.6rem; font-size: 0.85rem; }
+
+.pro-base, .pro-caso { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.7rem; margin: 0 0 0.4rem; }
+.pro-base .chips, .pro-caso .chips { margin: 0; }
+.pro-rotulo { color: var(--tinta-suave); font-size: 0.85rem; }
+.pro-chip { min-width: 2.75rem; }
+
+.pro-formula {
+  margin: 0.6rem 0 0.9rem; padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo);
+  overflow-x: auto; overflow-y: hidden;
+}
+.pro-formula .katex { font-size: 1.15em; }
+
+/* ---------- disposição: uma coluna no telemóvel, duas em ecrã largo ---------- */
+
+.pro-corpo { display: grid; gap: 1rem 1.5rem; }
+.pro-col { min-width: 0; }
+@media (min-width: 52em) {
+  .pro-corpo { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* ---------- controlos ---------- */
+
+.pro-controlos { margin: 0 0 0.6rem; }
+.pro-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.pro-linha label { font-family: var(--serif); font-size: 1.05rem; font-style: italic; color: var(--tinta); }
+.pro-saida { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pro-slider { height: 2.75rem; margin: 0; }
+.pro-atalhos { margin: 0; }
+.pro-dominio { margin: 0; }
+
+/* ---------- régua ---------- */
+
+.pro-fig { margin: 0; }
+.pro-svg { max-width: 36rem; }
+.pro-svg text {
+  font-size: 13px; font-variant-numeric: tabular-nums;
+  paint-order: stroke; stroke: var(--papel); stroke-width: 3px; stroke-linejoin: round;
+}
+.pro-svg .pro-numero { fill: var(--tinta-suave); font-size: 12px; stroke-width: 2px; }
+.pro-svg .pro-t-barra, .pro-svg .pro-t-curto { fill: var(--tinta); font-weight: 600; }
+.pro-svg .pro-t-curto { font-size: 12px; }
+.pro-svg .pro-t-aviso { fill: var(--erro); font-weight: 600; }
+.pro-svg .pro-t-folga { fill: var(--erro); font-weight: 700; }
+.pro-svg .pro-t-a { fill: var(--c-exp, #1d5f94); font-weight: 700; }
+.pro-svg .pro-t-b { fill: var(--c-log, #b4452f); font-weight: 700; }
+.pro-svg .pro-t-dentro { fill: var(--papel); stroke: none; font-weight: 700; }
+
+.pro-grelha line { stroke: var(--c-grelha); stroke-width: 1; }
+.pro-eixo-linha { stroke: var(--c-eixo); stroke-width: 1.4; }
+.pro-marca { stroke: var(--c-eixo); stroke-width: 1.2; }
+.pro-zero { stroke: var(--c-eixo); stroke-width: 1.4; }
+.pro-guia { stroke: var(--tinta); stroke-width: 1.3; stroke-dasharray: 4 3; opacity: 0.7; }
+.pro-guia--total { stroke: var(--c-tg, #2d7a4b); opacity: 1; }
+.pro-folga { stroke: var(--erro); stroke-width: 1.6; }
+.pro-folga-seta { fill: var(--erro); }
+
+/* cada tipo de barra define a sua cor; as negativas levam riscas (a forma não depende só da cor) */
+.pro-t-x { --cor: var(--c-exp, #1d5f94); }
+.pro-t-y { --cor: var(--c-log, #b4452f); }
+.pro-t-r { --cor: var(--c-tg, #2d7a4b); }
+.pro-t-f { --cor: var(--c-der, #7a3f98); }
+.pro-t-m { --cor: var(--c-der, #7a3f98); }
+.pro-barra { stroke: var(--cor); stroke-width: 1.6; stroke-linejoin: round; }
+.pro-barra.pro-pos { fill: var(--cor); fill-opacity: 0.9; }
+.pro-ponto { fill: var(--cor); stroke: var(--papel); stroke-width: 1.5; }
+.pro-fundo { fill: var(--papel); }
+.pro-risca--x { stroke: var(--c-exp, #1d5f94); }
+.pro-risca--y { stroke: var(--c-log, #b4452f); }
+.pro-risca--r { stroke: var(--c-tg, #2d7a4b); }
+.pro-risca--f, .pro-risca--m { stroke: var(--c-der, #7a3f98); }
+
+.pro-regua--a .pro-eixo-linha, .pro-regua--a .pro-marca { stroke: var(--c-exp, #1d5f94); }
+.pro-regua--b .pro-eixo-linha, .pro-regua--b .pro-marca { stroke: var(--c-log, #b4452f); }
+.pro-regua--a .pro-numero { fill: var(--c-exp, #1d5f94); font-weight: 600; }
+.pro-regua--b .pro-numero { fill: var(--c-log, #b4452f); font-weight: 600; }
+.pro-seta-a { fill: var(--c-exp, #1d5f94); }
+.pro-seta-b { fill: var(--c-log, #b4452f); }
+
+.pro-legenda { margin: 0.6rem 0 0; color: var(--tinta-suave); font-size: 0.88rem; line-height: 1.45; }
+
+/* ---------- conferência numérica ---------- */
+
+.pro-conf { margin: 0 0 1rem; }
+.pro-lado { margin: 0 0 0.5rem; padding: 0.4rem 0.65rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); }
+.pro-lado__rot { display: block; color: var(--tinta-suave); font-size: 0.78rem; }
+.pro-lado-tex { overflow-x: auto; overflow-y: hidden; padding: 0.1rem 0; }
+.pro-lado-tex .katex { font-size: 1.05em; }
+
+.pro-selo {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.6rem;
+  margin: 0 0 0.5rem; padding: 0.5rem 0.8rem; border-radius: 0.4rem; font-weight: 700;
+}
+.pro-selo__simbolo { font-size: 1.2em; }
+.pro-selo__dif { font-size: 0.85rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+.pro-selo--iguais { background: var(--certo-fundo); color: var(--certo); }
+.pro-selo--diferentes { background: var(--erro-fundo); color: var(--erro); }
+.pro-selo--acaso { background: var(--dourado-fundo); color: var(--dourado-texto); }
+.pro-arred { margin: 0; }
+
+/* ---------- porquê ---------- */
+
+.pro-porque {
+  padding: 0.7rem 0.9rem 0.2rem; border: 1px solid var(--linha); border-left: 3px solid var(--c-destaque);
+  border-radius: 0.4rem; background: var(--papel);
+}
+.pro-porque__titulo {
+  margin: 0 0 0.5rem; color: var(--c-destaque); font-family: var(--sans); font-size: 0.82rem;
+  font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.pro-porque__linhas p { margin: 0 0 0.7rem; font-size: 0.98rem; line-height: 1.6; overflow-wrap: anywhere; }
+.pro-porque__linhas .katex { font-size: 1.02em; }
+.pro-cola { white-space: nowrap; }

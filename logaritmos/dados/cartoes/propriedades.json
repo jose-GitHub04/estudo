@@ -1,0 +1,118 @@
+{
+ "grupo": "propriedades",
+ "cartoes": [
+  {
+   "id": "pro-produto",
+   "grupo": "propriedades",
+   "frente": "Quanto vale $\\log_a(xy)$? Para que valores de $x$ e $y$ a regra funciona?",
+   "verso": "$\\log_a(xy)=\\log_a x+\\log_a y$, para $x>0$ e $y>0$.",
+   "porque": "Se $x=a^m$ e $y=a^n$, então $xy=a^m\\times a^n=a^{m+n}$. O logaritmo é um expoente, e ao multiplicar potências da mesma base somam-se os expoentes.",
+   "verifica": [
+    "ig(logb(a, x*y), logb(a, x)+logb(a, y))",
+    "ig(x*y, a**(logb(a, x)+logb(a, y)))"
+   ]
+  },
+  {
+   "id": "pro-quociente",
+   "grupo": "propriedades",
+   "frente": "Quanto vale $\\log_a\\dfrac{x}{y}$? E o caso particular $\\log_a\\dfrac{1}{y}$?",
+   "verso": "$\\log_a\\dfrac{x}{y}=\\log_a x-\\log_a y$, para $x,y>0$. Com $x=1$: $\\log_a\\dfrac{1}{y}=-\\log_a y$.",
+   "porque": "Ao dividir potências da mesma base subtraem-se os expoentes: $\\dfrac{a^m}{a^n}=a^{m-n}$. O caso particular sai de $\\log_a 1=0$, porque $a^0=1$.",
+   "verifica": [
+    "ig(logb(a, x/y), logb(a, x)-logb(a, y))",
+    "ig(logb(a, 1/y), -logb(a, y))"
+   ]
+  },
+  {
+   "id": "pro-potencia",
+   "grupo": "propriedades",
+   "frente": "Quanto vale $\\log_a(x^p)$? E em particular $\\log_a\\sqrt{x}$?",
+   "verso": "$\\log_a(x^p)=p\\,\\log_a x$, para $x>0$. Por exemplo, $\\log_a\\sqrt{x}=\\dfrac12\\log_a x$.",
+   "porque": "Se $x=a^m$, então $x^p=(a^m)^p=a^{mp}$. O expoente passa a ser $p\\times m$: o $p$ vem para a frente a multiplicar.",
+   "verifica": [
+    "ig(logb(a, x**t), t*logb(a, x))",
+    "ig(logb(a, sqrt(x)), logb(a, x)/2)"
+   ]
+  },
+  {
+   "id": "pro-mudanca",
+   "grupo": "propriedades",
+   "frente": "Como se escreve $\\log_a x$ numa base $b$ à tua escolha?",
+   "verso": "$\\log_a x=\\dfrac{\\log_b x}{\\log_b a}$, com $b>0$ e $b\\neq1$. Por exemplo, $\\log_a x=\\dfrac{\\ln x}{\\ln a}$.",
+   "porque": "Se $y=\\log_a x$, então $a^y=x$. Aplicando $\\log_b$ aos dois lados: $y\\log_b a=\\log_b x$. Dividindo por $\\log_b a$ obténs $y$.",
+   "verifica": [
+    "ig(logb(a, x), logb(b, x)/logb(b, a))",
+    "ig(logb(a, x), ln(x)/ln(a))"
+   ]
+  },
+  {
+   "id": "pro-inversa-base",
+   "grupo": "propriedades",
+   "frente": "Quanto vale $\\log_b a$ em função de $\\log_a b$?",
+   "verso": "$\\log_b a=\\dfrac{1}{\\log_a b}$, com $a,b\\in\\mathbb{R}^+\\setminus\\{1\\}$. Exemplo: $\\log_4 2=\\dfrac12$ e $\\log_2 4=2$.",
+   "porque": "É a mudança de base para a base $a$: $\\log_b a=\\dfrac{\\log_a a}{\\log_a b}=\\dfrac{1}{\\log_a b}$. Trocar a base com o argumento inverte o valor.",
+   "verifica": [
+    "ig(logb(b, a), 1/logb(a, b))",
+    "ig(logb(4, 2), 1/logb(2, 4))"
+   ]
+  },
+  {
+   "id": "pro-exp-e",
+   "grupo": "propriedades",
+   "frente": "Como escreves $a^x$ com base $e$ (para $a>0$)?",
+   "verso": "$a^x=e^{x\\ln a}$. Por exemplo, $2^x=e^{x\\ln 2}$.",
+   "porque": "$\\ln a$ é o expoente a que se eleva $e$ para obter $a$, ou seja, $a=e^{\\ln a}$. Logo $a^x=\\left(e^{\\ln a}\\right)^x=e^{x\\ln a}$.",
+   "verifica": [
+    "ig(a**t, exp(t*ln(a)))",
+    "ig(a, exp(ln(a)))"
+   ]
+  },
+  {
+   "id": "pro-condensar",
+   "grupo": "propriedades",
+   "frente": "Como condensas $2\\log_a x-\\log_a y+\\log_a z$ num só logaritmo?",
+   "verso": "$\\log_a\\dfrac{x^2z}{y}$. Primeiro os coeficientes passam a expoentes; depois a soma vira produto e a subtração vira quociente.",
+   "porque": "É ler as propriedades da direita para a esquerda. Só funciona se os logaritmos tiverem a <strong>mesma base</strong>. Para expandir, fazes o caminho contrário.",
+   "verifica": [
+    "ig(2*logb(a, x)-logb(a, y)+logb(a, z), logb(a, x**2*z/y))"
+   ]
+  },
+  {
+   "id": "pro-erro-soma",
+   "grupo": "propriedades",
+   "frente": "O que se pode fazer a $\\log_a(x+y)$? E $\\log_a(xy)$ é a soma ou o produto dos logaritmos?",
+   "verso": "Nada: não há regra para o logaritmo de uma soma. Já $\\log_a(xy)=\\log_a x+\\log_a y$ é a <strong>soma</strong> dos logaritmos, nunca o produto.",
+   "porque": "Não há regra porque $a^m+a^n$ não se simplifica. Contraexemplo: $\\log_2(4+4)=3$, mas $\\log_2 4+\\log_2 4=4$.",
+   "verifica": [
+    "ig(logb(2, 4+4), 3)",
+    "ig(logb(2, 4)+logb(2, 4), 4)",
+    "not ig(logb(a, x+y), logb(a, x)+logb(a, y))"
+   ]
+  },
+  {
+   "id": "pro-erro-razao",
+   "grupo": "propriedades",
+   "frente": "$\\dfrac{\\log_a x}{\\log_a y}$ é o mesmo que $\\log_a\\dfrac{x}{y}$?",
+   "verso": "Não. $\\log_a\\dfrac{x}{y}=\\log_a x-\\log_a y$. Já $\\dfrac{\\log_a x}{\\log_a y}=\\log_y x$ é uma mudança de base.",
+   "porque": "Com $a=10$, $x=100$ e $y=10$: $\\log\\dfrac{100}{10}=1$, mas $\\dfrac{\\log 100}{\\log 10}=\\dfrac21=2$.",
+   "verifica": [
+    "ig(log(100/10), 1)",
+    "ig(log(100)/log(10), 2)",
+    "ig(logb(a, x)/logb(a, b), logb(b, x))",
+    "ig(logb(a, x/y), logb(a, x)-logb(a, y))"
+   ]
+  },
+  {
+   "id": "pro-erro-quadrado",
+   "grupo": "propriedades",
+   "frente": "$\\ln x^2=2\\ln x$ é sempre verdade? E $(\\ln x)^2$ é o mesmo que $\\ln x^2$?",
+   "verso": "$\\ln x^2=2\\ln|x|$ para $x\\neq0$; só é $2\\ln x$ quando $x>0$. E $(\\ln x)^2$ é o quadrado do logaritmo: com $x=e$, $\\ln e^2=2$ mas $(\\ln e)^2=1$.",
+   "porque": "A regra da potência exige $x>0$. Com $x=-3$, $\\ln(-3)^2=\\ln 9$ existe, mas $2\\ln(-3)$ não existe. Quando $x$ pode ser negativo, passa o expoente para a frente com o módulo de $x$.",
+   "verifica": [
+    "ig(ln(t**2), 2*ln(abs(t)))",
+    "ig(ln(x**2), 2*ln(x))",
+    "ig(ln(e**2), 2) and ig(ln(e)**2, 1)"
+   ]
+  }
+ ]
+}

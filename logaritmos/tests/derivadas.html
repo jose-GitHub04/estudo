@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget das derivadas</title>
+<!-- Testes que correm no browser: cada derivada pela fórmula contra a diferença finita central,
+     a reta tangente (passa por P e tem o declive certo), a configuração do gráfico, o KaTeX e o
+     widget montado (cliques, setas, sliders, sem NaN, alvos de toque).
+     Abrir /logaritmos/tests/derivadas.html ou:
+     msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8816/logaritmos/tests/derivadas.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/derivadas.css">
+<style>
+  body { font: 14px/1.4 monospace; padding: 1rem; }
+  pre { white-space: pre-wrap; }
+  body.vista { padding: 0 20px; }
+  body.vista h1, body.vista pre { display: none; }
+  #palco { width: 350px; margin: 1rem 0; font-size: 1.0625rem; line-height: 1.6; font-family: var(--sans); }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body>
+<h1>Testes do widget das derivadas</h1>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+import { FAMILIAS, A_LISTA, H_LISTA, configuracao, leituras, equacaoTangente, montar } from '../widgets/derivadas.js';
+
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const E = Math.E;
+// Modo vista (para capturas de ecrã, sem correr testes): ?vista=1&fn=7&a=2&h=8&x0=0.5&sinal=1&pw=350
+// fn = índice da função (0 a 7), a = base (número ou e), h = índice em H_LISTA, pw = largura do palco em px
+const consulta = new URLSearchParams(location.search);
+const VISTA = consulta.has('vista');
+if (VISTA) document.body.classList.add('vista');
+
+async function teste(nome, fn) {
+  if (VISTA) return;
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 3) erros.push(msg); }
+  };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+const perto = (a, b, tol = 1e-5) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const num = (s) => Number(s.replace('{,}', '.'));
+
+// as bases que se testam nas famílias com parâmetro
+const BASES = [0.3, 0.5, 0.9, 1.1, 2, E, 3, 4];
+/** Todas as combinações (família, a) a testar. */
+const CASOS = [];
+FAMILIAS.forEach((f, fi) => { for (const a of (f.param ? BASES : [2])) CASOS.push({ fi, f, a, nome: f.param ? `${f.id}(a=${a === E ? 'e' : a})` : f.id }); });
+
+/** Pontos do domínio: 41 pontos da janela da função, sem a vizinhança do limite do domínio. */
+function pontos(f, a) {
+  const { x } = f.janela(a);
+  const lo = Math.max(x[0], f.inf === -Infinity ? -Infinity : f.inf + 0.02);
+  const r = [];
+  for (let i = 0; i <= 40; i++) r.push(lo + ((x[1] - lo) * i) / 40);
+  return r;
+}
+
+/** Derivada por diferença finita central, com h proporcional a |x| (e nunca perto da fronteira). */
+function central(fn, x) {
+  const h = 1e-5 * Math.max(Math.abs(x), 0.05);
+  return (fn(x + h) - fn(x - h)) / (2 * h);
+}
+
+// ---------- (a) fórmulas ----------
+await teste(`cada derivada pela fórmula = diferença finita central (${CASOS.length} casos, 41 pontos cada, tolerância 1e-5)`, (ok) => {
+  for (const { f, a, nome } of CASOS) {
+    for (const x of pontos(f, a)) {
+      const cd = central((t) => f.f(t, a), x);
+      const fo = f.df(x, a);
+      ok(Number.isFinite(fo) && perto(fo, cd), `${nome} em x=${x.toFixed(4)}: fórmula ${fo}, central ${cd}`);
+    }
+  }
+});
+
+await teste('a função f(x, a) coincide com a mesma expressão no avaliador do motor (criarFuncao)', (ok) => {
+  for (const { f, a, nome } of CASOS) {
+    const g = M.criarFuncao(f.expr, 'x', { a });
+    for (const x of pontos(f, a).filter((_, i) => i % 2 === 0)) {
+      ok(perto(f.f(x, a), g(x), 1e-12), `${nome} em x=${x.toFixed(3)}: ${f.f(x, a)} vs ${g(x)}`);
+    }
+  }
+});
+
+await teste('derivada numérica da expressão do motor (criarFuncao) = fórmula', (ok) => {
+  for (const { f, a, nome } of CASOS) {
+    const g = M.criarFuncao(f.expr, 'x', { a });
+    for (const x of pontos(f, a).filter((_, i) => i % 3 === 0)) ok(perto(f.df(x, a), central(g, x)), `${nome} em x=${x.toFixed(3)}`);
+  }
+});
+
+await teste('zeros de f\': são zeros, mudam o sinal, e não há outros na janela', (ok) => {
+  for (const { fi, f, a, nome } of CASOS) {
+    const zs = f.zeros(a);
+    for (const z of zs) {
+      ok(Math.abs(f.df(z, a)) < 1e-12, `${nome}: f'(${z}) = ${f.df(z, a)}`);
+      ok(f.df(z - 0.01, a) * f.df(z + 0.01, a) < 0, `${nome}: f' não muda de sinal em ${z}`);
+    }
+    // varrimento: n.º de mudanças de sinal de f' na janela = n.º de zeros declarados
+    const { x } = f.janela(a);
+    const lo = Math.max(x[0], f.inf === -Infinity ? -Infinity : f.inf + 1e-6);
+    let mudancas = 0;
+    let ant = Math.sign(f.df(lo + 1e-6, a));
+    for (let i = 1; i <= 4000; i++) {
+      const s = Math.sign(f.df(lo + ((x[1] - lo) * i) / 4000, a));
+      if (s !== ant && s !== 0 && ant !== 0) mudancas++;
+      if (s !== 0) ant = s;
+    }
+    const dentro = zs.filter((z) => z > lo && z < x[1]).length;
+    ok(mudancas === dentro, `${nome}: ${mudancas} mudanças de sinal, ${dentro} zeros declarados`);
+  }
+});
+
+await teste('o sinal de f\' diz se f sobe ou desce (f(x+0,001) - f(x-0,001) tem o sinal de f\')', (ok) => {
+  for (const { f, a, nome } of CASOS) {
+    for (const x of pontos(f, a)) {
+      const m = f.df(x, a);
+      if (Math.abs(m) < 1e-3) continue;
+      const d = f.f(x + 1e-4 * Math.max(1, Math.abs(x)), a) - f.f(x - 1e-4 * Math.max(1, Math.abs(x)), a);
+      ok(Math.sign(d) === Math.sign(m), `${nome} em x=${x.toFixed(3)}: f' ${m}, variação ${d}`);
+    }
+  }
+});
+
+await teste('observações: f\'/f = ln a em a^x e f\' = f em e^x', (ok) => {
+  const pot = FAMILIAS.find((f) => f.id === 'pot');
+  const exp = FAMILIAS.find((f) => f.id === 'exp');
+  for (const a of A_LISTA) for (const x of [-2.5, -1, 0, 0.37, 1, 2.2]) ok(perto(pot.df(x, a) / pot.f(x, a), Math.log(a), 1e-12), `a=${a} x=${x}`);
+  for (const x of pontos(exp, 0)) ok(exp.df(x) === exp.f(x), `e^x em ${x}`);
+  ok(Math.abs(Math.log(E) - 1) < 1e-15, 'ln e = 1');
+  // só a = e dá razão 1 (a razão aparece com 4 casas, por isso distingue-se de 1 até a = 2,7)
+  for (const a of A_LISTA) if (a !== E) ok(Math.abs(Math.log(a) - 1) > 1e-3, `ln ${a} perto de 1`);
+});
+
+await teste('os "erros típicos" dão mesmo um valor diferente do certo (e coincidem só quando devem)', (ok) => {
+  let coincidencias = 0;
+  for (const { f, a, nome } of CASOS) {
+    if (!f.erro) continue;
+    let aqui = 0;
+    for (const x of pontos(f, a)) {
+      const errado = f.erro.valor(x, a);
+      ok(Number.isFinite(errado), `${nome} em ${x}: erro não finito`);
+      if (Math.abs(errado - f.df(x, a)) < 5e-5) aqui++;
+    }
+    if (a === E) ok(aqui === 41, `${nome}: com a = e o erro devia coincidir sempre (${aqui})`); // ln e = 1
+    else coincidencias += aqui;
+  }
+  ok(coincidencias <= 3, `${coincidencias} coincidências fora de a = e`); // só pontos isolados
+  // a^x com a = e: esquecer o ln a não muda nada
+  const pot = FAMILIAS.find((f) => f.id === 'pot');
+  ok(Math.abs(pot.erro.valor(1.3, E) - pot.df(1.3, E)) < 1e-12, 'a = e: sem ln a dá o mesmo');
+  ok(Math.abs(pot.erro.valor(1.3, 2) - pot.df(1.3, 2)) > 0.1, 'a = 2: sem ln a dá outro valor');
+});
+
+// ---------- (b) reta tangente ----------
+function parseTex1(s) {
+  const m = /^y(?:=|\\approx)(-?\d+\{,\}\d+)\\,(x|\(x([-+])(\d+\{,\}\d+)\))([-+])(\d+\{,\}\d+)$/.exec(s);
+  if (!m) return null;
+  const x0 = m[2] === 'x' ? 0 : (m[3] === '-' ? 1 : -1) * num(m[4]);
+  return { m: num(m[1]), x0, f0: (m[5] === '-' ? -1 : 1) * num(m[6]) };
+}
+function parseTex2(s) {
+  const m = /^y(?:=|\\approx)(-?\d+\{,\}\d+)(?:\\,x([-+])(\d+\{,\}\d+))?$/.exec(s);
+  if (!m) return null;
+  return m[2] === undefined ? { m: 0, b: num(m[1]) } : { m: num(m[1]), b: (m[2] === '-' ? -1 : 1) * num(m[3]) };
+}
+
+await teste('equação da tangente: passa por P, tem o declive certo (≥ 20 pontos por função) e o texto bate', (ok) => {
+  let n = 0;
+  for (const { fi, f, a, nome } of CASOS) {
+    const cfg = configuracao(fi, a);
+    const passo = Math.max(1, Math.floor((cfg.p[1] - cfg.p[0]) * 100 / 24));
+    let contados = 0;
+    for (let k = Math.round(cfg.p[0] * 100); k <= Math.round(cfg.p[1] * 100); k += passo) {
+      const x0 = k / 100;
+      const r = leituras(fi, a, x0, 0.001);
+      ok(r.ok, `${nome} x0=${x0}: leituras não ok`);
+      const eq = equacaoTangente(x0, r.f0, r.m);
+      const cdm = central((t) => f.f(t, a), x0);
+      // a reta exata: y = m(x - x0) + f(x0)
+      const reta = (x) => r.m * (x - x0) + r.f0;
+      ok(reta(x0) === r.f0, `${nome} x0=${x0}: a reta não passa por P`);
+      ok(perto(reta(x0 + 1) - reta(x0), cdm), `${nome} x0=${x0}: declive ${r.m} != ${cdm}`);
+      // a tangente é o limite das secantes
+      const hh = 1e-7;
+      ok(Math.abs((f.f(x0 + hh, a) - f.f(x0, a)) / hh - r.m) <= 2e-4 * Math.max(1, Math.abs(r.m)), `${nome} x0=${x0}: secante com h=1e-7 longe de f'`);
+      // o que está escrito
+      const p1 = parseTex1(eq.tex);
+      const p2 = parseTex2(eq.tex2);
+      ok(p1 && p1.x0 === x0 && Math.abs(p1.m - r.m) <= 5.01e-4 && Math.abs(p1.f0 - r.f0) <= 5.01e-4, `${nome} x0=${x0}: tex «${eq.tex}» (m=${r.m}, f0=${r.f0})`);
+      ok(p2 && Math.abs(p2.m - r.m) <= 5.01e-4 && Math.abs(p2.m * x0 + p2.b - r.f0) <= 5.01e-4 * (1 + Math.abs(x0)) + 5e-4, `${nome} x0=${x0}: tex2 «${eq.tex2}»`);
+      ok(!/NaN|undefined|Infinity|−−|--/.test(eq.tex + eq.tex2 + eq.txt), `${nome} x0=${x0}: texto estranho`);
+      contados++;
+      n++;
+    }
+    ok(contados >= 4, `${nome}: só ${contados} pontos testados`);
+  }
+  ok(n >= 20 * FAMILIAS.length, `${n} pontos no total`);
+});
+
+await teste('equacaoTangente: casos à mão (sinais, x0 = 0, m = 0, exatidão)', (ok) => {
+  const a = equacaoTangente(1, Math.E, Math.E);
+  ok(a.tex === 'y\\approx2{,}718\\,(x-1{,}00)+2{,}718', a.tex);
+  ok(a.tex2 === 'y\\approx2{,}718\\,x+0{,}000', a.tex2);
+  const b = equacaoTangente(0, 1, 1); // e^x em 0: y = x + 1
+  ok(b.tex === 'y=1{,}000\\,x+1{,}000' && b.tex2 === 'y=1{,}000\\,x+1{,}000', b.tex + ' | ' + b.tex2);
+  const c = equacaoTangente(-1, -Math.exp(-1), 0); // x e^x em -1: horizontal
+  ok(c.tex === 'y\\approx0{,}000\\,(x+1{,}00)-0{,}368' && c.tex2 === 'y\\approx-0{,}368', c.tex + ' | ' + c.tex2);
+  const d = equacaoTangente(2, 0.5, -1.5); // 0,5 + (-1,5)(x - 2) = -1,5x + 3,5
+  ok(d.tex === 'y=-1{,}500\\,(x-2{,}00)+0{,}500' && d.tex2 === 'y=-1{,}500\\,x+3{,}500', d.tex + ' | ' + d.tex2);
+  const e = equacaoTangente(0.5, 0.25, 0.5); // x^2/... só um caso com f0 positivo, x0 < 1
+  ok(e.tex === 'y=0{,}500\\,(x-0{,}50)+0{,}250' && e.tex2 === 'y=0{,}500\\,x+0{,}000', e.tex + ' | ' + e.tex2);
+  ok(equacaoTangente(1, 1, -0.0001).m === 0, 'sem -0');
+  ok(!equacaoTangente(1, 1, -0.0001).tex.includes('-0{,}000\\,'), 'sem -0,000');
+});
+
+await teste('as secantes aproximam-se da tangente: o erro com h = 0,001 é menor do que com h = 2 (todas as funções)', (ok) => {
+  for (const { fi, f, a, nome } of CASOS) {
+    const cfg = configuracao(fi, a);
+    for (const x0 of [cfg.p[0], (cfg.p[0] + cfg.p[1]) / 2, cfg.p[1]].map((v) => Math.round(v * 100) / 100)) {
+      const err = (h) => leituras(fi, a, x0, h).dif;
+      const e2 = err(2);
+      const e0 = err(0.001);
+      ok(e0 <= e2 + 1e-12, `${nome} x0=${x0}: erro com h=0,001 (${e0}) > erro com h=2 (${e2})`);
+      ok(e0 < 0.2 * Math.max(1, Math.abs(leituras(fi, a, x0, 0.001).m)) || f.fronteira, `${nome} x0=${x0}: com h=0,001 ainda difere ${e0}`);
+      // quase monótono: a lista toda desce (tolerância para f'' que muda de sinal)
+      let pior = 0;
+      for (let i = 1; i < H_LISTA.length; i++) pior = Math.max(pior, err(H_LISTA[i]) - err(H_LISTA[i - 1]));
+      ok(pior <= 0.05 * Math.max(1, e2), `${nome} x0=${x0}: o erro sobe ${pior} ao diminuir h`);
+    }
+  }
+});
+
+// ---------- (c) configuração e listas ----------
+await teste('configuracao: x0 e P dentro da janela e do domínio, f finita, passo 0,01', (ok) => {
+  for (const { fi, f, a, nome } of CASOS) {
+    const cfg = configuracao(fi, a);
+    const [lo, hi] = cfg.p;
+    ok(lo <= cfg.x0 && cfg.x0 <= hi, `${nome}: x0 fora de p`);
+    ok(lo >= cfg.x[0] && hi <= cfg.x[1], `${nome}: p fora da janela x`);
+    ok(Math.abs(cfg.x0 * 100 - Math.round(cfg.x0 * 100)) < 1e-9, `${nome}: x0 não é múltiplo de 0,01`);
+    ok(hi - lo >= 0.5, `${nome}: intervalo de P muito pequeno (${lo}, ${hi})`);
+    for (const x of [lo, cfg.x0, hi]) {
+      const y = f.f(x, a);
+      ok(f.dominio(x) && Number.isFinite(y) && y >= cfg.y[0] && y <= cfg.y[1], `${nome}: P=(${x}, ${y}) fora do desenho`);
+    }
+    ok(cfg.x[1] > cfg.x[0] && cfg.y[1] > cfg.y[0], `${nome}: janela inválida`);
+  }
+});
+
+await teste('listas: A_LISTA sem 1 e com e, 0,3 a 4, crescente; H_LISTA de 2 a 0,001, decrescente', (ok) => {
+  ok(A_LISTA[0] === 0.3 && A_LISTA[A_LISTA.length - 1] === 4, 'extremos de a');
+  ok(!A_LISTA.includes(1) && A_LISTA.includes(E), 'sem 1, com e');
+  ok(A_LISTA.every((v, i) => i === 0 || v > A_LISTA[i - 1]), 'a crescente');
+  ok(A_LISTA.every((v) => Math.abs(Math.log(v)) > 0.05), 'nenhum a perto de 1');
+  ok(H_LISTA[0] === 2 && H_LISTA[H_LISTA.length - 1] === 0.001, 'extremos de h');
+  ok(H_LISTA.every((v, i) => i === 0 || v < H_LISTA[i - 1]), 'h decrescente');
+  ok(H_LISTA.every((v, i) => i === 0 || v / H_LISTA[i - 1] > 0.3), 'passos de h não saltam demasiado (escala log)');
+  ok(Math.abs(Math.log10(H_LISTA[0] / H_LISTA[H_LISTA.length - 1]) - 3.3) < 0.1, 'três ordens de grandeza');
+});
+
+await teste('fora do domínio ou perto da fronteira: leituras sem NaN, ok = false, nada de "NaN" nos textos', (ok) => {
+  for (const fi of [2, 3, 7]) { // ln, log_a, x ln x
+    for (const x0 of [0, -1, -0.5, NaN, Infinity]) {
+      const r = leituras(fi, 2, x0, 0.01);
+      ok(r.ok === false, `fi=${fi} x0=${x0}: devia ser não ok`);
+    }
+    const r = leituras(fi, 2, 0.03, 0.001); // perto da fronteira, mas dentro
+    ok(r.ok && Number.isFinite(r.m) && Number.isFinite(r.ms), `fi=${fi}: x0=0,03 devia dar valores finitos`);
+  }
+  ok(!leituras(0, 2, 1, 0).ok && !leituras(0, 2, 1, -1).ok, 'h <= 0 não é válido');
+});
+
+// ---------- (d) KaTeX ----------
+const avisosKatex = [];
+const vistas = new Set();
+function renderiza(src) {
+  if (vistas.has(src)) return null;
+  vistas.add(src);
+  try {
+    window.katex.renderToString(src, { throwOnError: true, strict: (c, m) => { avisosKatex.push(`${c}: ${m} em ${src}`); return 'ignore'; } });
+    return null;
+  } catch (e) {
+    return `${src} -> ${e.message}`;
+  }
+}
+await teste('KaTeX: todas as fórmulas das funções (para todos os a e vários x0, também negativos) compilam sem avisos', (ok) => {
+  for (const { fi, f, a, nome } of CASOS) {
+    const textos = [f.chip, f.tex.f(a), ...f.tex.regra(a), f.tex.der(a)];
+    const cfg = configuracao(fi, a);
+    for (const x0 of [cfg.p[0], cfg.x0, cfg.p[1], 0, -0.5]) {
+      if (!f.dominio(x0)) continue;
+      textos.push(f.tex.valor(x0, a));
+      if (f.erro) textos.push(f.erro.tex(x0, a));
+      const r = leituras(fi, a, x0, 0.01);
+      if (r.ok) textos.push(equacaoTangente(x0, r.f0, r.m).tex, equacaoTangente(x0, r.f0, r.m).tex2);
+    }
+    for (const t of textos) { const e = renderiza(t); ok(e === null, `${nome}: ${e}`); }
+  }
+  ok(vistas.size > 50, 'poucas fórmulas: ' + vistas.size);
+  ok(avisosKatex.length === 0, avisosKatex.slice(0, 3).join(' ; '));
+});
+
+// ---------- (e) higiene do texto ----------
+await teste('sem travessões (U+2014, U+2013) por extenso, sem pt-BR, nos ficheiros do widget e nos textos mostrados', async (ok) => {
+  // (o travessão que se mostra quando não há valor está no JS em escape, para o verificador do site)
+  for (const u of ['../widgets/derivadas.js', '../widgets/derivadas.css', './derivadas.html']) {
+    const txt = await (await fetch(u)).text();
+    ok(!txt.includes(String.fromCharCode(0x2014)), `${u}: travessão (U+2014) por extenso`);
+    ok(!txt.includes(String.fromCharCode(0x2013)), `${u}: travessão curto (U+2013)`);
+    if (u.endsWith('.html')) continue; // este ficheiro cita as palavras que procura
+    ok(!/\b(tela|arquivo|você|equipe|celular|ônibus)\b/i.test(txt), `${u}: pt-BR`);
+  }
+});
+
+// ---------- (f) o widget montado ----------
+const palco = document.getElementById('palco');
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+window.addEventListener('unhandledrejection', (e) => erros.push(String(e.reason)));
+
+const widget = document.createElement('div');
+widget.setAttribute('data-widget', 'derivadas');
+palco.append(widget);
+let montou = true;
+try { await montar(widget, {}); } catch (e) { montou = false; erros.push('montar: ' + e.message); }
+
+const $ = (sel) => widget.querySelector(sel);
+const $$ = (sel) => [...widget.querySelectorAll(sel)];
+const leitura = (k) => $(`[data-leitura="${k}"] .leitura__valor`).textContent;
+const chipsEl = () => $$('.dv-chip');
+const pEl = () => $('[role="slider"]');
+const tecla = (key, shift = false) => pEl().dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: shift, bubbles: true }));
+const limpo = () => !/NaN|undefined|Infinity|null/.test(widget.textContent) && widget.querySelectorAll('.katex-error').length === 0;
+const visivel = (el) => el.style.display !== 'none';
+const definir = (input, v) => { input.value = String(v); input.dispatchEvent(new Event('input', { bubbles: true })); };
+const nfp = (v, c) => M.fmt(v, c);
+const numero = (t) => Number(t.replace('−', '-').replace(',', '.'));
+const fixarA2 = () => definir($('input[data-param="a"]'), A_LISTA.indexOf(2));
+
+if (VISTA) {
+  if (consulta.get('pw')) palco.style.width = consulta.get('pw') + 'px';
+  if (consulta.has('fn')) chipsEl()[Number(consulta.get('fn'))].click();
+  if (consulta.has('a')) definir($('input[data-param="a"]'), A_LISTA.indexOf(consulta.get('a') === 'e' ? E : Number(consulta.get('a'))));
+  if (consulta.has('h')) definir($('input[data-param="h"]'), Number(consulta.get('h')));
+  if (consulta.has('x0')) {
+    const alvo = Number(consulta.get('x0'));
+    const passos = Math.round((alvo - numero(leitura('x0'))) / 0.05);
+    for (let k = 0; k < Math.abs(passos); k++) tecla(passos > 0 ? 'ArrowRight' : 'ArrowLeft');
+  }
+  if (consulta.get('sinal') === '1') $('.dv-sinal').click();
+  await dormir(300);
+}
+
+await teste('o widget monta sem erros: 8 chips, gráfico, ponto P focável, sliders, leituras e cartão da fórmula', (ok) => {
+  ok(montou && erros.length === 0, 'erros: ' + erros.join(' | '));
+  ok(chipsEl().length === 8, `${chipsEl().length} chips`);
+  ok($('svg.figura') && pEl() && pEl().getAttribute('tabindex') === '0', 'sem gráfico ou P não é focável');
+  ok($('input[data-param="h"]') && $('input[data-param="a"]'), 'faltam sliders');
+  ok($$('.dv-leitura').length >= 8, 'faltam leituras');
+  ok($$('.dv-regra__linha').length === 4, 'cartão da fórmula');
+  ok(limpo(), 'NaN/undefined no texto inicial: ' + widget.textContent.slice(0, 200));
+  ok($('.dv-intro') && $('.widget__titulo'), 'sem título ou introdução');
+  ok($('[role="status"][aria-live="polite"]'), 'sem região aria-live');
+  ok($('[data-leitura="m"]').closest('[aria-live]') === null, 'as leituras não devem ser aria-live (lê-se cada passo)');
+  ok(!$('[data-leitura="ms"]').hidden && !$('[data-leitura="eq"]').hidden, 'leituras escondidas');
+});
+
+await teste('cada função: leituras batem com a fórmula, sem NaN, P visível e dentro do gráfico', (ok) => {
+  const hh = H_LISTA[2];
+  chipsEl().forEach((chip, i) => {
+    chip.click();
+    const f = FAMILIAS[i];
+    const a = 2;
+    const cfg = configuracao(i, a);
+    const x0 = cfg.x0;
+    ok(chip.getAttribute('aria-pressed') === 'true' && chipsEl().filter((c) => c.getAttribute('aria-pressed') === 'true').length === 1, `${f.id}: chip`);
+    ok(limpo(), `${f.id}: texto com NaN`);
+    ok(leitura('x0') === nfp(x0, 2), `${f.id}: x0 ${leitura('x0')}`);
+    ok(leitura('f0') === nfp(f.f(x0, a), 4), `${f.id}: f0 ${leitura('f0')} vs ${nfp(f.f(x0, a), 4)}`);
+    ok(leitura('m') === nfp(f.df(x0, a), 4), `${f.id}: m ${leitura('m')} vs ${nfp(f.df(x0, a), 4)}`);
+    const ms = (f.f(x0 + hh, a) - f.f(x0, a)) / hh;
+    ok(leitura('ms') === nfp(ms, 4), `${f.id}: ms ${leitura('ms')} vs ${nfp(ms, 4)}`);
+    ok(leitura('dif') === nfp(Math.abs(ms - f.df(x0, a)), 4), `${f.id}: dif`);
+    ok(visivel(pEl()), `${f.id}: P escondido`);
+    ok($('path[data-id="tangente"], g[data-id="tangente"] path') !== null && $('[data-id="secante"]') !== null, `${f.id}: sem tangente ou secante`);
+    ok(/\\?[a-z]/i.test(widget.querySelector('[data-regra="der"]').textContent) && widget.querySelectorAll('.katex').length > 8, `${f.id}: KaTeX`);
+    ok($('.dv-legenda').children.length >= 3, `${f.id}: legenda`);
+    ok($('input[data-param="a"]').closest('.dv-controlo').hidden === !f.param, `${f.id}: visibilidade do slider de a`);
+  });
+});
+
+await teste('observações: e^x e a^x (razão = ln a); erro típico aparece nas outras', (ok) => {
+  chipsEl()[0].click();
+  ok(!$('[data-leitura="obs"]').hidden && /igual ao valor da função/.test($('[data-leitura="obs"]').textContent), 'e^x: observação');
+  chipsEl()[1].click();
+  const a = $('input[data-param="a"]');
+  definir(a, A_LISTA.indexOf(2));
+  const ob = $('[data-leitura="obs"]').textContent;
+  ok(!$('[data-leitura="obs"]').hidden && ob.includes('0,6931') && /Só vale 1/.test(ob), 'a=2: ' + ob);
+  ok(!$('[data-leitura="erro"]').hidden && /ln a/.test($('[data-leitura="erro"]').textContent), 'a=2: erro típico ln a');
+  definir(a, A_LISTA.indexOf(E));
+  ok(/igual ao valor da função/.test($('[data-leitura="obs"]').textContent), 'a=e: o declive é igual ao valor da função');
+  ok(/não se nota/.test($('[data-leitura="erro"]').textContent), 'a=e: esquecer o ln a coincide');
+  chipsEl()[2].click();
+  ok($('[data-leitura="obs"]').hidden && $('[data-leitura="erro"]').hidden, 'ln x: sem observação nem erro típico');
+  chipsEl()[4].click();
+  ok($('[data-leitura="obs"]').hidden && !$('[data-leitura="erro"]').hidden && /u′|u'/.test($('[data-leitura="erro"] .leitura__rotulo').textContent), 'e^(2x-1): erro do u′');
+});
+
+await teste('teclado: setas movem P (0,05), Shift ×5, Home/End vão aos extremos, P fica visível, leituras acompanham', (ok) => {
+  fixarA2();
+  for (let i = 0; i < 8; i++) {
+    chipsEl()[i].click();
+    const cfg = configuracao(i, 2);
+    const x0 = cfg.x0;
+    tecla('ArrowRight');
+    ok(leitura('x0') === nfp(Math.min(cfg.p[1], Math.round((x0 + 0.05) * 100) / 100), 2), `${FAMILIAS[i].id}: ArrowRight ${leitura('x0')}`);
+    tecla('ArrowLeft'); tecla('ArrowLeft');
+    ok(leitura('x0') === nfp(Math.max(cfg.p[0], Math.round((x0 - 0.05) * 100) / 100), 2), `${FAMILIAS[i].id}: ArrowLeft ${leitura('x0')}`);
+    tecla('End');
+    ok(leitura('x0') === nfp(cfg.p[1], 2) && visivel(pEl()) && limpo(), `${FAMILIAS[i].id}: End ${leitura('x0')}`);
+    tecla('Home');
+    ok(leitura('x0') === nfp(cfg.p[0], 2) && visivel(pEl()) && limpo(), `${FAMILIAS[i].id}: Home ${leitura('x0')}`);
+    tecla('ArrowRight', true);
+    ok(leitura('x0') === nfp(Math.round((cfg.p[0] + 0.25) * 100) / 100, 2), `${FAMILIAS[i].id}: Shift+ArrowRight ${leitura('x0')}`);
+    const f = FAMILIAS[i];
+    const x = numero(leitura('x0'));
+    ok(leitura('m') === nfp(f.df(x, 2), 4), `${f.id}: m depois das setas`);
+    ok(pEl().getAttribute('aria-valuetext').includes('declive da tangente'), 'aria-valuetext do ponto');
+  }
+});
+
+await teste('perto da fronteira do domínio (ln x, log_a x, x ln x): valores finitos, nota visível, sem NaN', (ok) => {
+  fixarA2();
+  for (const i of [2, 3, 7]) {
+    chipsEl()[i].click();
+    tecla('Home');
+    ok(limpo(), `${FAMILIAS[i].id}: texto em Home`);
+    ok(!widget.querySelector('.dv-nota-dominio').hidden && /x = 0/.test(widget.querySelector('.dv-nota-dominio').textContent), `${FAMILIAS[i].id}: sem nota`);
+    ok(visivel(pEl()), `${FAMILIAS[i].id}: P escondido`);
+    ok(numero(leitura('x0')) >= 0.03, `${FAMILIAS[i].id}: x0 ${leitura('x0')}`);
+    definir($('input[data-param="h"]'), H_LISTA.length - 1);
+    ok(limpo() && /^[−\d]/.test(leitura('ms')), `${FAMILIAS[i].id}: secante com h=0,001`);
+    tecla('End');
+    ok(widget.querySelector('.dv-nota-dominio').hidden, `${FAMILIAS[i].id}: nota em End`);
+  }
+});
+
+await teste('fora do domínio (simulado): leituras com o travessão e uma nota, sem NaN, sem exceções; recupera ao voltar', (ok) => {
+  const raro = String.fromCharCode(0x2014);
+  chipsEl()[2].click(); // ln x
+  const original = FAMILIAS[2].dominio;
+  FAMILIAS[2].dominio = (x) => x > 100; // faz com que o x0 atual já não pertença ao domínio
+  try {
+    tecla('ArrowRight');
+    ok(limpo(), 'NaN ou undefined: ' + widget.textContent.slice(0, 120));
+    for (const k of ['f0', 'q', 'ms', 'm', 'dif', 'eq']) ok(leitura(k) === raro, `leitura ${k}: «${leitura(k)}»`);
+    ok(!widget.querySelector('.dv-nota-dominio').hidden && /fora do domínio/.test(widget.querySelector('.dv-nota-dominio').textContent), 'sem nota de domínio');
+    ok(widget.querySelector('[data-regra="valor"] .dv-regra__valor').textContent === raro, 'cartão: ' + widget.querySelector('[data-regra="valor"] .dv-regra__valor').textContent);
+    ok($('[data-id="secante"]') === null && $('[data-id="tangente"]') === null, 'tangente ou secante desenhadas fora do domínio');
+  } finally {
+    FAMILIAS[2].dominio = original;
+  }
+  tecla('ArrowRight');
+  ok(limpo() && leitura('m') !== raro && widget.querySelector('.dv-nota-dominio').hidden, 'não recuperou: ' + leitura('m'));
+  ok($('[data-id="tangente"]') !== null, 'tangente não voltou');
+});
+
+await teste('slider de h: secante → tangente (diferença desce), Q muda, rótulo e aria-valuetext', (ok) => {
+  chipsEl()[0].click();
+  const sh = $('input[data-param="h"]');
+  const difs = [];
+  for (let i = 0; i < H_LISTA.length; i++) {
+    definir(sh, i);
+    difs.push(numero(leitura('dif')));
+    ok($('output[for$="-h"]').textContent === `h = ${String(H_LISTA[i]).replace('.', ',')}`, `h ${i}: ${$('output[for$="-h"]').textContent}`);
+    ok(sh.getAttribute('aria-valuetext') === `h igual a ${String(H_LISTA[i]).replace('.', ',')}`, 'aria-valuetext de h');
+    ok(limpo(), `h ${i}: NaN`);
+  }
+  ok(difs[0] > 1 && difs[difs.length - 1] < 0.002, `diferença de ${difs[0]} a ${difs[difs.length - 1]}`);
+  ok(difs.every((d, i) => i === 0 || d < difs[i - 1]), 'e^x: a diferença desce sempre');
+  ok(+sh.min === 0 && +sh.max === H_LISTA.length - 1, 'limites do slider');
+});
+
+await teste('slider de a: todos os valores, em a^x e log_a x, sem NaN, P visível, x0 sempre dentro do intervalo de P', (ok) => {
+  for (const i of [1, 3]) {
+    chipsEl()[i].click();
+    const sa = $('input[data-param="a"]');
+    for (let k = 0; k < A_LISTA.length; k++) {
+      definir(sa, k);
+      const a = A_LISTA[k];
+      const cfg = configuracao(i, a);
+      const x = numero(leitura('x0'));
+      ok(x >= cfg.p[0] - 1e-9 && x <= cfg.p[1] + 1e-9 && limpo() && visivel(pEl()), `${FAMILIAS[i].id} a=${a}: x0=${x}`);
+      ok(leitura('m') === nfp(FAMILIAS[i].df(x, a), 4), `${FAMILIAS[i].id} a=${a}: declive`);
+      ok($('output[for$="-a"]').textContent === (a === E ? 'a = e ≈ 2,718' : `a = ${M.fmt(a, 1).replace(/,0$/, '')}`), `${FAMILIAS[i].id} a=${a}: ${$('output[for$="-a"]').textContent}`);
+    }
+  }
+  // botão «a = e»
+  $('.dv-btn-e').click();
+  ok($('output[for$="-a"]').textContent.startsWith('a = e'), 'botão a = e');
+});
+
+await teste('mostrar o sinal de f\': pinta em dois tons (x e^x, x ln x, ln(x²+1)), um tom em e^x, marca f\' = 0', (ok) => {
+  const btn = $('.dv-sinal');
+  const pecas = () => $$('path[data-id^="sinal"]');
+  const esperado = [1, 1, 1, 1, 1, 2, 2, 2]; // exp, pot, ln, loga, exp2, ln2, xex, xlnx
+  for (let i = 0; i < 8; i++) {
+    chipsEl()[i].click();
+    if (btn.getAttribute('aria-pressed') !== 'true') btn.click();
+    ok(btn.getAttribute('aria-pressed') === 'true', 'botão ativo');
+    ok(pecas().length === esperado[i], `${FAMILIAS[i].id}: ${pecas().length} pedaços (esperava ${esperado[i]})`);
+    ok(!$('[data-leitura="sinal"]').hidden && /f′\(x₀\)/.test(leitura('sinal')), `${FAMILIAS[i].id}: leitura do sinal «${leitura('sinal')}»`);
+    // legenda: tangente e secante + um item por tom presente + o de f' = 0 quando há zeros
+    ok($$('.dv-legenda li').length === [3, 3, 3, 3, 3, 5, 5, 5][i], `${FAMILIAS[i].id}: ${$$('.dv-legenda li').length} itens na legenda`);
+    ok(limpo(), `${FAMILIAS[i].id}: texto`);
+  }
+  // x e^x: desce antes de -1, sobe depois, tangente horizontal em x = -1
+  chipsEl()[6].click();
+  const li = $$('.dv-legenda li').map((l) => l.textContent).join('|');
+  ok(/sobe/.test(li) && /desce/.test(li) && /horizontal/.test(li), 'x e^x: legenda ' + li);
+  // posição de P à esquerda do mínimo: desce; à direita: sobe
+  tecla('Home');
+  ok(/< 0/.test(leitura('sinal')) && /desce/.test(leitura('sinal')), 'x e^x em Home: ' + leitura('sinal'));
+  tecla('End');
+  ok(/> 0/.test(leitura('sinal')) && /sobe/.test(leitura('sinal')), 'x e^x em End: ' + leitura('sinal'));
+  // e^x só tem um tom (sobe)
+  chipsEl()[0].click();
+  const li0 = $$('.dv-legenda li').map((l) => l.textContent).join('|');
+  ok(/sobe/.test(li0) && !/desce/.test(li0) && !/horizontal/.test(li0), 'e^x: legenda ' + li0);
+  btn.click();
+  ok(btn.getAttribute('aria-pressed') === 'false' && pecas().length === 0 && $('[data-leitura="sinal"]').hidden, 'desligar o sinal');
+});
+
+await teste('tangente horizontal em x e^x: P em x = -1 (grelha) dá f\'(x0) = 0 e a equação y = -0,368', (ok) => {
+  chipsEl()[6].click();
+  const cfg = configuracao(6, 2);
+  // põe P em x = -1 com setas: de x0 = 0,5 desce 1,5 = 30 passos de 0,05
+  for (let k = 0; k < 30; k++) tecla('ArrowLeft');
+  ok(leitura('x0') === '−1,00', 'x0 ' + leitura('x0'));
+  ok(leitura('m') === '0,0000', 'm ' + leitura('m'));
+  ok(/−0,368/.test($('[data-leitura="eq"]').textContent), 'equação: ' + $('[data-leitura="eq"]').textContent);
+  const btn = $('.dv-sinal');
+  btn.click();
+  ok(/horizontal/.test(leitura('sinal')), 'sinal: ' + leitura('sinal'));
+  btn.click();
+});
+
+await teste('arrasto com o ponteiro: pointerdown/move no gráfico leva P para esse x (com passo 0,01)', (ok) => {
+  chipsEl()[0].click();
+  const svg = $('svg.figura');
+  const r = svg.getBoundingClientRect();
+  const evento = (tipo, fx) => new PointerEvent(tipo, { clientX: r.left + r.width * fx, clientY: r.top + r.height * 0.5, button: 0, pointerId: 7, bubbles: true, cancelable: true });
+  svg.dispatchEvent(evento('pointerdown', 0.45));
+  const x1 = numero(leitura('x0'));
+  svg.dispatchEvent(evento('pointermove', 0.75));
+  const x2 = numero(leitura('x0'));
+  svg.dispatchEvent(evento('pointerup', 0.75));
+  ok(x2 > x1 && Math.abs(x1 * 100 - Math.round(x1 * 100)) < 1e-9 && limpo(), `x1=${x1} x2=${x2}`);
+  ok(x1 > -2 && x1 < 1.5, `x1 fora do esperado: ${x1}`);
+});
+
+await teste('h → 0: anima o slider até 0,001 e o aria-live recebe o resumo (com atraso)', async (ok) => {
+  chipsEl()[1].click();
+  const sh = $('input[data-param="h"]');
+  definir(sh, 0);
+  const btn = $('.dv-btn-zero');
+  btn.click();
+  const emReduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!emReduzido) {
+    await dormir(600);
+    ok(+sh.value > 0 && +sh.value < H_LISTA.length - 1, `a meio da animação: ${sh.value}`);
+    await dormir(5000);
+  }
+  ok(+sh.value === H_LISTA.length - 1, `fim: ${sh.value}`);
+  ok($('output[for$="-h"]').textContent === 'h = 0,001', $('output[for$="-h"]').textContent);
+  await dormir(900);
+  const estado = $('[role="status"]').textContent;
+  ok(/Declive da secante/.test(estado) && /Tangente: y/.test(estado) && !/NaN|undefined/.test(estado), 'aria-live: ' + estado);
+  // um input no slider pára a animação
+  definir(sh, 0);
+  btn.click();
+  await dormir(400);
+  definir(sh, 5);
+  await dormir(1200);
+  ok(+sh.value === 5, 'o slider pára a animação: ' + sh.value);
+});
+
+await teste('aria-live não muda a cada passo: 20 setas seguidas e o texto só muda depois do atraso', async (ok) => {
+  chipsEl()[0].click();
+  await dormir(900);
+  const antes = $('[role="status"]').textContent;
+  for (let k = 0; k < 20; k++) tecla('ArrowRight');
+  await dormir(100);
+  ok($('[role="status"]').textContent === antes, 'mudou durante o arrasto');
+  await dormir(900);
+  ok($('[role="status"]').textContent !== antes && /x₀ = /.test($('[role="status"]').textContent), 'não atualizou depois do atraso');
+});
+
+await teste('alvos de toque ≥ 44 px (chips, botões, sliders, ponto) e sem scroll horizontal a 350 px', (ok) => {
+  for (const b of $$('.dv button')) {
+    if (b.closest('[hidden]')) continue;
+    const r = b.getBoundingClientRect();
+    ok(r.height >= 43.5, `botão «${b.textContent.slice(0, 20)}» com ${r.height.toFixed(1)} px de altura`);
+  }
+  chipsEl()[1].click();
+  for (const s of $$('input[type="range"]')) {
+    if (s.closest('[hidden]')) continue;
+    ok(s.getBoundingClientRect().height >= 43.5, `slider ${s.dataset.param}: ${s.getBoundingClientRect().height}`);
+  }
+  const alvo = pEl().querySelector('circle');
+  ok(alvo && Number(alvo.getAttribute('r')) >= 20, 'alvo do ponto');
+  ok(palco.scrollWidth <= palco.clientWidth, `scrollWidth ${palco.scrollWidth} > ${palco.clientWidth}`);
+  ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'scroll horizontal na página');
+  const sv = $('svg.figura').getBoundingClientRect();
+  ok(sv.width > 250 && sv.width <= 351, `largura do gráfico ${sv.width}`);
+});
+
+await teste('cores via tokens: nenhuma cor hexadecimal fixa no JS (só como reserva de var(...))', async (ok) => {
+  const js = await (await fetch('../widgets/derivadas.js')).text();
+  const css = await (await fetch('../widgets/derivadas.css')).text();
+  const semVar = js.replace(/var\(--[a-z-]+,\s*#[0-9a-fA-F]{3,8}\)/g, '');
+  ok(!/#[0-9a-fA-F]{3,8}\b/.test(semVar), 'cor fixa no JS');
+  ok(!/#[0-9a-fA-F]{3,8}\b/.test(css), 'cor fixa no CSS');
+  ok(!/prefers-color-scheme/.test(css), 'sem esquema escuro');
+});
+
+await teste('o widget montado não mostra travessões (U+2014, U+2013) em condições normais, para nenhuma função', (ok) => {
+  chipsEl().forEach((chip) => {
+    chip.click();
+    ok(!widget.textContent.includes(String.fromCharCode(0x2014)), 'travessão (U+2014) no widget: ' + chip.getAttribute('aria-label'));
+    ok(!widget.textContent.includes(String.fromCharCode(0x2013)), 'travessão curto no widget');
+  });
+});
+
+await teste('sem erros globais durante os testes', (ok) => { ok(erros.length === 0, erros.join(' | ')); });
+
+// ---------- resumo ----------
+const ms = Math.round(performance.now() - t0);
+linhas.push('');
+linhas.push(`${vistas.size} fórmulas KaTeX distintas, ${CASOS.length} casos (função, a)`);
+linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

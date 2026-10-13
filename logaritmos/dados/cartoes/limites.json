@@ -1,0 +1,118 @@
+{
+ "grupo": "limites",
+ "cartoes": [
+  {
+   "id": "lim-imediatos",
+   "grupo": "limites",
+   "frente": "Quanto valem os limites de $e^x$ e de $\\ln x$ nos extremos dos seus domínios?",
+   "verso": "$e^x$: $\\lim_{x\\to+\\infty}e^x=+\\infty$ e $\\lim_{x\\to-\\infty}e^x=0$ (sempre com valores positivos).<br>$\\ln x$: $\\lim_{x\\to0^+}\\ln x=-\\infty$ e $\\lim_{x\\to+\\infty}\\ln x=+\\infty$.",
+   "porque": "O $\\ln$ é a inversa de $e^x$, por isso os extremos trocam: $e^x\\to0^+$ quando $x\\to-\\infty$ corresponde a $\\ln y\\to-\\infty$ quando $y\\to0^+$. Em $\\ln x$ só te aproximas de 0 pela direita, porque não há logaritmo de números negativos.",
+   "verifica": [
+    "exp(30+abs(t))>1e13",
+    "0<exp(-30-abs(t))<1e-13",
+    "ln(1e-30*x)<-60",
+    "ln(1e30*x)>60"
+   ]
+  },
+  {
+   "id": "lim-base",
+   "grupo": "limites",
+   "frente": "Que limites tem $f(x)=a^x$ ($a>0$, $a\\neq1$) quando $x\\to+\\infty$ e quando $x\\to-\\infty$?",
+   "verso": "Se $a>1$: $+\\infty$ quando $x\\to+\\infty$ e $0$ quando $x\\to-\\infty$.<br>Se $0<a<1$: $0$ quando $x\\to+\\infty$ e $+\\infty$ quando $x\\to-\\infty$.",
+   "porque": "$a^x=e^{x\\ln a}$: com $a>1$ é $\\ln a>0$ e o expoente tem o sinal de $x$; com $0<a<1$ é $\\ln a<0$ e o expoente tem o sinal contrário. A assíntota horizontal é sempre $y=0$, mas num lado ou no outro conforme a base.",
+   "verifica": [
+    "ig(a**t, exp(t*ln(a)))",
+    "(a>1) == (ln(a)>0)",
+    "(a>1) == (a**200>1)"
+   ]
+  },
+  {
+   "id": "lim-exp-vence",
+   "grupo": "limites",
+   "frente": "Quando $x\\to+\\infty$, quem «ganha» entre $e^x$, uma potência $x^p$ ($p>0$) e $\\ln x$? Que limites o dizem?",
+   "verso": "A exponencial vence a potência e a potência vence o logaritmo:<br>$\\lim_{x\\to+\\infty}\\dfrac{e^x}{x^p}=+\\infty$ e $\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{x^p}=0$.",
+   "porque": "$e^x$ ultrapassa qualquer potência, mesmo $x^{100}$, a partir de certo $x$. Com números: $\\dfrac{e^{30}}{30}\\approx3{,}6\\times10^{11}$ é enorme e $\\dfrac{\\ln10^{6}}{10^{6}}\\approx1{,}4\\times10^{-5}$ é minúsculo.",
+   "verifica": [
+    "exp(30)/30>3.5e11",
+    "ln(1e6)/1e6<1.5e-5",
+    "exp(700)/700**100>1e19"
+   ]
+  },
+  {
+   "id": "lim-notaveis-zero",
+   "grupo": "limites",
+   "frente": "Quais são os dois limites notáveis, com $x\\to0$, ligados a $e^x$ e a $\\ln$?",
+   "verso": "$\\lim_{x\\to0}\\dfrac{e^x-1}{x}=1$ e $\\lim_{x\\to0}\\dfrac{\\ln(1+x)}{x}=1$.",
+   "porque": "Perto de 0, $e^x\\approx1+x$ e $\\ln(1+x)\\approx x$, por isso o numerador comporta-se como $x$ e o quociente fica perto de 1. Com $x=0{,}001$: $\\dfrac{e^{x}-1}{x}\\approx1{,}0005$.",
+   "verifica": [
+    "ig(lim(lambda s: (exp(s)-1)/s, 0), 1)",
+    "ig(lim(lambda s: ln(1+s)/s, 0), 1)"
+   ]
+  },
+  {
+   "id": "lim-xlnx",
+   "grupo": "limites",
+   "frente": "Quanto vale $\\lim_{x\\to0^+}x\\ln x$? Que tipo de indeterminação é?",
+   "verso": "Vale $0$. É do tipo $0\\times(-\\infty)$. Com $y=\\dfrac1x$ (e $y\\to+\\infty$) fica $-\\lim_{y\\to+\\infty}\\dfrac{\\ln y}{y}=0$.",
+   "porque": "$x\\ln x=\\dfrac{\\ln\\frac1y}{y}=-\\dfrac{\\ln y}{y}$, que é outra vez «a potência vence o logaritmo»: $x$ vai para 0 mais depressa do que $\\ln x$ vai para $-\\infty$.",
+   "verifica": [
+    "abs(1e-100*ln(1e-100))<1e-97",
+    "ig(x*ln(x), -ln(1/x)*x)"
+   ]
+  },
+  {
+   "id": "lim-indeterminacoes",
+   "grupo": "limites",
+   "frente": "Como se levanta cada uma destas indeterminações: $\\dfrac{\\infty}{\\infty}$, $\\infty-\\infty$ e $0\\times\\infty$?",
+   "verso": "<strong>$\\dfrac{\\infty}{\\infty}$</strong>: usa $\\dfrac{e^x}{x^p}\\to+\\infty$ e $\\dfrac{\\ln x}{x^p}\\to0$, ou divide tudo pelo termo que manda.<br><strong>$\\infty-\\infty$</strong>: põe em evidência o termo que manda, por exemplo $e^x-x=x\\left(\\dfrac{e^x}{x}-1\\right)$.<br><strong>$0\\times\\infty$</strong>: passa a fração, por exemplo $x\\,e^{-x}=\\dfrac{x}{e^{x}}$.",
+   "porque": "O resultado depende de quem tende mais depressa, por isso não há resposta fixa. Em particular $\\infty\\times0$ não é «0»: $x\\cdot\\dfrac1x\\to1$, $x\\cdot\\dfrac{1}{x^2}\\to0$ e $x^2\\cdot\\dfrac1x\\to+\\infty$ são todos desse tipo.",
+   "verifica": [
+    "ig(x*exp(-x), x/exp(x))",
+    "ig(exp(x)-x, x*(exp(x)/x-1))"
+   ]
+  },
+  {
+   "id": "lim-mudanca-variavel",
+   "grupo": "limites",
+   "frente": "Como se faz uma mudança de variável para usar um limite notável?",
+   "verso": "1. Chama $y$ à expressão que tende para 0 (ou para $\\infty$) e escreve $x$ em função de $y$.<br>2. Reescreve <em>todo</em> o limite em $y$ e diz para onde tende $y$.<br>3. Reconhece o limite notável e acerta os fatores que sobram.<br>Exemplo: $\\lim_{x\\to0}\\dfrac{e^{5x}-1}{x}$, com $y=5x$, é $5\\lim_{y\\to0}\\dfrac{e^{y}-1}{y}=5$. Se $x\\to-\\infty$, usa $y=-x$ para teres $y\\to+\\infty$.",
+   "porque": "O limite notável só se aplica quando o que está no expoente é igual ao que está no denominador. A mudança de variável iguala-os e mostra o fator que ficou de fora (aqui, o 5).",
+   "verifica": [
+    "ig(lim(lambda s: (exp(5*s)-1)/s, 0), 5)"
+   ]
+  },
+  {
+   "id": "lim-vertical",
+   "grupo": "limites",
+   "frente": "Onde podem estar as assíntotas verticais de uma função contínua no seu domínio? Como as confirmas?",
+   "verso": "Só nos extremos finitos do domínio que não lhe pertencem. Aí calculas os limites laterais: $x=a$ é assíntota vertical se algum deles for $+\\infty$ ou $-\\infty$.<br>Quando aparece $\\dfrac{k}{0}$ com $k\\neq0$, estuda o sinal do denominador: $\\dfrac{k}{0^+}$ e $\\dfrac{k}{0^-}$ dão infinitos de sinais contrários.",
+   "porque": "Num ponto onde $f$ é contínua o limite é $f(a)$, um número e não $\\infty$. Por isso $\\ln(x+3)$ não tem assíntota em $x=0$ (que está no domínio), mas tem em $x=-3$.",
+   "verifica": [
+    "ig(lim(lambda s: ln(s+3), 0), ln(3))",
+    "ln((-3+1e-9)+3)<-18"
+   ]
+  },
+  {
+   "id": "lim-nao-verticais",
+   "grupo": "limites",
+   "frente": "Como calculas as assíntotas não verticais $y=mx+b$? E o que muda se $m=0$?",
+   "verso": "Estuda $x\\to+\\infty$ e $x\\to-\\infty$ em separado: $m=\\lim\\dfrac{f(x)}{x}$ e $b=\\lim\\left(f(x)-mx\\right)$. Só há assíntota se $m$ e $b$ forem números reais.<br>Se $m=0$ é a assíntota horizontal $y=b$, com $b=\\lim f(x)$. Se $m=\\pm\\infty$, não há assíntota nesse sentido.",
+   "porque": "Se $f(x)\\approx mx+b$ para $x$ grande, dividir por $x$ dá $m$, e o que sobra depois de tirares $mx$ é $b$. Os dois sentidos são independentes: $f(x)=x\\,e^{x}$ tem a assíntota $y=0$ quando $x\\to-\\infty$ e nenhuma quando $x\\to+\\infty$.",
+   "verifica": [
+    "abs(-60*exp(-60))<1e-20",
+    "60*exp(60)>1e20"
+   ]
+  },
+  {
+   "id": "lim-cauchy",
+   "grupo": "limites",
+   "frente": "(Só se o teu professor permitir.) O que diz a regra de Cauchy sobre $\\lim\\dfrac{f(x)}{g(x)}$?",
+   "verso": "Se $\\lim\\dfrac{f(x)}{g(x)}$ é uma indeterminação $\\dfrac00$ ou $\\dfrac{\\infty}{\\infty}$ e existe $\\lim\\dfrac{f'(x)}{g'(x)}$, então $\\lim\\dfrac{f(x)}{g(x)}=\\lim\\dfrac{f'(x)}{g'(x)}$.",
+   "porque": "Derivam-se o numerador e o denominador cada um por si, não o quociente. Confirma antes que é mesmo $\\frac00$ ou $\\frac{\\infty}{\\infty}$ e pergunta ao teu professor se a aceita: os limites notáveis fazem o mesmo trabalho.",
+   "verifica": [
+    "ig(der(lambda s: ln(s), x)/der(lambda s: s**2, x), 1/(2*x**2))",
+    "not ig(der(lambda s: ln(s)/s**2, x), 1/(2*x**2))"
+   ]
+  }
+ ]
+}

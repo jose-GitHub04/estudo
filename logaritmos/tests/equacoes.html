@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget das equações</title>
+<!-- Testes que correm no browser para logaritmos/widgets/equacoes.js:
+     (a) a matemática dos dados com o avaliador do site (soluções, rejeitadas, domínio, conjuntos,
+         função do parâmetro), (b) o widget monta cada predefinida, passa os passos todos sem erros
+         de KaTeX, trata o foco e os botões, desenha zonas, pontos rejeitados e conjuntos, e
+         (c) a 358 px (telemóvel de 390 px) nada passa da largura e os alvos têm >= 44 px.
+     Abrir /logaritmos/tests/equacoes.html ou:
+       msedge --headless=new --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8815/logaritmos/tests/equacoes.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Modo de vista (para capturas): ?p=<índice>&n=<passos|todos>&v=<id da vista>&k=<valor do slider>
+     mostra só o widget nesse estado; ?w=390 fixa a largura da página. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/equacoes.css">
+<style>
+  body { padding: 0.5rem 16px 3rem; }
+  #resultado { white-space: pre-wrap; font: 13px/1.4 monospace; }
+  #caixa { width: 358px; max-width: 100%; margin: 0 auto 1rem; }
+  body.vista #caixa { width: auto; max-width: 62rem; }
+  body.vista #resultado, body.vista h1 { display: none; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body>
+<h1>Testes do widget das equações</h1>
+<pre id="resultado">A correr...</pre>
+<div id="caixa"><div data-widget="equacoes" id="alvo"></div></div>
+<script type="module">
+import * as W from '../widgets/equacoes.js';
+import { criarFuncao } from '../../assets/motor/matematica.js';
+import { renderizar } from '../../assets/motor/katex.js';
+
+const q = new URLSearchParams(location.search);
+const alvo = document.getElementById('alvo');
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+window.addEventListener('unhandledrejection', (e) => erros.push(String(e.reason)));
+
+async function teste(nome, fn) {
+  const falhas = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (falhas.length < 4) falhas.push(msg); } };
+  try { await fn(ok); } catch (e) { total++; falhas.push('exceção: ' + (e && e.stack || e)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else { nFalhas++; linhas.push('FALHOU: ' + nome + ' | ' + falhas.join(' | ') + (total > falhas.length ? ` (+${total - falhas.length})` : '')); }
+}
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const esperar = () => new Promise((r) => setTimeout(r, 0));
+
+const dados = await fetch('../dados/equacoes.json').then((r) => r.json());
+const preds = dados.predefinidas;
+
+// o widget (a 390 px de largura a caixa tem 358 px)
+if (q.has('w')) document.body.style.width = `${Number(q.get('w'))}px`;
+if (q.has('p')) document.body.classList.add('vista');
+await W.montar(alvo, {});
+renderizar(document.body);
+
+const $ = (s, raiz = alvo) => raiz.querySelector(s);
+const $$ = (s, raiz = alvo) => [...raiz.querySelectorAll(s)];
+const chipsPred = () => $$('.eq-escolha .eq-chip');
+const btnSeg = () => $('.eq-btn--seguinte');
+const btnTudo = () => $$('.eq-btn')[1];
+const btnRec = () => $$('.eq-btn')[2];
+const passos = () => $$('.eq-passo');
+const clicar = async (b) => { b.click(); await esperar(); };
+
+// ---------- modo de vista (capturas) ----------
+if (q.has('p')) {
+  const i = Number(q.get('p'));
+  await clicar(chipsPred()[i]);
+  if (q.has('k')) {
+    const r = $('.eq-range');
+    r.value = q.get('k');
+    r.dispatchEvent(new Event('input'));
+  }
+  const n = q.get('n') === 'todos' ? preds[i].passos.length : Number(q.get('n') || 0);
+  for (let k = 0; k < n; k++) await clicar(btnSeg());
+  if (q.has('v')) {
+    const b = $$('.eq-vistas .eq-chip').find((x) => preds[i].vistas.find((v) => v.rotulo === x.textContent && v.id === q.get('v')));
+    if (b) await clicar(b);
+  }
+  renderizar(document.body);
+  document.documentElement.dataset.pronto = erros.length ? 'erro' : 'sim';
+} else {
+
+// ---------- (a) a matemática dos dados, com o avaliador do site ----------
+const consts0 = (p) => W.constantes(p, p.param ? p.param.inicial : 0);
+
+function zeros(f, a, b, n = 4000) {
+  const r = [];
+  let y0 = f(a);
+  for (let i = 1; i <= n; i++) {
+    const x1 = a + ((b - a) * i) / n;
+    const y1 = f(x1);
+    if (y1 === 0) {
+      r.push(x1); // zero exatamente na grelha
+    } else if (Number.isFinite(y0) && Number.isFinite(y1) && y0 * y1 < 0) {
+      let lo = x1 - (b - a) / n;
+      let hi = x1;
+      let flo = y0;
+      for (let k = 0; k < 60; k++) {
+        const m = (lo + hi) / 2;
+        const fm = f(m);
+        if ((fm < 0) === (flo < 0)) { lo = m; flo = fm; } else hi = m;
+      }
+      if (Math.abs(f((lo + hi) / 2)) < 1e-6) r.push((lo + hi) / 2);
+    }
+    y0 = y1;
+  }
+  return r;
+}
+
+function modelos(p) {
+  const lista = [{ nome: p.id, M: p.modelo }];
+  for (const v of p.vistas) if (v.modelo) lista.push({ nome: `${p.id}/${v.id}`, M: v.modelo });
+  return lista;
+}
+
+for (const p of preds.filter((x) => !x.param)) {
+  for (const { nome, M } of modelos(p)) {
+    await teste(`matemática de ${nome}`, (ok) => {
+      const consts = consts0(p);
+      const v = M.variavel;
+      const esq = criarFuncao(M.esq, v, consts);
+      const dir = criarFuncao(M.dir, v, consts);
+      const noDom = (x) => W.noDominio(M, x, consts);
+      const [a, b] = M.procura;
+      if (M.rel === '=') {
+        for (const s of M.solucoes) {
+          ok(noDom(s.v), `a solução ${s.v} devia estar no domínio`);
+          ok(perto(esq(s.v), dir(s.v), 1e-9), `a solução ${s.v} não satisfaz: ${esq(s.v)} contra ${dir(s.v)}`);
+        }
+        for (const r of M.rejeitadas || []) {
+          ok(!noDom(r.v), `a rejeitada ${r.v} devia estar fora do domínio`);
+          if (M.auxiliar) {
+            const ae = criarFuncao(M.auxiliar.esq, v, consts);
+            const ad = criarFuncao(M.auxiliar.dir, v, consts);
+            ok(perto(ae(r.v), ad(r.v), 1e-9), `a rejeitada ${r.v} devia satisfazer a equação transformada`);
+            ok(!Number.isFinite(esq(r.v) - dir(r.v)), `a rejeitada ${r.v} devia deixar a equação original indefinida`);
+          } else {
+            ok(perto(esq(r.v), dir(r.v), 1e-9), `a rejeitada ${r.v} devia ser raiz da equação`);
+          }
+        }
+        const raizes = zeros((x) => esq(x) - dir(x), a, b).filter(noDom);
+        ok(raizes.length === M.solucoes.length && raizes.every((r, k) => perto(r, M.solucoes[k].v, 1e-7)),
+          `as raízes no domínio são [${raizes}] e as soluções [${M.solucoes.map((s) => s.v)}]`);
+      } else {
+        const vale = (x) => {
+          if (!noDom(x)) return false;
+          const A = esq(x);
+          const B = dir(x);
+          if (!Number.isFinite(A) || !Number.isFinite(B)) return false;
+          return M.rel === '>' ? A > B && !perto(A, B) : A < B && !perto(A, B);
+        };
+        const dentro = (x) => M.conjunto.some((iv) => (iv.de === null || x > iv.de) && (iv.ate === null || x < iv.ate));
+        const fins = M.conjunto.flatMap((iv) => [iv.de, iv.ate]).filter((e) => e !== null);
+        let maus = 0;
+        for (let i = 0; i <= 4000; i++) {
+          const x = a + ((b - a) * i) / 4000;
+          if (fins.some((e) => Math.abs(x - e) < 1e-6)) continue;
+          if (vale(x) !== dentro(x)) maus++;
+        }
+        ok(maus === 0, `${maus} pontos em que o conjunto-solução não bate com a desigualdade`);
+      }
+    });
+  }
+}
+
+await teste('o parâmetro de 2^x = k: resolverParametro bate com o valor esperado', (ok) => {
+  const p = preds.find((x) => x.id === 'parametro-k');
+  const casos = [[8, 3], [5, Math.log(5) / Math.log(2)], [0.5, -1], [1, 0], [16, 4], [2.5, Math.log(2.5) / Math.log(2)]];
+  for (const [k, esperado] of casos) {
+    const r = W.resolverParametro(p, k);
+    ok(r.existe && perto(r.x, esperado, 1e-12), `k=${k}: ${r.x} em vez de ${esperado}`);
+    ok(perto(2 ** r.x, k, 1e-12), `k=${k}: 2^x devia dar k`);
+  }
+  for (const k of [0, -0.5, -1, -2]) ok(!W.resolverParametro(p, k).existe, `k=${k} devia não ter solução`);
+});
+
+await teste('o parâmetro de log2(x+1) = c: resolverParametro bate com o valor esperado', (ok) => {
+  const p = preds.find((x) => x.id === 'log-simples');
+  const casos = [[3, 7], [0, 0], [-3, -0.875], [0.5, Math.SQRT2 - 1], [3.5, 2 ** 3.5 - 1]];
+  for (const [c, esperado] of casos) {
+    const r = W.resolverParametro(p, c);
+    ok(r.existe && perto(r.x, esperado, 1e-12), `c=${c}: ${r.x} em vez de ${esperado}`);
+    const f = criarFuncao(p.modelo.esq, 'x', { c });
+    ok(perto(f(r.x), c, 1e-12), `c=${c}: log2(x+1) devia dar c`);
+    ok(r.x > -1, `c=${c}: a solução devia estar no domínio`);
+  }
+});
+
+await teste('os sliders: a grelha contém o valor inicial e a solução cabe sempre na janela', (ok) => {
+  for (const p of preds.filter((x) => x.param)) {
+    const { min, max, passo, inicial } = p.param;
+    const n = Math.round((max - min) / passo);
+    ok(Math.abs(min + Math.round((inicial - min) / passo) * passo - inicial) < 1e-12, `${p.id}: inicial fora da grelha`);
+    const V = p.vistas[0];
+    for (let i = 0; i <= n; i++) {
+      const v = min + i * passo;
+      const r = W.resolverParametro(p, v);
+      if (!r.existe) continue;
+      const y = criarFuncao(p.modelo.esq, 'x', W.constantes(p, v))(r.x);
+      ok(r.x >= V.x[0] && r.x <= V.x[1] && y >= V.y[0] && y <= V.y[1], `${p.id}: v=${v} dá o ponto (${r.x}, ${y}) fora da janela`);
+    }
+  }
+});
+
+// ---------- (b) o widget ----------
+await teste('o widget tem uma chip por predefinida (>= 8), com os grupos', (ok) => {
+  ok(chipsPred().length === preds.length, `${chipsPred().length} chips para ${preds.length} predefinidas`);
+  ok(preds.length >= 8, 'menos de 8 predefinidas');
+  ok($$('.eq-grupo').length === dados.grupos.length, 'faltam grupos');
+  ok(chipsPred()[0].getAttribute('aria-pressed') === 'true', 'devia começar na primeira');
+});
+
+for (let i = 0; i < preds.length; i++) {
+  const p = preds[i];
+  await teste(`widget: ${p.id} (${p.passos.length} passos)`, async (ok) => {
+    await clicar(chipsPred()[i]);
+    ok(chipsPred()[i].getAttribute('aria-pressed') === 'true', 'a chip devia ficar premida');
+    ok(chipsPred().filter((b) => b.getAttribute('aria-pressed') === 'true').length === 1, 'só uma chip premida');
+    ok($('.eq-formula .katex'), 'o enunciado devia ter fórmula');
+    ok(passos().length === 0, 'devia começar sem passos');
+    ok($('.eq-resposta').hidden, 'a resposta devia estar escondida');
+    ok(btnRec().disabled, 'Recomeçar devia estar desativado no início');
+    ok(($('.eq-param') && !$('.eq-param').hidden) === !!p.param, 'o slider só aparece nas predefinidas com parâmetro');
+    ok($$('.eq-figura svg[role="img"][aria-label]').length === 1, 'devia haver um gráfico com aria-label');
+    ok($$('.eq-figura path[data-tracos]').every((c) => Number(c.dataset.tracos) >= 1 || c.getAttribute('d') === ''), 'curva sem traços');
+    ok($$('.eq-figura path[data-tracos]').some((c) => Number(c.dataset.tracos) >= 1), 'nenhuma curva desenhada');
+    for (let k = 1; k <= p.passos.length; k++) {
+      await clicar(btnSeg());
+      ok(passos().length === k, `depois de ${k} cliques há ${passos().length} passos`);
+      ok($$('.katex-error', alvo).length === 0, `erro de KaTeX no passo ${k}`);
+      ok($('.eq-progresso').textContent.includes(`Passo ${k}`), `progresso: «${$('.eq-progresso').textContent}»`);
+    }
+    ok(!$('.eq-resposta').hidden && $('.eq-resposta .katex'), 'a resposta devia aparecer no fim');
+    ok(btnSeg().disabled && btnTudo().disabled, 'Seguinte e Tudo desativados no fim');
+    ok(document.activeElement === btnRec(), `o foco devia estar em Recomeçar e está em ${document.activeElement && document.activeElement.className}`);
+    ok($$('.eq-metodo__fase--feita').length === 3, 'o método devia estar todo feito');
+    // cada vista, no estado final
+    const V0 = p.vistas;
+    for (let vi = 0; vi < V0.length; vi++) {
+      if (V0.length > 1) await clicar($$('.eq-vistas .eq-chip')[vi]);
+      const V = V0[vi];
+      const svg = $('.eq-figura svg');
+      const rotulos = [...svg.querySelectorAll('text')].map((t) => t.textContent);
+      const nRej = (V.pontos || []).filter((x) => x.estado === 'rejeitada').length;
+      ok(rotulos.filter((t) => t.includes('rejeitada')).length === nRej, `vista ${V.id}: ${rotulos.filter((t) => t.includes('rejeitada')).length} rótulos «rejeitada» em vez de ${nRej}`);
+      const nZonas = (V.zonas || []).length;
+      ok(svg.querySelectorAll('path[style*="riscas"]').length === nZonas, `vista ${V.id}: ${svg.querySelectorAll('path[style*="riscas"]').length} zonas riscadas em vez de ${nZonas}`);
+      ok(!V.conjunto || rotulos.includes('solução'), `vista ${V.id}: falta o rótulo «solução»`);
+      const nPontos = (V.pontos || []).length;
+      const pontosVistos = svg.querySelectorAll('g[data-camada="pontos"] > g').length;
+      const esperados = nPontos + (V.conjunto ? p.modelo.conjunto.reduce((s, iv) => s + (iv.de !== null) + (iv.ate !== null), 0) : 0);
+      ok(pontosVistos === esperados, `vista ${V.id}: ${pontosVistos} pontos em vez de ${esperados}`);
+      ok(svg.querySelectorAll('g[data-camada="curvas"] path[data-tracos]').length === V.curvas.length, `vista ${V.id}: curvas a menos`);
+      ok($$('.eq-legenda__item').length >= V.curvas.length, `vista ${V.id}: legenda curta`);
+    }
+    // estado final em cada vista do passo: as candidatas já foram decididas
+    ok($$('.katex-error', alvo).length === 0, 'KaTeX com erro no estado final');
+    ok($$('.aviso-erro', alvo).length === 0, 'aviso de erro no widget');
+    await clicar(btnRec());
+    ok(passos().length === 0 && document.activeElement === btnSeg(), 'Recomeçar devia limpar e dar o foco a Seguinte');
+    await clicar(btnTudo());
+    ok(passos().length === p.passos.length && document.activeElement === btnRec(), 'Mostrar tudo devia mostrar tudo e dar o foco a Recomeçar');
+    await clicar(btnRec());
+  });
+}
+
+await teste('widget: durante os passos o gráfico muda de vista com os passos (substituição)', async (ok) => {
+  const i = preds.findIndex((x) => x.id === 'substituicao-rejeitada');
+  await clicar(chipsPred()[i]);
+  const vistaAtiva = () => $$('.eq-vistas .eq-chip').findIndex((b) => b.getAttribute('aria-pressed') === 'true');
+  ok(vistaAtiva() === 0, 'devia começar na vista original');
+  const esperadas = [];
+  let corrente = 0;
+  for (const passo of preds[i].passos) {
+    if (passo.vista) corrente = preds[i].vistas.findIndex((v) => v.id === passo.vista);
+    esperadas.push(corrente);
+  }
+  for (let k = 0; k < esperadas.length; k++) {
+    await clicar(btnSeg());
+    ok(vistaAtiva() === esperadas[k], `passo ${k + 1}: vista ${vistaAtiva()} em vez de ${esperadas[k]}`);
+  }
+  // a rejeitada só fica decidida (ponto oco com «rejeitada») no passo da condição u > 0
+  await clicar(btnRec());
+  const rot = () => [...$('.eq-figura svg').querySelectorAll('text')].map((t) => t.textContent);
+  for (let k = 0; k < 3; k++) await clicar(btnSeg());
+  ok(!rot().some((t) => t.includes('rejeitada')), 'antes de decidir não devia haver «rejeitada»');
+  ok(rot().some((t) => t.includes('−2')), 'a candidata −2 devia aparecer no passo 3');
+  await clicar(btnSeg());
+  await clicar(btnSeg());
+  ok(rot().some((t) => t.includes('−2') && t.includes('rejeitada')), 'a −2 devia ficar rejeitada');
+  await clicar(btnRec());
+});
+
+await teste('widget: o slider move a solução e a leitura (2^x = k)', async (ok) => {
+  const i = preds.findIndex((x) => x.id === 'parametro-k');
+  await clicar(chipsPred()[i]);
+  const r = $('.eq-range');
+  ok(r.labels && r.labels.length === 1, 'o slider devia ter uma label');
+  const ponto = () => $('.eq-figura g[data-camada="pontos"] > g circle:not([r="22"])');
+  const antes = ponto().getAttribute('cx');
+  const leitura = () => $('.eq-leitura').textContent;
+  ok(leitura().includes('log') || leitura().includes('2'), 'leitura inicial vazia');
+  r.value = '8';
+  r.dispatchEvent(new Event('input'));
+  ok(ponto().getAttribute('cx') !== antes, 'o ponto devia mover-se');
+  ok($('.eq-param__valor').textContent === '8', `valor mostrado: ${$('.eq-param__valor').textContent}`);
+  ok($('.eq-leitura').innerHTML.includes('katex'), 'a leitura devia ter fórmulas');
+  ok(/porque/.test(leitura()), `k=8 devia explicar porque vale 3: «${leitura()}»`);
+  r.value = '-1';
+  r.dispatchEvent(new Event('input'));
+  ok(!ponto(), 'sem solução não devia haver ponto');
+  ok(/sem solução/.test(leitura()), `k=-1: «${leitura()}»`);
+  ok(r.getAttribute('aria-valuetext').includes('−1') || r.getAttribute('aria-valuetext').includes('-1'), 'aria-valuetext');
+  r.value = '5';
+  r.dispatchEvent(new Event('input'));
+  ok(ponto() && /2,32/.test(leitura()), `k=5 devia dar 2,32: «${leitura()}»`);
+});
+
+// ---------- (c) largura 358 px e alvos de toque ----------
+await teste('a 358 px: nada passa da largura e os alvos têm >= 44 px', async (ok) => {
+  const caixa = document.getElementById('caixa');
+  ok(Math.round(caixa.getBoundingClientRect().width) === 358, `a caixa tem ${caixa.getBoundingClientRect().width} px`);
+  for (let i = 0; i < preds.length; i++) {
+    await clicar(chipsPred()[i]);
+    await clicar(btnTudo());
+    const larguras = $$('.eq-formula, .eq-linha, .eq-leitura, .eq-resposta__formula, .eq-legenda, .eq-passo, .eq-param, .eq-enunciado');
+    for (const e of larguras) {
+      ok(e.scrollWidth <= e.clientWidth + 1, `${preds[i].id}: ${e.className} é mais largo (${e.scrollWidth}) do que a caixa (${e.clientWidth})`);
+    }
+    ok(alvo.scrollWidth <= alvo.clientWidth + 1, `${preds[i].id}: o widget tem scroll horizontal`);
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, `${preds[i].id}: a página tem scroll horizontal`);
+    for (const b of [...$$('button'), ...$$('input[type="range"]')]) {
+      if (b.hidden || b.closest('[hidden]')) continue;
+      const r = b.getBoundingClientRect();
+      ok(r.height >= 43.5 && r.width >= 43.5, `${preds[i].id}: alvo pequeno (${Math.round(r.width)}x${Math.round(r.height)}) em «${b.textContent.slice(0, 20)}»`);
+    }
+    await clicar(btnRec());
+  }
+});
+
+await teste('sem erros de consola nem de módulos durante os testes', (ok) => {
+  ok(erros.length === 0, erros.join(' | '));
+});
+
+const resumo = `${linhas.filter((l) => l.startsWith('OK')).length} OK, ${nFalhas} falhas em ${Math.round(performance.now() - t0)} ms`;
+saida.textContent = linhas.join('\n') + '\n\n' + resumo;
+document.documentElement.dataset.testes = nFalhas ? 'falhou' : 'ok';
+document.documentElement.dataset.pronto = 'sim';
+}
+</script>
+</body>
+</html>

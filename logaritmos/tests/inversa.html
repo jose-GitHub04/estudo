@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget inversa</title>
+<!-- Testes de logaritmos/widgets/inversa.js: monta sem erros, P e Q ficam sempre dentro da janela (todas as
+     bases do slider, 10 e e), Q é mesmo o simétrico de P (coordenadas trocadas, ponto médio na reta y = x,
+     segmento PQ perpendicular), a base nunca é 1, o teclado e o ponteiro movem P, a tabela muda só no que
+     tem de mudar, «dobrar o papel» e a reflexão. Abrir /logaritmos/tests/inversa.html ou:
+       msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8813/logaritmos/tests/inversa.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?ver=1 só mostra o widget (para os screenshots), e aceita &a=0.25&x=1.5&dobrar=0&um=1. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/inversa.css">
+<style>
+  body { font-size: 1.0625rem; }
+  #resultado { font: 13px/1.4 monospace; white-space: pre-wrap; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<main class="envolve">
+  <pre id="resultado">A correr...</pre>
+  <article class="modulo" id="inversa"><div id="palco"></div></article>
+</main>
+<script type="module">
+import { montar } from '../widgets/inversa.js';
+
+const params = new URLSearchParams(location.search);
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+
+const API = await montar(palco, {});
+
+// modo de vista (screenshots)
+if (params.get('ver')) {
+  saida.hidden = true;
+  if (params.get('a')) API.definirBase(Number(params.get('a')));
+  if (params.get('x')) API.moverP(Number(params.get('x')));
+  if (params.get('dobrar') === '0') API.dobrar(false);
+  if (params.get('um')) { // tenta pôr a base em 1: o slider salta e explica porquê
+    const sl = palco.querySelector('.inv-base input');
+    sl.value = '1';
+    sl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  document.documentElement.dataset.pronto = erros.length ? 'erro' : 'sim';
+} else {
+  await correrTestes();
+}
+
+async function correrTestes() {
+  const linhas = [];
+  let nFalhas = 0;
+  const t0 = performance.now();
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function teste(nome, fn) {
+    const falhas = [];
+    let total = 0;
+    const ok = (cond, msg) => {
+      if (!cond) { total++; if (falhas.length < 3) falhas.push(msg); }
+    };
+    try { await fn(ok); } catch (e) { total++; falhas.push('exceção: ' + (e && e.stack || e)); }
+    if (total === 0) linhas.push('OK: ' + nome);
+    else {
+      nFalhas++;
+      linhas.push('FALHOU: ' + nome + ' | ' + falhas.join(' | ') + (total > falhas.length ? ` (+${total - falhas.length} falhas)` : ''));
+    }
+  }
+
+  const perto = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+  const svg = palco.querySelector('svg.figura');
+  const slider = palco.querySelector('.inv-base input');
+  const P = palco.querySelector('[role="slider"]');
+  // geometria do gráfico (largura 300, margens 12 | 16 | 16 | 12, janela [-3, 7] nos dois eixos)
+  const X = (x) => 12 + ((x + 3) / 10) * 272;
+  const Y = (y) => 16 + ((7 - y) / 10) * 272;
+  const texto = (sel) => palco.querySelector(sel).textContent.replace(/\s+/g, ' ').trim();
+  const centro = (c) => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))];
+  const bolaDe = (g) => [...g.querySelectorAll('circle')].pop(); // a bola é o último círculo do ponto
+  const Q = () => bolaDe(svg.querySelector('[data-id="q"]'));
+  const Pbola = () => bolaDe(P);
+  const BASES = [];
+  for (let a = 0.25; a <= 5.0001; a += 0.05) { const v = Math.round(a * 100) / 100; if (v !== 1) BASES.push(v); }
+  BASES.push(10, Math.E);
+
+  await teste('monta com o gráfico, o slider, 5 chips, a tabela e as leituras', (ok) => {
+    ok(erros.length === 0, 'erros ao montar: ' + erros.join(' | '));
+    ok(svg && slider && P, 'faltam svg, slider ou ponto P');
+    ok(palco.querySelectorAll('.inv-chip').length === 5, 'chips != 5');
+    ok(palco.querySelectorAll('.inv-tabela tbody tr').length === 6, 'tabela sem 6 linhas');
+    ok(palco.querySelectorAll('.katex-error').length === 0, 'KaTeX com erro');
+    ok(slider.min === '0.25' && slider.max === '5' && slider.step === '0.05', 'slider != 0,25 a 5, passo 0,05');
+    ok(palco.querySelector('.inv-vivo').getAttribute('aria-live') === 'polite', 'falta aria-live polite');
+    ok(P.getAttribute('tabindex') === '0' && P.getAttribute('role') === 'slider', 'P não é focável');
+    ok(/mesma escala/.test(svg.getAttribute('aria-label')) && /base 2/.test(svg.getAttribute('aria-label')), 'aria do gráfico: ' + svg.getAttribute('aria-label'));
+    ok(svg.getAttribute('viewBox') === '0 0 300 300', 'janela quadrada (escala igual): ' + svg.getAttribute('viewBox'));
+  });
+
+  await teste('curvas desenhadas com todas as bases (0,25 a 5, 10 e e)', (ok) => {
+    for (const a of BASES) {
+      API.definirBase(a);
+      const tr = (id) => Number(svg.querySelector(`[data-id="${id}"]`).getAttribute('data-tracos'));
+      ok(tr('exp') >= 1, `a=${a}: exponencial sem traço`);
+      ok(tr('log') >= 1, `a=${a}: logaritmo sem traço`);
+      ok(!/NaN|Infinity/.test(svg.innerHTML), `a=${a}: NaN/Infinity no SVG`);
+    }
+  });
+
+  await teste('P e Q ficam dentro da janela nos extremos de todas as bases', (ok) => {
+    for (const a of BASES) {
+      API.definirBase(a);
+      const [lo, hi] = API.limitesX(a);
+      ok(lo >= -3 && hi <= 7 && lo < hi, `a=${a}: limites ${lo}, ${hi}`);
+      for (const x0 of [-50, lo, 0, (lo + hi) / 2, hi, 50]) {
+        API.moverP(x0);
+        const { x } = API.estado();
+        const y = a ** x;
+        ok(x >= lo - 1e-9 && x <= hi + 1e-9, `a=${a}, pedido ${x0}: x=${x} fora de [${lo}, ${hi}]`);
+        ok(y > 0 && y <= 7 + 1e-9, `a=${a}, x=${x}: y=${y} fora da janela`);
+        ok(Math.abs(x * 10 - Math.round(x * 10)) < 1e-9, `a=${a}: x=${x} não é múltiplo de 0,1`);
+        const [px, py] = centro(Pbola());
+        const [qx, qy] = centro(Q());
+        ok(perto(px, X(x), 1e-3) && perto(py, Y(y), 1e-3), `a=${a}, x=${x}: P desenhado em (${px}, ${py}), esperado (${X(x)}, ${Y(y)})`);
+        ok(perto(qx, X(y), 1e-3) && perto(qy, Y(x), 1e-3), `a=${a}, x=${x}: Q desenhado em (${qx}, ${qy}), esperado (${X(y)}, ${Y(x)})`);
+        ok(qx >= X(-3) - 1e-6 && qx <= X(7) + 1e-6 && qy >= Y(7) - 1e-6 && qy <= Y(-3) + 1e-6, `a=${a}, x=${x}: Q fora do desenho`);
+      }
+    }
+  });
+
+  await teste('Q é o simétrico de P: coordenadas trocadas, PQ perpendicular a y = x, ponto médio na reta', (ok) => {
+    for (const a of [0.25, 0.5, 0.8, 1.05, 1.5, 2, Math.E, 3, 5, 10]) {
+      API.definirBase(a);
+      API.dobrar(true);
+      const [lo, hi] = API.limitesX(a);
+      for (const x0 of [lo, -1, 0, 0.7, 1, 2, hi]) {
+        API.moverP(x0);
+        const { x } = API.estado();
+        const y = a ** x;
+        const lp = texto('[data-l="p"]');
+        const lq = texto('[data-l="q"]');
+        const nums = (s) => s.replace(/[()]/g, '').split(';').map((t) => Number(t.trim().replace(',', '.').replace('−', '-')));
+        const [px, py] = nums(lp);
+        const [qx, qy] = nums(lq);
+        ok(perto(px, x, 1e-9) && perto(py, y, 6e-3), `a=${a}: leitura de P ${lp} (x=${x}, y=${y})`);
+        ok(qx === py && qy === px, `a=${a}: Q ${lq} não é P ${lp} trocado`);
+        const seg = svg.querySelector('line[stroke-dasharray="3 3"]');
+        const medio = [...svg.querySelectorAll('circle')].find((c) => c.getAttribute('r') === '3.2');
+        const dist = Math.hypot(X(x) - X(y), Y(y) - Y(x));
+        if (dist >= 22) {
+          const [x1, y1, x2, y2] = ['x1', 'y1', 'x2', 'y2'].map((k) => Number(seg.getAttribute(k)));
+          ok(perto(x1, X(x), 1e-3) && perto(y1, Y(y), 1e-3) && perto(x2, X(y), 1e-3) && perto(y2, Y(x), 1e-3), `a=${a}, x=${x}: extremos do segmento`);
+          ok(Math.abs((x2 - x1) * (1) + (y2 - y1) * (-1)) < 1e-2 * Math.max(1, dist), `a=${a}, x=${x}: PQ não é perpendicular a y = x`);
+          const [mx, my] = centro(medio);
+          ok(perto(mx, (x1 + x2) / 2, 1e-3) && perto(my, (y1 + y2) / 2, 1e-3), `a=${a}, x=${x}: ponto médio fora do centro de PQ`);
+          // o ponto médio está na reta y = x: em coordenadas dos dados, as duas coordenadas são iguais
+          const mxd = ((mx - 12) / 272) * 10 - 3;
+          const myd = 7 - ((my - 16) / 272) * 10;
+          ok(perto(mxd, myd, 1e-3), `a=${a}, x=${x}: ponto médio (${mxd}, ${myd}) não está em y = x`);
+        }
+      }
+    }
+  });
+
+  await teste('equivalência a^x = y <=> log_a y = x com os números de P', (ok) => {
+    API.definirBase(2);
+    API.moverP(1.5);
+    const t = texto('[data-l="eq"]');
+    ok(/2,83/.test(t) && /1,5/.test(t) && /\\log_\{2\}|log/.test(palco.querySelector('[data-l="eq"]').innerHTML), 'texto da equivalência: ' + t);
+    ok(!!palco.querySelector('[data-l="eq"] .katex-html'), 'sem KaTeX na equivalência');
+    API.moverP(1);
+    ok(!/≈/.test(texto('[data-l="eq"] .katex-html')) , 'com x = 1 e a = 2 devia ser igualdade exata: ' + texto('[data-l="eq"] .katex-html'));
+    API.definirBase(Math.E);
+    API.moverP(1);
+    ok(/ln/.test(texto('[data-l="eq"] .katex-html')), 'a = e devia usar ln: ' + texto('[data-l="eq"] .katex-html'));
+    ok(/e ≈ 2,718/.test(texto('.inv-base__valor')), 'saída da base e: ' + texto('.inv-base__valor'));
+  });
+
+  await teste('a base nunca é 1: o slider salta para o valor seguinte e explica porquê', (ok) => {
+    API.definirBase(0.95);
+    slider.value = '1';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    ok(API.estado().a === 1.05, 'a subir devia dar 1,05: ' + API.estado().a);
+    const av = palco.querySelector('.inv-aviso');
+    ok(!av.hidden && /inversa/.test(av.textContent), 'sem aviso visível: ' + av.textContent);
+    ok(/1,05/.test(av.textContent.replace(/\s/g, '').replace('a=1{,}05', '1,05')) || /1,05/.test(texto('.inv-aviso')), 'o aviso não diz o novo valor: ' + texto('.inv-aviso'));
+    slider.value = '1';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    ok(API.estado().a === 0.95, 'a descer devia dar 0,95: ' + API.estado().a);
+    slider.value = '2';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    ok(API.estado().a === 2 && av.hidden, 'longe de 1 o aviso devia desaparecer');
+    ok(!BASES.includes(1), 'a lista de bases não devia ter 1');
+  });
+
+  await teste('chips: ½, 2, e, 3, 10 põem a base e marcam-se; o 10 passa do máximo do slider', (ok) => {
+    const chips = [...palco.querySelectorAll('.inv-chip')];
+    const bases = [0.5, 2, Math.E, 3, 10];
+    chips.forEach((c, i) => {
+      c.click();
+      ok(perto(API.estado().a, bases[i], 1e-9), `chip ${i}: base ${API.estado().a}`);
+      ok(chips.filter((k) => k.getAttribute('aria-pressed') === 'true').length === 1 && c.getAttribute('aria-pressed') === 'true', `chip ${i}: aria-pressed`);
+      ok(c.getBoundingClientRect().height >= 43.5, `chip ${i}: altura ${c.getBoundingClientRect().height}`);
+    });
+    ok(slider.value === '5', 'slider com a = 10 devia ficar no máximo: ' + slider.value);
+    ok(/acima do máximo/.test(slider.getAttribute('aria-valuetext')), 'aria-valuetext com a = 10');
+    ok(slider.getBoundingClientRect().height >= 43.5, 'altura do slider ' + slider.getBoundingClientRect().height);
+  });
+
+  await teste('teclado: setas, Shift, PageUp/PageDown, Home e End movem P', (ok) => {
+    API.definirBase(2);
+    API.moverP(0);
+    const tecla = (key, extra = {}) => P.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra }));
+    tecla('ArrowRight');
+    ok(perto(API.estado().x, 0.1, 1e-9), 'seta direita: ' + API.estado().x);
+    tecla('ArrowRight', { shiftKey: true });
+    ok(perto(API.estado().x, 0.6, 1e-9), 'Shift + seta direita: ' + API.estado().x);
+    tecla('ArrowLeft');
+    tecla('ArrowLeft');
+    ok(perto(API.estado().x, 0.4, 1e-9), 'duas setas esquerda: ' + API.estado().x);
+    tecla('PageUp');
+    ok(perto(API.estado().x, 1.4, 1e-9), 'PageUp: ' + API.estado().x);
+    tecla('End');
+    ok(perto(API.estado().x, API.limitesX(2)[1], 1e-9) && API.estado().x === 2.8, 'End em a = 2 devia ser 2,8: ' + API.estado().x);
+    tecla('ArrowRight');
+    ok(API.estado().x === 2.8, 'não passa do fim: ' + API.estado().x);
+    tecla('Home');
+    ok(API.estado().x === -3, 'Home devia ser -3: ' + API.estado().x);
+    API.definirBase(0.25);
+    tecla('Home');
+    ok(API.estado().x === -1.4, 'Home com a = 0,25 devia ser -1,4: ' + API.estado().x);
+    ok(P.getAttribute('aria-valuemin') === '-1.4', 'aria-valuemin: ' + P.getAttribute('aria-valuemin'));
+    ok(/P = \(−1,4 ; 6,96\)/.test(P.getAttribute('aria-valuetext')), 'aria-valuetext de P: ' + P.getAttribute('aria-valuetext'));
+  });
+
+  await teste('ponteiro: carregar e arrastar no gráfico leva P para esse x, sempre dentro da janela', (ok) => {
+    API.definirBase(2);
+    const r = svg.getBoundingClientRect();
+    const k = r.width / 300;
+    const evento = (tipo, xd) => svg.dispatchEvent(new PointerEvent(tipo, { clientX: r.left + X(xd) * k, clientY: r.top + Y(2) * k, pointerId: 7, button: 0, bubbles: true, cancelable: true }));
+    evento('pointerdown', 1.37);
+    ok(perto(API.estado().x, 1.4, 1e-9), 'carregar em 1,37: ' + API.estado().x);
+    evento('pointermove', -2.2);
+    ok(perto(API.estado().x, -2.2, 1e-9), 'arrastar até -2,2: ' + API.estado().x);
+    evento('pointermove', 6.5);
+    ok(perto(API.estado().x, 2.8, 1e-9), 'arrastar até 6,5 devia parar em 2,8: ' + API.estado().x);
+    evento('pointerup', 6.5);
+    evento('pointermove', 0);
+    ok(perto(API.estado().x, 2.8, 1e-9), 'depois de largar, mover não faz nada');
+    API.definirBase(5);
+    ok(API.estado().x === 1.2, 'ao mudar para a = 5, P fica no máximo (1,2): ' + API.estado().x);
+    API.definirBase(0.25);
+    API.moverP(-1.4);
+    API.definirBase(5);
+    ok(API.estado().x === -1.4, 'mudar a base mantém x quando cabe: ' + API.estado().x);
+  });
+
+  await teste('tabela: domínio e contradomínio fixos, monotonia e sinal mudam com a base', (ok) => {
+    const celula = (r, c) => palco.querySelector(`.inv-tabela tbody tr:nth-child(${r}) td:nth-child(${c})`);
+    const vis = (c) => (c.querySelector('.katex-html') || c).textContent;
+    API.definirBase(2);
+    const dom2 = [celula(1, 2).innerHTML, celula(1, 3).innerHTML, celula(2, 2).innerHTML, celula(2, 3).innerHTML];
+    const t2 = { m1: celula(3, 2).textContent, m2: celula(3, 3).textContent, s: celula(5, 3).textContent.replace(/\s+/g, ' ') };
+    ok(t2.m1 === 'crescente' && t2.m2 === 'crescente', 'a = 2: ' + t2.m1 + ', ' + t2.m2);
+    ok(/^negativa em .*positiva em /.test(t2.s), 'sinal para a = 2: ' + t2.s);
+    API.definirBase(0.5);
+    const dom05 = [celula(1, 2).innerHTML, celula(1, 3).innerHTML, celula(2, 2).innerHTML, celula(2, 3).innerHTML];
+    ok(dom2.join('|') === dom05.join('|'), 'o domínio e o contradomínio mudaram com a base');
+    ok(celula(3, 2).textContent === 'decrescente' && celula(3, 3).textContent === 'decrescente', 'a = 0,5: monotonia');
+    ok(/^positiva em .*negativa em /.test(celula(5, 3).textContent.replace(/\s+/g, ' ')), 'sinal para a = 0,5');
+    ok(/decrescentes/.test(texto('.inv-mono')) && /0<a<1/.test(palco.querySelector('.inv-mono annotation').textContent), 'nota da monotonia para a < 1: ' + texto('.inv-mono'));
+    API.definirBase(1.05);
+    ok(celula(3, 2).textContent === 'crescente', 'a = 1,05 é crescente');
+    // domínio e contradomínio trocam
+    ok(vis(celula(1, 2)) === 'R' && vis(celula(2, 3)) === 'R' && vis(celula(1, 3)) === 'R+' && vis(celula(2, 2)) === 'R+', 'D e D\' não trocam entre as colunas: ' + [celula(1, 2), celula(1, 3), celula(2, 2), celula(2, 3)].map(vis).join(' | '));
+    ok(/o domínio de uma é o contradomínio da outra/i.test(texto('.inv-dominio')), 'falta a frase do domínio');
+    ok(/x=1/.test(palco.querySelector('.inv-tabela tbody tr:nth-child(4) td:nth-child(3) annotation').textContent), 'zero do logaritmo');
+    ok(/x=0/.test(palco.querySelector('.inv-tabela tbody tr:nth-child(6) td:nth-child(3) annotation').textContent) && /y=0/.test(palco.querySelector('.inv-tabela tbody tr:nth-child(6) td:nth-child(2) annotation').textContent), 'assíntotas na tabela');
+  });
+
+  await teste('dobrar o papel mostra e esconde a reta y = x e a ligação PQ', (ok) => {
+    API.definirBase(2);
+    API.moverP(1);
+    const btn = palco.querySelector('.inv-dobrar');
+    const reta = svg.querySelector('path[stroke-dasharray="7 5"]').parentNode;
+    const extra = svg.querySelector('line[stroke-dasharray="3 3"]').parentNode;
+    ok(btn.getAttribute('aria-pressed') === 'true' && reta.style.display !== 'none' && extra.style.display !== 'none', 'por defeito: ligado');
+    btn.click();
+    ok(btn.getAttribute('aria-pressed') === 'false' && reta.style.display === 'none' && extra.style.display === 'none', 'desligado: a reta e a ligação saem');
+    ok(!!Q() && Q().parentNode.style.display !== 'none', 'Q continua visível sem a reta');
+    ok(palco.querySelector('[data-leg-reta]').hidden, 'a legenda da reta devia sair');
+    btn.click();
+    ok(reta.style.display !== 'none' && extra.style.display !== 'none', 'ligado outra vez');
+    ok(btn.getBoundingClientRect().height >= 43.5, 'altura do botão ' + btn.getBoundingClientRect().height);
+  });
+
+  await teste('reflexão: o ponto anda de P a Q em ~600 ms e desaparece', async (ok) => {
+    // o Edge sem janela, com tempo virtual, quase não dá frames: troca o rAF por um temporizador de 16 ms
+    const rafOriginal = window.requestAnimationFrame;
+    window.requestAnimationFrame = (f) => setTimeout(() => f(performance.now()), 16);
+    try {
+    API.definirBase(2);
+    API.moverP(1);
+    API.dobrar(false);
+    const fant = svg.querySelector('.inv-fantasma');
+    ok(fant && fant.getAttribute('display') === 'none', 'o fantasma devia estar escondido');
+    const btn = palco.querySelector('.inv-refletir');
+    ok(!btn.hidden, 'botão da reflexão escondido sem prefers-reduced-motion');
+    btn.click();
+    ok(palco.querySelector('.inv-dobrar').getAttribute('aria-pressed') === 'true', 'a reflexão liga o dobrar');
+    const amostras = [];
+    for (let i = 0; i < 60 && (i < 3 || fant.getAttribute('display') !== 'none'); i++) {
+      await esperar(30);
+      if (fant.getAttribute('display') !== 'none') amostras.push([Number(fant.getAttribute('cx')), Number(fant.getAttribute('cy'))]);
+    }
+    ok(amostras.length >= 3, 'o fantasma devia aparecer durante a animação (' + amostras.length + ' amostras)');
+    const xs = amostras.map((a) => a[0]);
+    ok(xs.every((v) => v > Math.min(X(1), X(2)) - 1 && v < Math.max(X(1), X(2)) + 1), 'o fantasma sai do segmento PQ: ' + xs.join(', '));
+    ok(xs.every((v, i) => i === 0 || v >= xs[i - 1] - 1e-6), 'o fantasma devia andar sempre de P para Q: ' + xs.join(', '));
+    ok(xs.length && Math.abs(xs[xs.length - 1] - X(2)) < 10, 'no fim o fantasma devia estar perto de Q');
+    // P = (1, 2) e Q = (2, 1) estão na reta x + y = 3: o fantasma tem de andar nela
+    ok(amostras.every(([cx, cy]) => Math.abs(((cx - 12) / 27.2 - 3) + (7 - (cy - 16) / 27.2) - 3) < 0.01), 'o fantasma anda ao longo de PQ')
+    for (let i = 0; i < 40 && fant.getAttribute('display') !== 'none'; i++) await esperar(50);
+    ok(fant.getAttribute('display') === 'none', 'no fim o fantasma devia sair');
+    // interromper: mexer em P a meio cancela
+    btn.click();
+    await esperar(100);
+    API.moverP(0.5);
+    ok(fant.getAttribute('display') === 'none', 'mover P devia cancelar a animação');
+    } finally { window.requestAnimationFrame = rafOriginal; }
+  });
+
+  await teste('leituras para o leitor de ecrã: aria-live com o resumo de P e Q', async (ok) => {
+    API.definirBase(2);
+    API.moverP(1.5);
+    await esperar(500);
+    const t = palco.querySelector('.inv-vivo').textContent;
+    ok(/Base 2\./.test(t) && /P tem coordenadas \(1,5 ; 2,83\)/.test(t) && /Q tem as mesmas coordenadas trocadas, \(2,83 ; 1,5\)/.test(t), 'texto: ' + t);
+  });
+
+  await teste('a 390 px e a 320 px: sem scroll horizontal, nada cortado e alvos de toque >= 44 px', async (ok) => {
+    for (const w of [390, 320]) {
+      for (const query of ['?ver=1', '?ver=1&a=10&x=0.5', '?ver=1&a=0.25&x=-1.4']) {
+        const f = document.createElement('iframe');
+        f.style.cssText = `width:${w}px;height:900px;border:0;position:absolute;left:-9999px;top:0`;
+        f.src = 'inversa.html' + query;
+        document.body.append(f);
+        for (let i = 0; i < 100 && !(f.contentDocument && f.contentDocument.documentElement.dataset.pronto); i++) await esperar(50);
+        const d = f.contentDocument;
+        const quem = `${w}px ${query}`;
+        ok(d && d.documentElement.dataset.pronto === 'sim', `${quem}: não ficou pronto`);
+        if (!d || !d.querySelector('.inv')) { f.remove(); continue; }
+        const de = d.documentElement;
+        ok(de.scrollWidth <= de.clientWidth + 1, `${quem}: scroll horizontal da página (${de.scrollWidth} > ${de.clientWidth})`);
+        const widget = d.querySelector('.inv').getBoundingClientRect();
+        for (const n of d.querySelectorAll('.inv *')) {
+          if (n.closest('svg') || n.closest('.katex') || n.closest('.tabela-rolante') || n.closest('.sr-only')) continue;
+          const r = n.getBoundingClientRect();
+          if (r.width === 0 && r.height === 0) continue; // escondido
+          ok(r.right <= widget.right + 1 && r.left >= widget.left - 1, `${quem}: ${n.className || n.tagName} fora do widget (${Math.round(r.left)}..${Math.round(r.right)} contra ${Math.round(widget.left)}..${Math.round(widget.right)})`);
+        }
+        for (const n of d.querySelectorAll('.leitura__valor:not(.inv-equiv)')) ok(n.scrollWidth <= n.clientWidth + 1, `${quem}: leitura cortada: ${n.textContent}`);
+        const tr = d.querySelector('.tabela-rolante');
+        if (w >= 390) ok(tr.scrollWidth <= tr.clientWidth + 1, `${quem}: a tabela precisa de scroll (${tr.scrollWidth} > ${tr.clientWidth})`); // a 320 px a tabela pode deslizar dentro do seu quadro
+        const eq = d.querySelector('.inv-equiv');
+        ok(eq.scrollWidth <= eq.clientWidth + 1, `${quem}: a equivalência precisa de scroll`);
+        for (const n of d.querySelectorAll('.inv-chip, .inv-dobrar, .inv-refletir, .inv-base input')) {
+          const r = n.getBoundingClientRect();
+          ok(r.height >= 43.5 && r.width >= 43.5, `${quem}: alvo pequeno ${n.className || n.tagName} ${Math.round(r.width)}x${Math.round(r.height)}`);
+        }
+        const svgW = d.querySelector('svg.figura').getBoundingClientRect().width;
+        if (w === 390) ok(svgW / 300 * 44 >= 44, `${quem}: o alvo de toque de P tem ${Math.round(svgW / 300 * 44)} px`);
+        f.remove();
+      }
+    }
+  });
+
+  ok_final();
+
+  function ok_final() {
+    const ms = Math.round(performance.now() - t0);
+    const resumo = nFalhas === 0 ? `TUDO OK (${linhas.length} testes, ${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`;
+    saida.textContent = resumo + '\n' + linhas.join('\n');
+    document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+  }
+}
+</script>
+</body>
+</html>

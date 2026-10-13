@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matéria · Exponenciais e logaritmos · Mat100limites</title>
+  <meta name="description" content="Matéria de Exponenciais e logaritmos, Matemática A, 12.º ano: função exponencial, logaritmo, propriedades, equações, derivadas, limites e estudo de funções, com desenhos para mexer.">
+  <link rel="icon" href="../assets/mat100_logo.png">
+  <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  <link rel="stylesheet" href="../assets/estilo.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="widgets/exponencial.css">
+  <link rel="stylesheet" href="widgets/logaritmo.css">
+  <link rel="stylesheet" href="widgets/inversa.css">
+  <link rel="stylesheet" href="widgets/propriedades.css">
+  <link rel="stylesheet" href="widgets/equacoes.css">
+  <link rel="stylesheet" href="widgets/derivadas.css">
+  <link rel="stylesheet" href="widgets/limites.css">
+  <link rel="stylesheet" href="widgets/estudo.css">
+  <script defer src="../assets/katex/katex.min.js"></script>
+  <script defer src="../assets/katex/auto-render.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body data-pagina="materia" data-dados="estudos">
+  <a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+  <header id="barra"></header>
+
+  <main id="conteudo">
+    <section class="hero hero--pagina">
+      <div class="envolve">
+        <p class="hero__etiqueta">Exponenciais e logaritmos · 12.º ano</p>
+        <h1>Matéria</h1>
+      </div>
+    </section>
+
+    <section class="seccao">
+      <div class="envolve">
+        <nav class="indice" aria-label="Nesta página">
+          <span class="indice__rotulo">Nesta página:</span>
+          <a href="#exponencial">Exponencial</a>
+          <a href="#logaritmo">Logaritmo</a>
+          <a href="#inversa">Inversa</a>
+          <a href="#propriedades">Propriedades</a>
+          <a href="#equacoes">Equações</a>
+          <a href="#derivadas">Derivadas</a>
+          <a href="#limites">Limites</a>
+          <a href="#estudo">Estudo</a>
+        </nav>
+
+        <article class="modulo" id="exponencial">
+          <h3>Função exponencial</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Numa função exponencial, $f(x)=a^x$, a variável está no expoente. A base é positiva e diferente de 1: com $a=1$ só terias a função constante 1, e com $a&lt;0$ potências como $a^{1/2}$ nem existem. Cada vez que $x$ sobe 1, o valor multiplica-se por $a$. O gráfico passa sempre por $(0,1)$, porque $a^0=1$, e por $(1,a)$, porque $a^1=a$.</p>
+            <p>Se $a&gt;1$, multiplicar por $a$ faz crescer: a função é crescente, $a^x\to0$ quando $x\to-\infty$ e $a^x\to+\infty$ quando $x\to+\infty$. Se $0&lt;a&lt;1$, multiplicar por $a$ faz encolher: é decrescente e os dois limites trocam. Nos dois casos o domínio é $\mathbb{R}$ e o contradomínio é $\mathbb{R}^+$, porque uma potência de base positiva nunca é zero nem negativa. A reta $y=0$ é assíntota horizontal.</p>
+            <p>Cada valor positivo é atingido uma só vez, por isso $a^x=a^y\Leftrightarrow x=y$. Exemplo: para resolver $4^x=8$, passa as duas potências para a base 2, $2^{2x}=2^3$, e fica $2x=3$, ou seja, $x=\frac32$. A base mais usada é o número $e\approx2{,}718$: $e^x$ é crescente e passa por $(0,1)$ e por $(1,e)$.</p>
+            <p><strong>Atenção.</strong> A monotonia decide-se pela base, não pelo sinal do expoente: $3^{-x}=\left(\frac13\right)^x$ tem base entre 0 e 1, por isso é decrescente.</p>
+          </div>
+          <div data-widget="exponencial"></div>
+        </article>
+
+        <article class="modulo" id="logaritmo">
+          <h3>O logaritmo é um expoente</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Sabes que $2^3=8$. O logaritmo faz a pergunta ao contrário: a que expoente tens de elevar 2 para obter 8? A resposta é $\log_28=3$. Ou seja, <strong>o logaritmo é um expoente</strong>: $\log_ay$ é o expoente a que se eleva $a$ para dar $y$.</p>
+            $$\begin{gathered}a^x=y\Leftrightarrow x=\log_ay\\[0.4em] (a&gt;0,\ a\neq1,\ y&gt;0)\end{gathered}$$
+            <p>Como $a^0=1$ e $a^1=a$, e como o logaritmo e a exponencial se desfazem um ao outro, ficam quatro resultados:</p>
+            $$\begin{gathered}\log_a1=0\qquad\log_aa=1\\[0.4em] \log_a(a^x)=x\qquad a^{\log_ax}=x\end{gathered}$$
+            <p>Uma potência de base positiva nunca dá 0 nem um número negativo, por isso só existe logaritmo de números positivos: nenhum expoente faz $2^x=0$ nem $2^x=-4$, logo $\log_20$ e $\log_2(-4)$ não existem. Com base 10 escreve-se $\log x$ e com base $e$ escreve-se $\ln x$.</p>
+            <p>Exemplo: $\log_3\frac{1}{27}$ pergunta «3 elevado a quê dá $\frac{1}{27}$?». Como $\frac{1}{27}=3^{-3}$, vale $-3$. E $\log_48=\frac32$, porque $4^{3/2}=(2^2)^{3/2}=2^3=8$.</p>
+            <p><strong>Atenção.</strong> A base e o número não trocam de lugar: $\log_28=3$, mas $\log_82=\frac13$, porque $8^{1/3}=2$.</p>
+          </div>
+          <div data-widget="logaritmo"></div>
+        </article>
+
+        <article class="modulo" id="inversa">
+          <h3>Função logarítmica: a inversa da exponencial</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>A exponencial $a^x$ é injetiva, por isso tem inversa. Para a encontrar, resolve $y=a^x$ em ordem a $x$: pela definição, $x=\log_ay$. Trocando os nomes das variáveis, a inversa de $a^x$ é a função logarítmica $\log_ax$. É isto que quer dizer «desfazem-se um ao outro».</p>
+            <p>No gráfico, a inversa é o espelho na reta $y=x$: se $(p,q)$ está no gráfico de $a^x$, então $(q,p)$ está no de $\log_ax$. Por exemplo, $(3,8)$ está em $2^x$ e $(8,3)$ está em $\log_2x$, e o mesmo com $(2,4)$ e $(4,2)$. O domínio e o contradomínio trocam: o logaritmo tem $D=\mathbb{R}^+$ e $D'=\mathbb{R}$. O zero é $x=1$ e a assíntota $y=0$ passa a ser a vertical $x=0$.</p>
+            <p>A monotonia mantém-se: $\log_ax$ é crescente se $a&gt;1$ e decrescente se $0&lt;a&lt;1$. Para $a&gt;1$, $\lim_{x\to0^+}\log_ax=-\infty$ e $\lim_{x\to+\infty}\log_ax=+\infty$. O argumento tem de ser positivo, por isso o domínio de $\ln(x^2-4)$ sai de $x^2-4&gt;0$, ou seja, $\mathopen{]}-\infty,-2\mathclose{[}\cup\mathopen{]}2,+\infty\mathclose{[}$.</p>
+            <p>Exemplo: a inversa de $f(x)=1+2\ln(x-3)$. Desfaz os passos por ordem inversa: de $y=1+2\ln(x-3)$ vem $\ln(x-3)=\frac{y-1}{2}$, depois $x-3=e^{(y-1)/2}$ e $x=3+e^{(y-1)/2}$. Logo $f^{-1}(x)=3+e^{(x-1)/2}$, com domínio $\mathbb{R}$ (o contradomínio de $f$) e contradomínio $]3,+\infty[$ (o domínio de $f$).</p>
+            <p><strong>Atenção.</strong> $x^2-4&gt;0$ não é só $x&gt;2$: $x=-3$ também serve, porque $(-3)^2-4=5&gt;0$ e $\ln5$ existe.</p>
+          </div>
+          <div data-widget="inversa"></div>
+        </article>
+
+        <article class="modulo" id="propriedades">
+          <h3>Propriedades dos logaritmos</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Um logaritmo é um expoente, por isso as propriedades dos logaritmos são as das potências lidas ao contrário. Se $x=a^m$ e $y=a^n$, então $m=\log_ax$ e $n=\log_ay$. Como $xy=a^{m+n}$, vem $\log_a(xy)=m+n=\log_ax+\log_ay$. O quociente e a potência saem do mesmo modo. Para $x,y&gt;0$:</p>
+            $$\begin{gathered}\log_a(xy)=\log_ax+\log_ay\\[0.4em] \log_a\frac{x}{y}=\log_ax-\log_ay\\[0.4em] \log_a(x^p)=p\log_ax\\[0.4em] \log_ax=\frac{\log_bx}{\log_ba}\end{gathered}$$
+            <p>A última é a mudança de base: se $m=\log_ax$, então $x=a^m$ e, aplicando $\log_b$, $\log_bx=m\log_ba$. Com $x=b$ dá $\log_ab=\frac{1}{\log_ba}$. E, como $a=e^{\ln a}$, também $a^x=e^{x\ln a}$.</p>
+            <p>Exemplo sem calculadora: $\log_62+\log_618=\log_6(2\times18)=\log_636=2$. E $\log_84=\frac{\log_24}{\log_28}=\frac23$.</p>
+            <p><strong>Atenção.</strong> Não há regra para a soma: $\log_2(4+4)=3$, mas $\log_24+\log_24=4$. E as regras só valem com argumentos positivos: $\ln(x^2)=2\ln x$ só para $x&gt;0$. Para $x&lt;0$ é $2\ln(-x)$, e $\ln(x^2)$ existe para qualquer $x\neq0$ enquanto $2\ln x$ só existe para $x&gt;0$.</p>
+          </div>
+          <div data-widget="propriedades"></div>
+        </article>
+
+        <article class="modulo" id="equacoes">
+          <h3>Equações exponenciais e logarítmicas</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Como o logaritmo e a exponencial se desfazem, tiras a incógnita do expoente com um logaritmo e tiras a incógnita do logaritmo com uma exponencial:</p>
+            $$\begin{gathered}a^x=y\Leftrightarrow x=\log_ay\\[0.4em] \log_ax=y\Leftrightarrow x=a^y\\[0.4em] \log_ax=\log_ay\Leftrightarrow x=y\\[0.4em] (x,y&gt;0)\end{gathered}$$
+            <p>Nas equações com logaritmos, segue sempre esta ordem: o domínio (todos os argumentos positivos), juntar num só logaritmo, resolver, e ver se a solução pertence ao domínio. Nas exponenciais, ou passas à mesma base, ou fazes $u=2^x$ (ou $u=e^x$) para cair numa equação do 2.º grau, e rejeitas $u\le0$. Se não der para igualar as bases, aplica o logaritmo: $2^x=5\Leftrightarrow x=\log_25=\frac{\ln5}{\ln2}\approx2{,}32$ (arredonda só no fim).</p>
+            <p>Exemplo: $\log_2(x+1)+\log_2(x-1)=3$. O domínio é $x&gt;1$. Fica $\log_2(x^2-1)=3\Leftrightarrow x^2-1=8\Leftrightarrow x=\pm3$, mas só $x=3$ pertence ao domínio. Confirma: $\log_24+\log_22=2+1=3$.</p>
+            <p>Exemplo: $4^x-3\times2^x-4=0$. Com $u=2^x$, fica $u^2-3u-4=0$, logo $u=4$ ou $u=-1$. Como $2^x=-1$ é impossível, resta $2^x=4$, ou seja, $x=2$.</p>
+            <p><strong>Atenção.</strong> Nas inequações, base maior que 1 mantém o sentido e base entre 0 e 1 inverte-o: $\left(\frac12\right)^x&gt;\frac18\Leftrightarrow x&lt;3$. E, nas logarítmicas, a solução tem de ficar dentro do domínio.</p>
+          </div>
+          <div data-widget="equacoes"></div>
+        </article>
+
+        <article class="modulo" id="derivadas">
+          <h3>Derivadas de exponenciais e logaritmos</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>O número $e$ é a base para a qual a tangente a $e^x$ em $(0,1)$ tem declive 1, e daí resulta $(e^x)'=e^x$: em cada ponto, o declive é igual ao valor da função. Para outra base, $a^x=e^{x\ln a}$ e a derivada da função composta faz aparecer o fator $\ln a$ (com $a=e$ esse fator é $\ln e=1$). Como $\ln x$ é a inversa de $e^x$, derivar $x=e^{\ln x}$ dá $1=x\,(\ln x)'$, ou seja, $(\ln x)'=\frac1x$. Com $u$ uma função de $x$:</p>
+            $$\begin{gathered}(e^u)'=u'e^u\qquad(a^u)'=u'a^u\ln a\\[0.4em] (\ln u)'=\frac{u'}{u}\qquad(\log_au)'=\frac{u'}{u\ln a}\end{gathered}$$
+            <p>Combina com as regras do produto, do quociente e da função composta, e simplifica antes de derivar: $\ln\sqrt[3]{x}=\frac13\ln x$ tem derivada $\frac{1}{3x}$. O declive da tangente em $x_0$ é $f'(x_0)$ e a reta é $y-f(x_0)=f'(x_0)(x-x_0)$.</p>
+            <p>Exemplo: $f(x)=x\,e^{2x}$. Pela regra do produto:</p>
+            $$\begin{aligned}f'(x)&amp;=e^{2x}+x\times2e^{2x}\\ &amp;=(1+2x)e^{2x}\end{aligned}$$
+            <p>Como $e^{2x}&gt;0$, o sinal de $f'$ é o de $1+2x$, e a tangente é horizontal em $x=-\frac12$. Em $x=0$, $f(0)=0$ e $f'(0)=1$, por isso a tangente é $y=x$.</p>
+            <p><strong>Atenção.</strong> $(a^x)'$ não é $a^x$: falta o fator $\ln a$. Também não é $x\,a^{x-1}$, que é a regra da potência (variável na base). O declive de $2^x$ em $x=0$ é $\ln2\approx0{,}69$ e não 1.</p>
+          </div>
+          <div data-widget="derivadas"></div>
+        </article>
+
+        <article class="modulo" id="limites">
+          <h3>Limites e assíntotas</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Quando $x\to+\infty$, as funções $e^x$, $x^p$ (com $p&gt;0$) e $\ln x$ vão todas para $+\infty$, mas a ritmos muito diferentes: a exponencial vence qualquer potência, e qualquer potência vence o logaritmo. Os limites que mais vais usar são:</p>
+            $$\begin{gathered}\lim_{x\to+\infty}\frac{e^x}{x^p}=+\infty\\[0.4em] \lim_{x\to+\infty}\frac{\ln x}{x^p}=0\\[0.4em] \lim_{x\to0}\frac{e^x-1}{x}=1\\[0.4em] \lim_{x\to0}\frac{\ln(1+x)}{x}=1\end{gathered}$$
+            <p>Se a variável não vem sozinha, faz uma mudança de variável: em $\lim_{x\to0}\dfrac{e^{3x}-1}{x}$ põe $y=3x$ e fica $3\times\lim_{y\to0}\dfrac{e^y-1}{y}=3$.</p>
+            <p>A assíntota vertical $x=c$ procura-se na fronteira do domínio, com limites laterais. A horizontal $y=b$ existe quando $\lim f(x)=b$. A oblíqua $y=mx+b$ tem $m=\lim\frac{f(x)}{x}$ e $b=\lim\bigl(f(x)-mx\bigr)$, e se $m$ ou $b$ não forem números reais não há assíntota oblíqua nesse sentido.</p>
+            <p>Exemplo: $f(x)=\dfrac{\ln x}{x}$, com domínio $\mathbb{R}^+$. Como $\lim_{x\to+\infty}\dfrac{\ln x}{x}=0$, a reta $y=0$ é assíntota horizontal. Quando $x\to0^+$, $\ln x\to-\infty$ e $\frac1x\to+\infty$, logo $f(x)\to-\infty$ e a reta $x=0$ é assíntota vertical.</p>
+            <p><strong>Atenção.</strong> $\frac{\infty}{\infty}$ não é 1: é uma indeterminação, e quem decide é o ritmo. Quando $x\to+\infty$, em $\dfrac{e^x}{x}$ ganha a exponencial ($+\infty$) e em $\dfrac{\ln x}{x}$ ganha o $x$ ($0$).</p>
+          </div>
+          <div data-widget="limites"></div>
+        </article>
+
+        <article class="modulo" id="estudo">
+          <h3>Estudo de uma função</h3>
+          <div class="resumo">
+            <p class="resumo__titulo">Em resumo</p>
+            <p>Estudar uma função é responder, por ordem, às perguntas que desenham o gráfico. Primeiro, o domínio, a continuidade e os zeros. Depois, $f'$: onde $f'&gt;0$ a função sobe, onde $f'&lt;0$ desce, e só há extremo onde $f'$ muda de sinal. A seguir, $f''$: com $f''&gt;0$ a concavidade é para cima, com $f''&lt;0$ é para baixo, e há ponto de inflexão onde $f''$ muda de sinal. Por fim, os limites e as assíntotas. Tudo isto junta-se na tabela de variação, no gráfico e no contradomínio.</p>
+            <p>Exemplo: $f(x)=x\,e^{-x}$, com $D=\mathbb{R}$. As derivadas são $f'(x)=(1-x)e^{-x}$ e $f''(x)=(x-2)e^{-x}$, e como $e^{-x}&gt;0$ os sinais são os de $1-x$ e de $x-2$. Logo $f$ sobe até $x=1$ e desce depois, com máximo $f(1)=\frac1e$. A concavidade é para baixo até $x=2$ e para cima depois, por isso há inflexão em $x=2$, onde $f(2)=\frac{2}{e^2}$.</p>
+            <p>Nos limites, $\lim_{x\to+\infty}f(x)=0$ dá a assíntota $y=0$, e $\lim_{x\to-\infty}f(x)=-\infty$. Como $f$ sobe de $-\infty$ até $\frac1e$ e depois desce para $0$ sem lá chegar, o contradomínio é $\left]-\infty,\frac1e\right]$.</p>
+            <p><strong>Atenção.</strong> $f'(x_0)=0$ só dá um candidato a extremo: vê se $f'$ muda de sinal. E o contradomínio sai dos extremos e dos limites nas pontas, não só dos extremos.</p>
+          </div>
+          <div data-widget="estudo"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="rodape"></footer>
+</body>
+</html>

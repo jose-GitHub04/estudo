@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do módulo de gráficos</title>
+<!-- Testes de assets/motor/grafico.js: conversões, marcas bonitas, amostragem (ln x perto de 0, 1/x, tan),
+     corte na janela, retas, ids únicos com vários gráficos, pontos arrastáveis (ponteiro e teclado),
+     arrastarNaCurva, definirJanela e limpar. Abrir /logaritmos/tests/grafico.html ou:
+       msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8803/logaritmos/tests/grafico.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     A página /logaritmos/tests/grafico-demo.html mostra os gráficos a sério. -->
+<style>
+  body { font: 14px/1.4 monospace; padding: 1rem; }
+  pre { white-space: pre-wrap; }
+  #palco { width: 400px; }
+  #palco svg { display: block; width: 400px; height: auto; }
+</style>
+</head>
+<body>
+<h1>Testes do módulo de gráficos</h1>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import { criarGrafico, arrastarNaCurva, amostrarCurva, marcasBonitas, passoBonito, formatarNumero, CORES } from '../../assets/motor/grafico.js';
+import { criarFuncao } from '../../assets/motor/matematica.js';
+
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 3) erros.push(msg); }
+  };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.stack || e)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const PI = Math.PI;
+
+/** Coloca o gráfico na página (preciso para medir) e devolve-o. */
+function montar(opcoes) {
+  const g = criarGrafico(opcoes);
+  const caixa = document.createElement('div');
+  caixa.append(g.svg);
+  palco.append(caixa);
+  return g;
+}
+/** Pares [x, y] de um atributo d (M/L). Cada «M» começa um traço. */
+function pontosDe(d) {
+  const tracos = [];
+  for (const m of d.matchAll(/([ML])(-?[\d.]+) (-?[\d.]+)/g)) {
+    if (m[1] === 'M') tracos.push([]);
+    tracos[tracos.length - 1].push([parseFloat(m[2]), parseFloat(m[3])]);
+  }
+  return tracos;
+}
+const dDe = (item) => (item.el.tagName === 'path' ? item.el : item.el.querySelector('path')).getAttribute('d');
+
+function ponteiro(g, tipo, x, y, alvo = g.svg, extra = {}) {
+  const r = g.svg.getBoundingClientRect();
+  const clientX = r.left + (g.X(x) / g.largura) * r.width;
+  const clientY = r.top + (g.Y(y) / g.altura) * r.height;
+  alvo.dispatchEvent(new PointerEvent(tipo, { bubbles: true, cancelable: true, pointerId: 7, clientX, clientY, button: 0, ...extra }));
+}
+const tecla = (el, key, extra = {}) => el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra }));
+
+// ---------- marcas e números ----------
+await teste('marcasBonitas: passos 1, 2, 5 × 10^k, sem ruído de vírgula flutuante', (ok) => {
+  const m1 = marcasBonitas(-3, 3, 7);
+  ok(m1.passo === 1 && m1.valores.join() === '-3,-2,-1,0,1,2,3', 'de −3 a 3: ' + m1.valores);
+  ok(marcasBonitas(0, 10, 5).passo === 2, '0 a 10 com 5 marcas: passo 2');
+  ok(marcasBonitas(0, 100, 5).passo === 20, '0 a 100 com 5 marcas: passo 20');
+  ok(marcasBonitas(0, 50, 5).passo === 10, '0 a 50 com 5 marcas: passo 10');
+  ok(marcasBonitas(0, 1, 5).passo === 0.2, '0 a 1 com 5 marcas: passo 0,2');
+  ok(marcasBonitas(0, 0.001, 5).passo === 0.0002, '0 a 0,001: passo 0,0002');
+  ok(marcasBonitas(-1, 9, 5).passo === 2, '−1 a 9: passo 2');
+  ok(marcasBonitas(-1, 1, 6).passo === 0.5, '−1 a 1 com 6 marcas: passo 0,5');
+  const m2 = marcasBonitas(-0.5, 0.5, 10);
+  ok(m2.valores.every((v) => String(v).length <= 5), 'sem ruído: ' + m2.valores);
+  ok(m2.valores[0] === -0.5 && m2.valores[m2.valores.length - 1] === 0.5, 'inclui as pontas: ' + m2.valores);
+  ok(m2.valores.includes(0) && !m2.valores.some((v) => Object.is(v, -0)), 'zero sem sinal');
+  for (const [a, b] of [[0, 7], [-13, 29], [0.3, 0.9], [-1000, 1000], [1e-6, 3e-6], [2, 2.5]]) {
+    const { passo, valores } = marcasBonitas(a, b, 6);
+    ok(valores.length >= 2 && valores.length <= 12, `${a}..${b}: ${valores.length} marcas`);
+    ok(valores.every((v) => v >= a - 1e-12 && v <= b + 1e-12), `${a}..${b}: dentro do intervalo`);
+    const mant = passo / Math.pow(10, Math.floor(Math.log10(passo)));
+    ok([1, 2, 5].some((c) => perto(mant, c, 1e-9)), `${a}..${b}: passo ${passo} não é 1, 2 ou 5`);
+  }
+  ok(passoBonito(6, 6) === 1, 'passoBonito(6, 6) = 1');
+});
+
+await teste('formatarNumero: vírgula decimal e sinal de menos «−»', (ok) => {
+  ok(formatarNumero(1234.5) === '1234,5', '1234,5');
+  ok(formatarNumero(-2) === '−2', '−2');
+  ok(formatarNumero(0.25) === '0,25', '0,25');
+  ok(formatarNumero(-0.001) === '0', '−0,001 com 2 casas dá 0, sem «−0»');
+  ok(formatarNumero(1 / 3, 3) === '0,333', '0,333');
+  ok(formatarNumero(NaN) === '', 'NaN dá texto vazio');
+  ok(!formatarNumero(-1.5).includes('-'), 'sem hífen');
+});
+
+// ---------- conversões ----------
+await teste('conversões ida e volta: g.x(g.X(x)) = x e g.y(g.Y(y)) = y (janelas livres e com escala igual)', (ok) => {
+  const janelas = [
+    { x: [-3, 3], y: [-1, 5] }, { x: [0, 10], y: [0, 4] }, { x: [-0.5, 0.5], y: [-100, 1000] }, { x: [-2 * PI, 2 * PI], y: [-4, 4] },
+    { x: [-2, 6], y: [-3, 4], igual: true }, { x: [1, 2], y: [1, 2], igual: true, largura: 300 }, { x: [-5, 5], y: [-5, 5], altura: 200 },
+  ];
+  for (const j of janelas) {
+    const g = criarGrafico(j);
+    for (const v of [j.x[0], j.x[1], (j.x[0] + j.x[1]) / 2, 0.37, -1.3]) ok(perto(g.x(g.X(v)), v, 1e-9), `x ${v} em ${JSON.stringify(j)}`);
+    for (const v of [j.y[0], j.y[1], (j.y[0] + j.y[1]) / 2, 0.37, -1.3]) ok(perto(g.y(g.Y(v)), v, 1e-9), `y ${v} em ${JSON.stringify(j)}`);
+    ok(g.X(j.x[1]) > g.X(j.x[0]), 'X cresce para a direita');
+    ok(g.Y(j.y[1]) < g.Y(j.y[0]), 'Y diminui para cima (o y do SVG vai para baixo)');
+    ok(g.X(j.x[0]) > 0 && g.X(j.x[1]) < g.largura && g.Y(j.y[1]) > 0 && g.Y(j.y[0]) < g.altura, 'a janela cabe no viewBox');
+    ok(g.svg.getAttribute('viewBox') === `0 0 ${g.largura} ${g.altura}`, 'viewBox');
+  }
+  const g = criarGrafico({ x: [-2, 6], y: [-3, 4], igual: true });
+  ok(perto(g.X(1) - g.X(0), g.Y(0) - g.Y(1), 1e-9), 'igual:true dá a mesma escala nos dois eixos');
+  const g2 = criarGrafico({ x: [0, 4], y: [0, 100] });
+  ok(Math.abs((g2.X(1) - g2.X(0)) - (g2.Y(0) - g2.Y(1))) > 1, 'sem igual a escala é livre');
+});
+
+await teste('o svg: classe figura, viewBox, role="img", aria-label, sem unidades estranhas', (ok) => {
+  const g = montar({ x: [-3, 3], y: [-1, 5], aria: 'Gráfico de teste' });
+  ok(g.svg.classList.contains('figura'), 'classe figura');
+  ok(g.svg.getAttribute('role') === 'img', 'role img');
+  ok(g.svg.getAttribute('aria-label') === 'Gráfico de teste', 'aria-label dado');
+  ok(/^0 0 \d+ \d+$/.test(g.svg.getAttribute('viewBox')), 'viewBox inteiro: ' + g.svg.getAttribute('viewBox'));
+  const g2 = criarGrafico({ x: [-1, 1], y: [-1, 1] });
+  ok(/Gráfico cartesiano/.test(g2.svg.getAttribute('aria-label')), 'aria-label por defeito');
+  let lancou = false;
+  try { criarGrafico({ x: [1, 1], y: [0, 1] }); } catch { lancou = true; }
+  ok(lancou, 'janela vazia lança');
+  lancou = false;
+  try { criarGrafico({ y: [0, 1] }); } catch { lancou = true; }
+  ok(lancou, 'sem x lança');
+  ok(CORES.exp.includes('--c-exp') && CORES.log.includes('--c-log') && CORES.assint.includes('--c-assint'), 'tokens de cor');
+});
+
+await teste('base: números dos eixos com vírgula decimal e menos «−», eixos com setas', (ok) => {
+  const g = montar({ x: [-1, 1], y: [-1, 1] });
+  const textos = [...g.svg.querySelectorAll('[data-camada="base"] text')].map((t) => t.textContent);
+  ok(textos.includes('0,5') && textos.includes('−0,5'), 'marcas 0,5 e −0,5: ' + textos.join(' '));
+  ok(textos.includes('x') && textos.includes('y'), 'nomes dos eixos');
+  ok(!textos.some((t) => t.includes('-') || t.includes('.')), 'sem hífen nem ponto decimal');
+  ok(g.svg.querySelectorAll('[data-camada="base"] polygon').length === 2, 'duas setas');
+  const g2 = montar({ x: [-1, 1], y: [-1, 1], setas: false, rotuloX: '', rotuloY: '', grelha: false, marcasX: false, marcasY: false });
+  ok(g2.svg.querySelectorAll('[data-camada="base"] polygon').length === 0, 'sem setas');
+  ok(g2.svg.querySelectorAll('[data-camada="base"] text').length === 0, 'sem texto');
+  const g3 = montar({ x: [0, 4], y: [0, 3], marcasX: [{ valor: Math.E, texto: 'e' }, 1] });
+  ok([...g3.svg.querySelectorAll('[data-camada="base"] text')].some((t) => t.textContent === 'e'), 'marca personalizada «e»');
+  for (const cfg of [{ x: [1, 5], y: [2, 6] }, { x: [-5, -1], y: [-6, -2] }, { x: [0, 3], y: [0, 3] }]) {
+    const gg = montar(cfg);
+    ok(!/NaN|Infinity/.test(gg.svg.outerHTML), 'sem NaN com janela ' + JSON.stringify(cfg));
+  }
+});
+
+// ---------- amostragem ----------
+await teste('amostrarCurva: ln x perto de 0 dá um só traço que começa depois de 0', (ok) => {
+  const t = amostrarCurva(Math.log, -1, 6, { n: 120, escalaY: 30, altura: 7 });
+  ok(t.length === 1, 'um traço, deu ' + t.length);
+  const x0 = t[0][0][0];
+  ok(x0 > 0 && x0 < 1e-3, 'começa em x = ' + x0);
+  ok(t[0][t[0].length - 1][0] === 6, 'acaba em 6');
+  ok(t[0].every(([x, y]) => Number.isFinite(y) && perto(y, Math.log(x))), 'todos os pontos estão na curva');
+  const n = t[0].length;
+  ok(n > 100 && n < 2000, 'número de pontos razoável: ' + n);
+  const f = criarFuncao('ln(x)');
+  ok(amostrarCurva(f, -1, 6).length === 1, 'também com criarFuncao');
+  const s = amostrarCurva(Math.sqrt, -1, 4, { escalaY: 30, altura: 5 });
+  ok(s.length === 1 && s[0][0][0] >= 0 && s[0][0][0] < 1e-3, 'sqrt começa em 0');
+});
+
+await teste('amostrarCurva: 1/x parte o traço em 0 (com 0 amostrado ou entre amostras), tan dá 5 ramos', (ok) => {
+  for (const [a, b] of [[-2, 2], [-1.9, 2.3], [-3, 3.1], [-0.37, 5.55]]) {
+    const t = amostrarCurva((x) => 1 / x, a, b, { n: 120, escalaY: 30, altura: 10 });
+    ok(t.length === 2, `1/x em [${a}, ${b}]: ${t.length} traços`);
+    ok(t[0].every(([x]) => x < 0) && t[1].every(([x]) => x > 0), `1/x em [${a}, ${b}]: um traço de cada lado`);
+  }
+  for (const [a, b] of [[-2 * PI, 2 * PI], [-7, 7], [-5, 5.5]]) {
+    const polos = [-3, -1, 1, 3].map((k) => (k * PI) / 2).filter((p) => p > a && p < b).length;
+    const t = amostrarCurva(Math.tan, a, b, { n: 120, escalaY: 30, altura: 8 });
+    ok(t.length === polos + 1, `tan em [${a.toFixed(2)}, ${b.toFixed(2)}]: ${t.length} traços, esperava ${polos + 1}`);
+  }
+  // sinal igual dos dois lados (1/x²): parte-se ou não, tanto faz, porque a janela corta os dois ramos
+  const q = amostrarCurva((x) => 1 / (x * x), -1.9, 2.3, { n: 120, escalaY: 30, altura: 10 });
+  ok(q.length <= 2 && q.flat().some(([x]) => x < 0) && q.flat().some(([x]) => x > 0), '1/x² cobre os dois lados do polo: ' + q.length + ' traços');
+  // saltos de função em escada
+  const e = amostrarCurva(Math.floor, -2.5, 2.5, { n: 120, escalaY: 30, altura: 0.5 });
+  ok(e.length >= 5, 'floor com altura 0,5 parte em degraus: ' + e.length);
+  // função que lança ou devolve lixo
+  const l = amostrarCurva((x) => { if (x > 1) throw new Error('boom'); return x; }, 0, 2, { escalaY: 30, altura: 5 });
+  ok(l.length === 1 && l[0][l[0].length - 1][0] <= 1.0001, 'exceção conta como fora do domínio');
+  ok(amostrarCurva(() => NaN, 0, 1).length === 0, 'sempre NaN: sem traços');
+  ok(amostrarCurva(() => 'abc', 0, 1).length === 0, 'texto: sem traços');
+  const c = amostrarCurva((x) => Math.sin(1 / x), 0.001, 1, { escalaY: 100, altura: 4 });
+  ok(c.length >= 1 && c.reduce((s, t) => s + t.length, 0) < 12000, 'sin(1/x) termina com poucos pontos');
+});
+
+// ---------- curva no SVG: partir, cortar ----------
+await teste('curva ln x: um traço, nada fora da janela, nenhum NaN, começa à direita de x = 0', (ok) => {
+  const g = montar({ x: [-1, 6], y: [-3, 4] });
+  const c = g.curva('ln(x)', { id: 'ln' });
+  const tr = pontosDe(dDe(c));
+  ok(c.tracos === 1 && tr.length === 1, 'um traço: ' + c.tracos);
+  ok(g.item('ln') === c && c.el.getAttribute('data-id') === 'ln', 'id guardado');
+  const L = g.X(-1);
+  const R = g.X(6);
+  const T = g.Y(4);
+  const B = g.Y(-3);
+  const todos = tr.flat();
+  ok(todos.every(([x, y]) => x >= L - 1.01 && x <= R + 1.01 && y >= T - 1.01 && y <= B + 1.01), 'todos os pontos dentro da janela (com 1 de folga)');
+  ok(tr[0][0][0] > g.X(0) && tr[0][0][0] < g.X(0.2), 'começa logo à direita de x = 0');
+  ok(Math.abs(tr[0][0][1] - B) < 1.5, 'e chega à borda de baixo (y = −3): ' + tr[0][0][1] + ' vs ' + B);
+  ok(!/NaN|Infinity/.test(dDe(c)), 'sem NaN');
+  ok(c.el.getAttribute('stroke-linecap') === 'round', 'pontas redondas');
+});
+
+await teste('curva tan: 5 ramos entre −2π e 2π, cada um corta nas bordas de cima e de baixo', (ok) => {
+  const g = montar({ x: [-2 * PI, 2 * PI], y: [-4, 4] });
+  const c = g.curva((x) => Math.tan(x));
+  const tr = pontosDe(dDe(c));
+  ok(c.tracos === 5 && tr.length === 5, '5 traços: ' + c.tracos + '/' + tr.length);
+  const T = g.Y(4);
+  const B = g.Y(-4);
+  const meio = tr.slice(1, 4);
+  ok(meio.every((t) => Math.abs(Math.min(...t.map((p) => p[1])) - T) < 1.5 && Math.abs(Math.max(...t.map((p) => p[1])) - B) < 1.5), 'os ramos do meio vão de borda a borda');
+  ok(!/NaN|Infinity/.test(dDe(c)), 'sem NaN');
+  ok(tr.flat().length < 1500, 'poucos pontos: ' + tr.flat().length);
+  // com a mesma função como string
+  const g2 = montar({ x: [-2, 2], y: [-4, 4] });
+  ok(g2.curva('1/x').tracos === 2, '1/x como string: 2 traços');
+  ok(g2.curva('1/x^2').tracos === 2, '1/x² cortado pela janela: 2 traços visíveis');
+});
+
+await teste('curva: de/ate, opções de estilo, rotulo, atualizar e remover', (ok) => {
+  const g = montar({ x: [-3, 3], y: [-1, 9] });
+  const c = g.curva('2^x', { de: 0, ate: 2, cor: 'log', espessura: 3, tracejado: true, opacidade: 0.5, camada: 'curvas' });
+  const pts = pontosDe(dDe(c)).flat();
+  ok(pts[0][0] >= g.X(0) - 1.01 && pts[pts.length - 1][0] <= g.X(2) + 1.01, 'de/ate respeitados');
+  ok(pts[0][0] < g.X(0) + 2 && pts[pts.length - 1][0] > g.X(2) - 2, 'e a curva vai de 0 a 2');
+  ok(c.el.getAttribute('style').includes('--c-log'), 'cor «log» vira o token');
+  ok(c.el.getAttribute('stroke-width') === '3' && c.el.getAttribute('stroke-dasharray') === '6 5' && c.el.getAttribute('stroke-opacity') === '0.5', 'espessura, tracejado, opacidade');
+  const d1 = dDe(c);
+  c.atualizar('3^x');
+  ok(dDe(c) !== d1, 'atualizar com outra função muda o desenho');
+  const r = g.curva((x) => x * x, { rotulo: 'x²' });
+  ok(r.el.tagName === 'g' && r.el.querySelector('text').textContent === 'x²', 'rótulo da curva');
+  c.remover();
+  ok(!g.camadas.curvas.contains(c.el), 'remover tira do SVG');
+  let lancou = false;
+  try { g.curva('foo(x)'); } catch { lancou = true; }
+  ok(lancou, 'expressão ilegível lança logo');
+});
+
+// ---------- retas, segmentos, áreas, rótulos ----------
+await teste('retas: vertical, horizontal, por declive e ordenada (cortadas pela janela), segmento', (ok) => {
+  const g = montar({ x: [-2, 2], y: [-1, 1] });
+  const v = g.retaVertical(1, { rotulo: 'x = 1' });
+  const pv = pontosDe(v.el.querySelector('path').getAttribute('d'));
+  ok(pv.length === 1 && perto(pv[0][0][0], g.X(1), 1e-3) && perto(pv[0][1][0], g.X(1), 1e-3), 'vertical em X(1)');
+  ok(Math.abs(pv[0][0][1] - g.Y(-1)) <= 1.01 && Math.abs(pv[0][1][1] - g.Y(1)) <= 1.01, 'vertical de borda a borda');
+  ok(v.el.querySelector('path').getAttribute('stroke-dasharray') === '6 5', 'vertical tracejada por defeito');
+  ok(v.el.querySelector('text').textContent === 'x = 1', 'rótulo da vertical');
+  const fora = g.retaVertical(5);
+  ok(fora.el.querySelector('path').getAttribute('d') === '', 'vertical fora da janela não se desenha');
+  const h = g.retaHorizontal(0.5);
+  const ph = pontosDe(h.el.querySelector('path').getAttribute('d'));
+  ok(perto(ph[0][0][1], g.Y(0.5), 1e-3) && ph[0][0][0] <= g.X(-2) + 1.01 && ph[0][1][0] >= g.X(2) - 1.01, 'horizontal em Y(0,5) de lado a lado');
+  const r = g.reta(1, 0, { rotulo: 'y = x' });
+  const pr = pontosDe(r.el.querySelector('path').getAttribute('d'))[0];
+  ok(pr.length === 2, 'y = x: um segmento');
+  const L = g.X(-2) - 1;
+  const R = g.X(2) + 1;
+  const T = g.Y(1) - 1;
+  const B = g.Y(-1) + 1;
+  ok(pr.every(([x, y]) => x >= L - 0.01 && x <= R + 0.01 && y >= T - 0.01 && y <= B + 0.01), 'y = x cortada pela janela');
+  ok(Math.abs(pr[0][0] - g.X(-1)) < 1.5 && Math.abs(pr[1][0] - g.X(1)) < 1.5, 'y = x entra em x = −1 e sai em x = 1 (a janela em y é [−1, 1])');
+  const r2 = g.reta(0, 5);
+  ok(r2.el.querySelector('path').getAttribute('d') === '', 'reta toda fora da janela: nada');
+  const s = g.segmento(-1, -0.5, 1, 0.5);
+  const ps = pontosDe(s.el.querySelector('path').getAttribute('d'))[0];
+  ok(perto(ps[0][0], g.X(-1), 1e-3) && perto(ps[1][1], g.Y(0.5), 1e-3), 'segmento entre os pontos dados');
+  const s2 = g.segmento(0, 0, 10, 0);
+  const ps2 = pontosDe(s2.el.querySelector('path').getAttribute('d'))[0];
+  ok(ps2[1][0] <= g.X(2) + 1.01, 'segmento que sai da janela é cortado');
+  ok(v.camada === 'retas' && g.camadas.retas.contains(v.el), 'estão na camada «retas»');
+});
+
+await teste('área sombreada e rótulos de texto', (ok) => {
+  const g = montar({ x: [0, 4], y: [0, 3] });
+  const a = g.area((x) => 1 / x, 1, 2);
+  const d = a.el.getAttribute('d');
+  ok(/^M/.test(d) && /Z$/.test(d) && !/NaN|Infinity/.test(d), 'caminho fechado: ' + d.slice(0, 30));
+  ok(a.el.getAttribute('style').includes('--c-zona'), 'cor da zona');
+  ok(g.camadas.areas.contains(a.el), 'camada «areas»');
+  const a2 = g.area('ln(x)', -1, 3, { entre: 1 }); // o ln não existe para x ≤ 0: só se sombreia onde existe
+  ok(/Z$/.test(a2.el.getAttribute('d')), 'área entre ln x e y = 1');
+  const a3 = g.area((x) => x, 5, 6);
+  ok(a3.el.getAttribute('d') === '', 'área fora da janela: nada');
+  const r = g.rotulo(2, 1, 'texto', { ancora: 'middle', dx: 0, dy: -8 });
+  ok(r.el.textContent === 'texto' && r.el.getAttribute('text-anchor') === 'middle', 'rótulo');
+  ok(perto(parseFloat(r.el.getAttribute('x')), g.X(2), 1e-3) && perto(parseFloat(r.el.getAttribute('y')), g.Y(1) - 8, 1e-3), 'rótulo ancorado em (2, 1) com desvio');
+  ok(r.el.getAttribute('style').includes('fill:'), 'cor por style (a regra «.figura text» não a anula)');
+});
+
+// ---------- ids únicos com vários gráficos ----------
+await teste('10 gráficos na mesma página: clipPath com ids únicos, cada um recorta o seu', (ok) => {
+  const gs = [];
+  for (let i = 0; i < 10; i++) {
+    const g = montar({ x: [-3, 3], y: [-3, 3] });
+    g.curva('2^x');
+    g.retaVertical(0);
+    gs.push(g);
+  }
+  const ids = [...document.querySelectorAll('clipPath')].map((e) => e.id);
+  ok(new Set(ids).size === ids.length, 'ids repetidos: ' + ids.join(' '));
+  ok(new Set(gs.map((g) => g.id)).size === 10, 'g.id único');
+  for (const g of gs) {
+    const proprio = g.svg.querySelector('clipPath').id;
+    const refs = [...g.svg.querySelectorAll('[clip-path]')].map((e) => e.getAttribute('clip-path'));
+    ok(refs.length >= 3 && refs.every((r) => r === `url(#${proprio})`), 'cada gráfico usa o seu clipPath');
+    ok(document.getElementById(proprio) === g.svg.querySelector('clipPath'), 'getElementById acha o do próprio gráfico');
+  }
+  ok(document.querySelectorAll('marker').length === 0, 'sem markers (as setas são polígonos)');
+});
+
+// ---------- pontos ----------
+await teste('ponto: posição, rótulo, oco, fora da janela escondido, mover', (ok) => {
+  const g = montar({ x: [-3, 3], y: [-1, 5] });
+  const p = g.ponto(0, 1, { rotulo: '(0, 1)', id: 'p' });
+  const c = p.el.querySelector('circle');
+  ok(perto(parseFloat(c.getAttribute('cx')), g.X(0), 1e-3) && perto(parseFloat(c.getAttribute('cy')), g.Y(1), 1e-3), 'círculo em (X(0), Y(1))');
+  ok(p.el.querySelector('text').textContent === '(0, 1)', 'rótulo');
+  p.mover(1, 2);
+  ok(p.x === 1 && p.y === 2 && perto(parseFloat(p.el.querySelector('circle').getAttribute('cx')), g.X(1), 1e-3), 'mover');
+  p.definirRotulo('novo');
+  ok(p.el.querySelector('text').textContent === 'novo', 'definirRotulo');
+  const fora = g.ponto(9, 9);
+  ok(fora.el.style.display === 'none', 'ponto fora da janela escondido');
+  const oco = g.ponto(1, 1, { oco: true });
+  ok(oco.el.querySelector('circle').getAttribute('style').includes('fill:var(--papel'), 'ponto oco tem miolo branco');
+  const perto2 = g.ponto(2.9, 1, { rotulo: 'muito comprido para caber', posRotulo: 'auto' });
+  ok(perto2.el.querySelector('text').getAttribute('text-anchor') === 'end', 'rótulo vira para a esquerda junto à borda direita');
+  ok(g.item('p') === p, 'g.item');
+  p.remover();
+  ok(g.item('p') === undefined && !g.camadas.pontos.contains(p.el), 'remover');
+});
+
+await teste('ponto arrastável: ponteiro, restringir, teclado, aria, aoMover', (ok) => {
+  const g = montar({ x: [-3, 3], y: [-1, 5] });
+  const chamadas = [];
+  const p = g.ponto(0, 1, { arrastavel: true, aria: 'Ponto P', aoMover: (x, y) => chamadas.push([x, y]) });
+  ok(p.el.getAttribute('tabindex') === '0' && p.el.getAttribute('role') === 'slider', 'focável e role slider');
+  ok(p.el.getAttribute('aria-label') === 'Ponto P', 'aria-label');
+  ok(p.el.getAttribute('aria-valuenow') === '0', 'aria-valuenow inicial');
+  ok(p.el.style.touchAction === 'none', 'touch-action: none no ponto');
+  ok(g.svg.getAttribute('role') === 'group', 'o svg passa a group (os filhos têm de ser acessíveis)');
+  ok(g.svg.classList.contains('figura--fixa'), 'o svg continua a deixar a página deslizar');
+  ponteiro(g, 'pointerdown', 0, 1, p.el);
+  ponteiro(g, 'pointermove', 1.5, 3, p.el);
+  ok(perto(p.x, 1.5, 1e-2) && perto(p.y, 3, 1e-2), `arrastou para (1,5; 3): (${p.x}, ${p.y})`);
+  ponteiro(g, 'pointermove', 9, 9, p.el);
+  ok(p.x === 3 && p.y === 5, 'fica dentro da janela: (' + p.x + ', ' + p.y + ')');
+  ponteiro(g, 'pointerup', 9, 9, p.el);
+  ponteiro(g, 'pointermove', 0, 0, p.el);
+  ok(p.x === 3 && p.y === 5, 'depois de largar já não segue o ponteiro');
+  ok(chamadas.length >= 2 && chamadas[0].length === 2, 'aoMover chamado: ' + chamadas.length);
+  p.mover(0, 1);
+  tecla(p.el, 'ArrowRight');
+  ok(perto(p.x, 0.12, 1e-6), 'seta direita: +1/50 da largura = ' + p.x);
+  tecla(p.el, 'ArrowUp', { shiftKey: true });
+  ok(perto(p.y, 1 + (6 / 50) * 5, 1e-6), 'Shift + seta cima: ×5 = ' + p.y);
+  tecla(p.el, 'ArrowLeft');
+  tecla(p.el, 'ArrowLeft');
+  ok(perto(p.x, -0.12, 1e-6), 'duas setas esquerda');
+  ok(p.el.getAttribute('aria-valuenow') === String(+p.x.toFixed(4)), 'aria-valuenow acompanha: ' + p.el.getAttribute('aria-valuenow'));
+  ok(/x = /.test(p.el.getAttribute('aria-valuetext')), 'aria-valuetext: ' + p.el.getAttribute('aria-valuetext'));
+  const h = g.ponto(1, 1, { arrastavel: true, restringir: 'x' });
+  ponteiro(g, 'pointerdown', 1, 1, h.el);
+  ponteiro(g, 'pointermove', -2, 4, h.el);
+  ok(perto(h.x, -2, 1e-2) && h.y === 1, 'restringir "x": só se move na horizontal');
+  tecla(h.el, 'ArrowUp');
+  ok(h.y === 1, 'e o teclado também respeita a restrição');
+  const v = g.ponto(1, 1, { arrastavel: true, restringir: { x: [0, 2], y: [0, 2] } });
+  ponteiro(g, 'pointerdown', 1, 1, v.el);
+  ponteiro(g, 'pointermove', 2.9, 4.5, v.el);
+  ok(v.x === 2 && v.y === 2, 'restringir com limites: (' + v.x + ', ' + v.y + ')');
+  const f = g.ponto(1, 1, { arrastavel: true, restringir: (x) => [x, x * x] });
+  f.mover(2);
+  ok(f.x === 2 && f.y === 4, 'restringir com função');
+  const q = g.ponto(1, 1, { arrastavel: true, teclado: false });
+  tecla(q.el, 'ArrowRight');
+  ok(q.x === 1, 'teclado: false desliga as setas');
+  const calado = g.ponto(0, 0, { arrastavel: true, aoMover: () => { throw new Error('não devia'); } });
+  calado.mover(1, 1, false);
+  ok(calado.x === 1, 'mover(x, y, false) não chama aoMover');
+});
+
+await teste('arrastarNaCurva: ponteiro, teclado (setas, Shift, Page, Home, End), aria, aoMover, mover', (ok) => {
+  const g = montar({ x: [-1, 6], y: [-0.5, 0.6] });
+  const f = criarFuncao('x*e^-x');
+  g.curva(f);
+  const chamadas = [];
+  const c = arrastarNaCurva(g, f, { x0: 2, xmin: 0, xmax: 5, aoMover: (x, y) => chamadas.push([x, y]) });
+  ok(chamadas.length === 0, 'não chama aoMover ao criar');
+  ok(c.el && typeof c.mover === 'function', 'devolve { mover, el }');
+  ok(c.x === 2 && perto(c.y, 2 * Math.exp(-2)), 'começa em x0 = 2 sobre a curva');
+  ok(c.el.getAttribute('tabindex') === '0' && c.el.getAttribute('role') === 'slider', 'tabindex 0, role slider');
+  ok(c.el.getAttribute('aria-label').length > 5, 'aria-label');
+  ok(c.el.getAttribute('aria-valuemin') === '0' && c.el.getAttribute('aria-valuemax') === '5' && c.el.getAttribute('aria-valuenow') === '2', 'aria-valuemin/max/now');
+  ok(g.camadas.controlos.contains(c.el), 'fica na camada «controlos»');
+  const cx = () => parseFloat(c.el.querySelector('circle:last-of-type').getAttribute('cx'));
+  ok(perto(cx(), g.X(2), 1e-3), 'desenhado em X(2)');
+  tecla(c.el, 'ArrowRight');
+  ok(perto(c.x, 2.05, 1e-9), 'seta direita: passo por defeito = (xmax−xmin)/100 = ' + c.x);
+  ok(perto(c.y, c.x * Math.exp(-c.x), 1e-9), 'continua na curva');
+  ok(chamadas.length === 1 && perto(chamadas[0][0], 2.05), 'aoMover chamado com x');
+  tecla(c.el, 'ArrowLeft', { shiftKey: true });
+  ok(perto(c.x, 1.8, 1e-9), 'Shift + seta esquerda: −5 passos = ' + c.x);
+  tecla(c.el, 'PageUp');
+  ok(perto(c.x, 2.3, 1e-9), 'PageUp: +10 passos = ' + c.x);
+  tecla(c.el, 'Home');
+  ok(c.x === 0 && c.el.getAttribute('aria-valuenow') === '0', 'Home vai a xmin');
+  tecla(c.el, 'ArrowLeft');
+  ok(c.x === 0, 'não passa de xmin');
+  tecla(c.el, 'End');
+  ok(c.x === 5 && c.el.getAttribute('aria-valuenow') === '5', 'End vai a xmax');
+  tecla(c.el, 'ArrowRight');
+  ok(c.x === 5, 'não passa de xmax');
+  tecla(c.el, 'a');
+  ok(c.x === 5, 'outras teclas ignoradas');
+  ok(/x = 5/.test(c.el.getAttribute('aria-valuetext')), 'aria-valuetext: ' + c.el.getAttribute('aria-valuetext'));
+  c.mover(100);
+  ok(c.x === 5, 'mover(100) fica em xmax');
+  const n = chamadas.length;
+  c.mover(1, false);
+  ok(c.x === 1 && chamadas.length === n, 'mover(x, false) não chama aoMover');
+  c.mover(1.5);
+  ok(c.x === 1.5 && chamadas.length === n + 1, 'mover(x) chama aoMover');
+  // ponteiro: carregar no fundo do gráfico leva o ponto para esse x; arrastar segue
+  ponteiro(g, 'pointerdown', 3, 0.3);
+  ok(perto(c.x, 3, 2e-2), 'carregar em x = 3: ' + c.x);
+  ponteiro(g, 'pointermove', 4.2, 0.1);
+  ok(perto(c.x, 4.2, 2e-2), 'arrastar até 4,2: ' + c.x);
+  ponteiro(g, 'pointermove', -0.5, 0.1);
+  ok(c.x === 0, 'o x é limitado a [xmin, xmax]');
+  ponteiro(g, 'pointerup', 4.2, 0.1);
+  ponteiro(g, 'pointermove', 2, 0.1);
+  ok(c.x === 0, 'depois de largar não segue');
+  ponteiro(g, 'pointerdown', c.x, c.y, c.el);
+  ponteiro(g, 'pointermove', 2, c.y, c.el);
+  ok(perto(c.x, 2, 2e-2), 'pegar no próprio ponto e arrastar: ' + c.x);
+  ponteiro(g, 'pointerup', 2, c.y, c.el);
+  ok(g.svg.style.touchAction === 'pan-y' && !g.svg.classList.contains('figura--fixa'), 'svg: pan-y (a página desliza na vertical)');
+  // fora do domínio: o ponto desaparece mas o x continua a andar
+  const g2 = montar({ x: [-2, 4], y: [-3, 3] });
+  const c2 = arrastarNaCurva(g2, 'ln(x)', { xmin: -1, xmax: 3, x0: 2 });
+  c2.mover(-0.5);
+  ok(c2.x === -0.5 && Number.isNaN(c2.y) && c2.el.style.display === 'none', 'fora do domínio: escondido, y = NaN');
+  c2.mover(1);
+  ok(c2.el.style.display === '' && c2.y === 0, 'volta a aparecer');
+});
+
+// ---------- janela, limpar, redesenhar ----------
+await teste('definirJanela redesenha tudo; limpar(camada) e limpar() com redesenho', (ok) => {
+  const g = montar({ x: [-3, 3], y: [-1, 5] });
+  const c = g.curva('2^x');
+  const p = g.ponto(1, 2);
+  const r = g.retaVertical(1);
+  const a = g.area('2^x', 0, 1);
+  const d1 = dDe(c);
+  const cx1 = parseFloat(p.el.querySelector('circle').getAttribute('cx'));
+  g.definirJanela([-1, 5], [-2, 10]);
+  ok(JSON.stringify(g.janela) === JSON.stringify({ x: [-1, 5], y: [-2, 10] }), 'g.janela atualizada');
+  ok(dDe(c) !== d1, 'a curva foi redesenhada');
+  ok(parseFloat(p.el.querySelector('circle').getAttribute('cx')) !== cx1 && perto(parseFloat(p.el.querySelector('circle').getAttribute('cx')), g.X(1), 1e-3), 'o ponto mudou de sítio com a janela');
+  ok(perto(g.x(g.X(2)), 2) && perto(g.y(g.Y(7)), 7), 'conversões com a nova janela');
+  ok(pontosDe(r.el.querySelector('path').getAttribute('d')).length === 1, 'a reta continua visível');
+  ok(a.el.getAttribute('d').length > 10, 'a área foi redesenhada');
+  g.definirJanela({ x: [0, 2], y: [0, 4] });
+  ok(g.janela.x[1] === 2, 'definirJanela com objeto');
+  ok(p.el.style.display === 'none' || perto(parseFloat(p.el.querySelector('circle').getAttribute('cx')), g.X(1), 1e-3), 'ponto');
+  let lancou = false;
+  try { g.definirJanela([1, 0], [0, 1]); } catch { lancou = true; }
+  ok(lancou, 'janela inválida lança');
+  ok(g.janela.x[0] === 0, 'e a janela não foi alterada');
+  const arr = arrastarNaCurva(g, 'x^2', { x0: 1, xmin: 0, xmax: 2 });
+  g.limpar('curvas');
+  ok(g.camadas.curvas.children.length === 0 && g.camadas.retas.children.length === 1, 'limpar("curvas") só limpa as curvas');
+  g.limpar();
+  ok(g.camadas.retas.children.length === 0 && g.camadas.pontos.children.length === 0 && g.camadas.areas.children.length === 0, 'limpar() limpa tudo');
+  ok(g.camadas.controlos.contains(arr.el), 'mas deixa os controlos');
+  g.limpar('controlos');
+  ok(!g.camadas.controlos.contains(arr.el), 'limpar("controlos") remove-os');
+  let l2 = false;
+  try { g.limpar('nada'); } catch { l2 = true; }
+  ok(l2, 'camada desconhecida lança');
+  g.curva('x');
+  g.redesenhar();
+  ok(g.camadas.curvas.children.length === 1, 'redesenhar mantém os itens');
+  const gi = criarGrafico({ x: [-2, 2], y: [-1, 1], igual: true });
+  const h1 = gi.altura;
+  gi.definirJanela([-2, 2], [-3, 3]);
+  ok(gi.altura > h1 && perto(gi.X(1) - gi.X(0), gi.Y(0) - gi.Y(1), 1e-9), 'com igual:true a altura acompanha a janela');
+});
+
+await teste('camadas pela ordem certa e nenhum atributo com NaN em gráficos completos', (ok) => {
+  const g = montar({ x: [-4, 4], y: [-1, 9] });
+  g.retaHorizontal(0, { rotulo: 'y = 0' });
+  g.curva('2^x', { cor: 'exp' });
+  g.ponto(0, 1, { rotulo: '(0, 1)' });
+  g.ponto(1, 2, { oco: true, guias: true });
+  g.rotulo(2, 5, 'olá');
+  g.area('2^x', 0, 2);
+  g.segmento(0, 0, 2, 4);
+  const ordem = [...g.svg.children].filter((e) => e.tagName === 'g').map((e) => e.getAttribute('data-camada'));
+  ok(ordem.join() === 'base,areas,retas,curvas,pontos,texto,controlos', 'ordem das camadas: ' + ordem.join());
+  ok(Object.keys(g.camadas).join() === 'areas,retas,curvas,pontos,texto,controlos', 'g.camadas');
+  ok(!/NaN|Infinity|undefined|null/.test(g.svg.outerHTML), 'sem NaN/undefined no SVG');
+  ok(!new RegExp(String.fromCharCode(0x2014, 0x7c, 0x2013)).test(g.svg.outerHTML), 'sem travessões');
+  ok(g.svg.outerHTML.length < 40000, 'SVG pequeno: ' + g.svg.outerHTML.length);
+});
+
+// ---------- resumo ----------
+const ms = Math.round(performance.now() - t0);
+linhas.push('');
+linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

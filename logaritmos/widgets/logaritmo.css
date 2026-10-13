@@ -1,0 +1,164 @@
+/* logaritmo: o tradutor a cores (log e potência são a mesma frase) e a escada de potências.
+   Cada papel tem cor E forma, para se distinguir sem cor: a base é sublinhada, o expoente
+   está numa caixa e o argumento numa cápsula tracejada. Contraste sobre branco: base
+   (--c-der) 7,0:1, expoente (--c-tg) 5,3:1, argumento (--dourado-texto) 5,3:1.
+   Por isso os papéis nunca ficam sobre fundos coloridos. */
+
+.lg [hidden] { display: none !important; }
+
+.lg-bloco { margin: 0 0 1.4rem; }
+.lg-bloco:last-child { margin-bottom: 0; }
+.lg-bloco + .lg-bloco { padding-top: 1.2rem; border-top: 1px solid var(--linha); }
+.lg-titulo { margin: 0 0 0.4rem; font-size: 1.2rem; }
+.lg-intro { margin: 0 0 0.9rem; color: var(--tinta-suave); font-size: 0.95rem; }
+
+/* ---------- os três papéis ---------- */
+
+.lg-pap { display: inline-block; padding: 0 0.22em; line-height: 1.3; }
+.lg-pap--base { color: var(--c-der); border-bottom: 3px solid currentColor; }
+.lg-pap--exp { color: var(--c-tg); border: 2px solid currentColor; border-radius: 0.25em; }
+.lg-pap--arg { color: var(--dourado-texto); border: 2px dashed currentColor; border-radius: 0.9em; }
+.lg-pap .katex { color: inherit; }
+
+/* ---------- as duas formas ---------- */
+
+.lg-formas {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
+  gap: 0.5rem 0.9rem; font-size: 1.3rem;
+}
+.lg-caixa { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+.lg-nome { color: var(--tinta-suave); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.lg-forma { display: inline-flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0 0.1em; }
+.lg-igual { margin: 0 0.3em; }
+.lg-lado2 { display: inline-flex; align-items: flex-end; justify-content: center; gap: 0.9rem; }
+.lg-equiv { padding-bottom: 0.25em; color: var(--tinta-suave); }
+.lg-sub, .lg-sup { position: relative; font-size: 0.72em; line-height: 0; }
+.lg-sub { top: 0.4em; margin-right: 0.28em; }
+.lg-sup { top: -0.7em; margin-left: 0.05em; }
+.lg-impossivel {
+  padding: 0.05rem 0.5rem; border: 1px solid currentColor; border-radius: 0.3rem;
+  color: var(--erro); font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+}
+
+/* o tradutor, em destaque */
+.lg-bloco > .lg-formas {
+  margin: 0.2rem 0 1rem; padding: 0.9rem 0.6rem;
+  border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--creme);
+  font-size: 1.55rem;
+}
+
+.lg-legenda { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.lg-legenda__item { display: flex; align-items: center; gap: 0.8rem; }
+.lg-legenda__item .lg-pap { flex: 0 0 auto; min-width: 2.3rem; text-align: center; font-size: 1.2rem; }
+.lg-legenda__item span:last-child { font-size: 0.98rem; }
+.lg-forma-nota { margin-top: 0.8rem; }
+
+/* ---------- escolha da base e do número ---------- */
+
+.lg-escolhas { display: grid; gap: 0.2rem 1.8rem; }
+.lg-grupo { margin: 0 0 0.7rem; min-width: 0; }
+.lg-grupo__rotulo { display: block; margin-bottom: 0.25rem; color: var(--tinta-suave); font-size: 0.88rem; }
+.lg-linha-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+.lg .chips { margin: 0; gap: 0.35rem; }
+.lg .chip { min-width: 2.75rem; min-height: 2.75rem; padding: 0.4rem 0.7rem; font-size: 0.98rem; }
+.lg-campo { flex: 1 1 7.5rem; width: auto; min-width: 7.5rem; min-height: 2.75rem; }
+.lg-campo[aria-invalid="true"] { border-color: var(--erro); outline: 2px solid var(--erro); outline-offset: 0; }
+.lg-ajuda { margin: 0 0 0.2rem; }
+
+@media (min-width: 46em) {
+  .lg-escolhas { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- a resposta (a única região em direto) ---------- */
+
+.lg-resultado {
+  margin: 0.8rem 0 0; padding: 0.7rem 0.9rem;
+  border: 1px solid var(--linha); border-left: 4px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--papel); min-width: 0;
+}
+.lg-resultado--ok { border-left-color: var(--certo); }
+.lg-resultado--nao, .lg-resultado--erro { border-left-color: var(--erro); }
+.lg-resultado--erro { background: var(--erro-fundo); color: var(--erro); }
+.lg-frase { margin: 0 0 0.4rem; font-size: 1.02rem; }
+.lg-resultado--erro .lg-frase { margin: 0; }
+.lg-notacao { margin: 0 0 0.3rem; padding: 0.2rem 0; overflow-x: auto; overflow-y: hidden; }
+.lg-notacao .lg-formas { font-size: 1.3rem; }
+.lg-caso { margin: 0.5rem 0 0; padding: 0.45rem 0.7rem; border-radius: 0.35rem; background: var(--dourado-fundo); font-size: 0.93rem; }
+
+/* ---------- a escada ---------- */
+
+.lg-escada {
+  margin: 1rem 0 0; border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--creme);
+}
+.lg-escada:focus-visible { outline-offset: 2px; }
+.lg-trilho {
+  --lg-w: 3.9rem; --lg-pad: 0.7rem; --lg-x: 3.5;
+  position: relative; width: max-content; min-width: 100%; padding: 2.7rem var(--lg-pad) 0.9rem;
+}
+.lg-degraus {
+  display: flex; margin: 0; padding: 0; list-style: none;
+  border-radius: 0.4rem; background: var(--papel); box-shadow: 0 0 0 1px #cdbfae; overflow: hidden;
+}
+.lg-degrau {
+  flex: 0 0 var(--lg-w); width: var(--lg-w); display: grid; grid-template-rows: auto 1fr; justify-items: center; align-items: center;
+  min-height: 4.6rem; padding: 0.3rem 0.1rem 0.45rem; border-left: 1px solid var(--linha); text-align: center; cursor: pointer;
+}
+.lg-degrau:first-child { border-left: 0; }
+.lg-degrau:hover { background: var(--creme); }
+.lg-degrau__exp {
+  width: 100%; padding-bottom: 0.2rem; border-bottom: 1px solid var(--linha);
+  color: var(--tinta-suave); font-size: 0.88rem; font-variant-numeric: tabular-nums;
+}
+.lg-degrau__val { font-size: 1.05rem; line-height: 1.2; }
+.lg-degrau--aqui { background: var(--dourado-fundo); box-shadow: inset 0 0 0 2px var(--dourado); }
+.lg-degrau--aqui .lg-degrau__exp { color: var(--castanho-escuro); font-weight: 700; }
+
+/* o marcador: uma etiqueta com seta por cima do degrau (ou entre degraus) */
+.lg-marca {
+  position: absolute; top: 0.6rem; left: calc(var(--lg-pad) + var(--lg-x) * var(--lg-w));
+  width: 0; height: 1.6rem; pointer-events: none; transition: left 0.1s linear;
+}
+.lg-marca__rotulo {
+  position: absolute; left: 0; top: 0; transform: translateX(-50%);
+  padding: 0.15rem 0.55rem; border-radius: 0.3rem; background: var(--castanho-escuro); color: var(--claro);
+  font-size: 0.88rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.4; white-space: nowrap;
+}
+.lg-marca__rotulo::after {
+  content: ""; position: absolute; left: 50%; top: 100%; margin-left: -6px;
+  border: 6px solid transparent; border-top-color: var(--castanho-escuro);
+}
+.lg-legenda-escada { margin-top: 0.5rem; }
+.lg-arred { margin-top: 0.2rem; }
+
+.lg--sem-escada .lg-escada, .lg--sem-escada .lg-controlo, .lg--sem-escada .lg-leitura { opacity: 0.4; pointer-events: none; }
+
+/* ---------- o expoente ---------- */
+
+.lg-controlo { margin: 0.9rem 0 0; }
+.lg-controlo__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.lg-slider { height: 2.75rem; margin: 0; }
+.lg-passos-x { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin-top: 0.2rem; }
+.lg .lg-passo { min-height: 2.75rem; padding: 0.4rem 0.2rem; font-size: 0.98rem; font-variant-numeric: tabular-nums; }
+
+.lg-leitura {
+  margin: 0.8rem 0 0; padding: 0.55rem 0.8rem; min-height: 4.3rem;
+  border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); font-size: 0.95rem;
+}
+.lg-leitura--achou { border-color: var(--certo); background: var(--certo-fundo); color: var(--certo); font-weight: 600; }
+
+/* ---------- o cálculo passo a passo ---------- */
+
+.lg-calculo-botao { width: 100%; min-height: 2.75rem; margin: 1rem 0 0; }
+.lg-calculo { display: grid; gap: 0.9rem; margin: 0.9rem 0 0; }
+.lg-modo { min-width: 0; padding: 0.8rem 0.9rem; border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--creme); }
+.lg-modo__titulo { margin: 0 0 0.6rem; font-family: var(--sans); font-size: 0.98rem; font-weight: 600; line-height: 1.35; }
+.lg-passos-lista { margin: 0; padding-left: 1.3rem; }
+.lg-passo-item { margin: 0 0 0.8rem; padding-left: 0.2rem; }
+.lg-passo-item:last-child { margin-bottom: 0; }
+.lg-passo-item__titulo { display: block; font-size: 0.95rem; font-weight: 600; }
+.lg-linha-tex { margin: 0.3rem 0; overflow-x: auto; overflow-y: hidden; text-align: center; }
+.lg-passo-item__texto { margin: 0.2rem 0 0; color: var(--tinta-suave); font-size: 0.9rem; }
+
+@media (min-width: 52em) {
+  .lg-calculo--exato { grid-template-columns: 1fr 1fr; align-items: start; }
+}

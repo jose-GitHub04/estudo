@@ -1,0 +1,160 @@
+{
+ "tema": "exponencial",
+ "perguntas": [
+  { "id": "exp-01", "nivel": 1,
+    "enunciado": "Quanto vale $16^{\\frac{3}{4}}$?",
+    "opcoes": [
+      { "tex": "$12$", "valor": "12" },
+      { "tex": "$8$", "valor": "8" },
+      { "tex": "$2$", "valor": "2" },
+      { "tex": "$64$", "valor": "64" } ],
+    "certa": 1,
+    "ref": "16**(3/4)",
+    "explicacao": "No expoente $\\frac{3}{4}$, o denominador 4 é o índice da raiz e o numerador 3 é a potência: $16^{\\frac{3}{4}}=\\left(\\sqrt[4]{16}\\right)^3=2^3=8$. O 12 vem de multiplicar $16\\times\\frac{3}{4}$, o 2 de esquecer a potência 3 e o 64 de trocar o índice com a potência: $\\left(\\sqrt{16}\\right)^3=16^{\\frac{3}{2}}$." },
+
+  { "id": "exp-02", "nivel": 1,
+    "enunciado": "Qual é o contradomínio da função $f(x)=4^x$?",
+    "opcoes": [
+      { "tex": "$\\mathbb{R}$" },
+      { "tex": "$[0,+\\infty[$" },
+      { "tex": "$]0,+\\infty[$" },
+      { "tex": "$[1,+\\infty[$" } ],
+    "certa": 2,
+    "verifica": ["4**t>0", "4**(-30)<1e-9", "4**30>1e15"],
+    "explicacao": "Uma potência de base positiva nunca é zero nem negativa, por isso $4^x>0$. Quando $x$ é muito negativo, $4^x$ fica tão perto de 0 quanto quiseres ($4^{-10}$ é cerca de um milionésimo); quando $x$ cresce, sobe sem limite; e, como a função é contínua (o gráfico não tem saltos), passa por todos os valores intermédios. O contradomínio é $]0,+\\infty[=\\mathbb{R}^+$, e o 1 é só a ordenada em $x=0$, não é um mínimo." },
+
+  { "id": "exp-03", "nivel": 1,
+    "enunciado": "Qual destas funções é decrescente?",
+    "opcoes": [
+      { "tex": "$f(x)=\\left(\\dfrac{1}{3}\\right)^x$" },
+      { "tex": "$g(x)=\\left(\\dfrac{3}{2}\\right)^x$" },
+      { "tex": "$h(x)=\\left(\\dfrac{1}{2}\\right)^{-x}$" },
+      { "tex": "$j(x)=\\left(\\sqrt{5}\\right)^x$" } ],
+    "certa": 0,
+    "verifica": ["der(lambda s: (1/3)**s, t)<0", "der(lambda s: (3/2)**s, t)>0", "der(lambda s: 0.5**(-s), t)>0", "der(lambda s: sqrt(5)**s, t)>0"],
+    "explicacao": "Uma exponencial é decrescente quando a base está entre 0 e 1: é o caso de $f$, de base $\\frac13$. A base $\\frac32$ é uma fração, mas vale $1{,}5>1$, por isso $g$ cresce. Em $h$, o expoente negativo inverte a base: $\\left(\\frac12\\right)^{-x}=2^x$, que é crescente (olha para a base só depois de simplificar). E $\\sqrt{5}>1$ também dá uma função crescente." },
+
+  { "id": "exp-04", "nivel": 1,
+    "enunciado": "Qual destes pontos pertence ao gráfico de $f(x)=a^x$, seja qual for a base $a>0$ (com $a\\neq1$)?",
+    "opcoes": [
+      { "tex": "$(1,1)$" },
+      { "tex": "$(0,a)$" },
+      { "tex": "$(1,0)$" },
+      { "tex": "$(0,1)$" } ],
+    "certa": 3,
+    "verifica": ["ig(a**0, 1)", "not ig(a**1, 1)", "not ig(a**0, a)", "a**1>0"],
+    "explicacao": "Para $x=0$ tem-se $a^0=1$, seja qual for a base, por isso $(0,1)$ está sempre no gráfico. O ponto que depende da base é $(1,a)$, porque $a^1=a$: o ponto $(1,1)$ só existiria com $a=1$, e $(0,a)$ mistura os dois pontos (em $x=0$ a imagem é sempre $1$, não $a$). Já $(1,0)$ é $(0,1)$ com as coordenadas trocadas, que é um ponto do gráfico de $\\log_a x$; no de $a^x$ é impossível, porque $a^x>0$." },
+
+  { "id": "exp-05", "nivel": 1,
+    "enunciado": "Porque é que, em $f(x)=a^x$, se exige que a base seja positiva?",
+    "opcoes": [
+      { "tex": "Porque, com $a<0$, todos os valores de $a^x$ seriam negativos." },
+      { "tex": "Porque, com $a<0$, expoentes como $\\frac12$ dariam $\\sqrt{a}$, que não existe em $\\mathbb{R}$." },
+      { "tex": "Porque, com $a<0$, a função seria sempre decrescente." },
+      { "tex": "Porque, com $a<0$, o gráfico não passaria no ponto $(0,1)$." } ],
+    "certa": 1,
+    "verifica": ["abs(((-4)**0.5).imag)>1", "ig((-4)**2, 16)", "(-4)**1<(-4)**2", "ig((-4)**0, 1)"],
+    "explicacao": "Com $a=-4$, por exemplo, $a^{\\frac12}=\\sqrt{-4}$ não é um número real, e por isso $a^x$ não ficaria definida para todo o $x\\in\\mathbb{R}$. As outras razões são falsas: $(-4)^2=16$ não é negativo, $(-4)^1=-4<16=(-4)^2$ mostra que não seria sempre decrescente, e $(-4)^0=1$, logo o ponto $(0,1)$ continuaria lá. Quanto a $a=1$: dá $1^x=1$, uma função constante, e por isso também se exclui." },
+
+  { "id": "exp-06", "nivel": 2,
+    "enunciado": "Qual das expressões é igual a $\\dfrac{2^{x+3}}{4^{x}}$, para qualquer $x$ real?",
+    "opcoes": [
+      { "tex": "$2^{3-x}$" },
+      { "tex": "$2$" },
+      { "tex": "$2^{-x-3}$" },
+      { "tex": "$2^{\\frac{x+3}{2x}}$" } ],
+    "certa": 0,
+    "verifica": ["ig(2**(t+3)/4**t, 2**(3-t))", "not ig(2**(t+3)/4**t, 2)", "not ig(2**(t+3)/4**t, 2**(-t-3))"],
+    "explicacao": "Escreve tudo na base 2: $4^x=(2^2)^x=2^{2x}$. No quociente subtraem-se os expoentes: $\\dfrac{2^{x+3}}{2^{2x}}=2^{x+3-2x}=2^{3-x}$. Um erro comum é escrever $4^x=2^{x+2}$, o que daria a constante $2$; mas numa potência de potência multiplicam-se os expoentes ($2\\times x$), não se somam." },
+
+  { "id": "exp-07", "nivel": 2,
+    "enunciado": "Qual das desigualdades é verdadeira?",
+    "opcoes": [
+      { "tex": "$\\left(\\dfrac{1}{2}\\right)^{3}>\\left(\\dfrac{1}{2}\\right)^{2}$" },
+      { "tex": "$2^{-3}>2^{-2}$" },
+      { "tex": "$\\left(\\dfrac{3}{2}\\right)^{-1}>\\left(\\dfrac{3}{2}\\right)^{0}$" },
+      { "tex": "$\\left(\\dfrac{1}{2}\\right)^{-1}>\\left(\\dfrac{1}{2}\\right)^{0}$" } ],
+    "certa": 3,
+    "verifica": ["0.5**(-1)>0.5**0", "not (0.5**3>0.5**2)", "not (2**(-3)>2**(-2))", "not (1.5**(-1)>1.5**0)"],
+    "explicacao": "Compara os expoentes e depois olha para a base. Com base entre 0 e 1 a função é decrescente: o expoente maior dá o valor menor, e como $-1<0$ vem $\\left(\\frac12\\right)^{-1}>\\left(\\frac12\\right)^0$ (isto é, $2>1$). A primeira desigualdade mantém o sentido de $3>2$ com uma base menor que 1, e é esse o erro. Nas bases $2$ e $\\frac32$ a função cresce, por isso $-3<-2$ dá $2^{-3}<2^{-2}$ e $-1<0$ dá $\\left(\\frac32\\right)^{-1}<\\left(\\frac32\\right)^{0}$." },
+
+  { "id": "exp-08", "nivel": 2,
+    "enunciado": "O gráfico de $f(x)=a^x$, com $a>0$, é uma curva que desce da esquerda para a direita e passa no ponto $\\left(2,\\dfrac{1}{9}\\right)$. Quanto vale $f(-1)$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{1}{3}$", "valor": "1/3" },
+      { "tex": "$-3$", "valor": "-3" },
+      { "tex": "$3$", "valor": "3" },
+      { "tex": "$9$", "valor": "9" } ],
+    "certa": 2,
+    "ref": "3",
+    "explicacao": "De $f(2)=\\frac19$ vem $a^2=\\frac19$ e, como $a>0$, $a=\\frac13$ (que a curva desça confirma $0<a<1$). Então $f(-1)=\\left(\\frac13\\right)^{-1}=3$. O valor $\\frac13$ é $f(1)$, isto é, a própria base; $-3$ viria de $a=-\\frac13$, que não é permitida; e $9$ é $f(-2)$." },
+
+  { "id": "exp-09", "nivel": 2,
+    "enunciado": "Qual é a solução da equação $\\left(\\dfrac{1}{2}\\right)^{x}=\\sqrt{8}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{3}{2}$", "valor": "3/2" },
+      { "tex": "$-\\dfrac{3}{2}$", "valor": "-3/2" },
+      { "tex": "$-3$", "valor": "-3" },
+      { "tex": "$-\\dfrac{2}{3}$", "valor": "-2/3" } ],
+    "certa": 1,
+    "ref": "-3/2",
+    "explicacao": "Põe os dois membros na base 2: $\\left(\\frac12\\right)^x=2^{-x}$ e $\\sqrt8=\\sqrt{2^3}=2^{\\frac32}$. Então $2^{-x}=2^{\\frac32}$, logo $-x=\\frac32$ e $x=-\\frac32$. O erro mais tentador é esquecer que $\\frac12=2^{-1}$ e responder $\\frac32$; o $-3$ vem de ler $\\sqrt8$ como se fosse $8$." },
+
+  { "id": "exp-10", "nivel": 2,
+    "enunciado": "Sabendo que $e\\approx2{,}718$, entre que dois inteiros consecutivos está $e^2$?",
+    "opcoes": [
+      { "tex": "Entre $2$ e $3$" },
+      { "tex": "Entre $5$ e $6$" },
+      { "tex": "Entre $7$ e $8$" },
+      { "tex": "Entre $9$ e $10$" } ],
+    "certa": 2,
+    "verifica": ["7<exp(2)<8", "not (2<exp(2)<3)", "not (5<exp(2)<6)", "not (9<exp(2)<10)"],
+    "explicacao": "$e^2=e\\times e\\approx2{,}718\\times2{,}718\\approx7{,}39$, que fica entre 7 e 8. O expoente 2 diz quantas vezes $e$ entra na multiplicação, por isso $e^2$ não é $2e\\approx5{,}4$. E arredondar $e$ para 3 daria $3^2=9$, que já passa do valor certo." },
+
+  { "id": "exp-11", "nivel": 2,
+    "enunciado": "Quanto vale $\\lim\\limits_{x\\to-\\infty}\\left(\\dfrac{1}{2}\\right)^{x}$?",
+    "opcoes": [
+      { "tex": "$+\\infty$" },
+      { "tex": "$0$" },
+      { "tex": "$-\\infty$" },
+      { "tex": "$1$" } ],
+    "certa": 0,
+    "verifica": ["0.5**(-100)>1e20", "0.5**(-100)>1"],
+    "explicacao": "Faz $x=-n$, com $n$ muito grande: $\\left(\\frac12\\right)^{-n}=2^n$, que cresce sem limite. A base está entre 0 e 1, a função é decrescente, e por isso, andando para a esquerda, os valores sobem. O limite $0$ é o de $\\left(\\frac12\\right)^x$ quando $x\\to+\\infty$, ou o de $2^x$ quando $x\\to-\\infty$." },
+
+  { "id": "exp-12", "nivel": 3,
+    "enunciado": "Qual é a solução da equação $\\dfrac{1}{\\sqrt{2}}\\times\\left(\\dfrac{1}{2}\\right)^{x}=4^{x-1}$?",
+    "opcoes": [
+      { "tex": "$\\dfrac{3}{2}$", "valor": "3/2" },
+      { "tex": "$\\dfrac{5}{6}$", "valor": "5/6" },
+      { "tex": "$\\dfrac{1}{4}$", "valor": "1/4" },
+      { "tex": "$\\dfrac{1}{2}$", "valor": "1/2" } ],
+    "certa": 3,
+    "ref": "1/2",
+    "verifica": ["ig((1/sqrt(2))*0.5**0.5, 4**(0.5-1))"],
+    "explicacao": "Escreve tudo na base 2: $\\frac{1}{\\sqrt2}=2^{-\\frac12}$, $\\left(\\frac12\\right)^x=2^{-x}$ e $4^{x-1}=2^{2(x-1)}$. A equação fica $2^{-\\frac12-x}=2^{2x-2}$, logo $-\\frac12-x=2x-2$, ou seja, $3x=\\frac32$ e $x=\\frac12$. Cada distrator é um erro: tratar $\\left(\\frac12\\right)^x$ como $2^x$ dá $\\frac32$; escrever $\\frac1{\\sqrt2}$ como $2^{\\frac12}$ dá $\\frac56$; escrever $4^{x-1}$ como $2^{x-1}$ dá $\\frac14$." },
+
+  { "id": "exp-13", "nivel": 3,
+    "enunciado": "Sabe-se que $2^{x}=5$. Qual é o valor de $\\dfrac{4^{x}\\times2^{3}}{2^{x}}$?",
+    "opcoes": [
+      { "tex": "$40$", "valor": "40" },
+      { "tex": "$16$", "valor": "16" },
+      { "tex": "$32$", "valor": "32" },
+      { "tex": "$200$", "valor": "200" } ],
+    "certa": 0,
+    "ref": "5**2*8/5",
+    "verifica": ["ig((4**t*2**3)/2**t, 8*2**t)"],
+    "explicacao": "Não precisas de calcular $x$. Como $4^x=(2^2)^x=(2^x)^2=5^2=25$, a expressão vale $\\frac{25\\times8}{5}=40$. Ou, mais depressa: $\\frac{4^x}{2^x}=\\left(\\frac42\\right)^x=2^x=5$, e $5\\times8=40$. Os valores 16 e 32 vêm de trocar a potência por uma multiplicação, $4^x=2\\times2^x=10$ ou $4^x=4\\times2^x=20$; o 200 vem de esquecer a divisão por $2^x$." },
+
+  { "id": "exp-14", "nivel": 3,
+    "enunciado": "Considera a função $f(x)=2^{x+1}-8$. Qual das afirmações é verdadeira?",
+    "opcoes": [
+      { "tex": "O zero de $f$ é $3$ e o contradomínio é $]-8,+\\infty[$." },
+      { "tex": "$f$ não tem zeros, porque $2^{x+1}>0$ para todo o $x$." },
+      { "tex": "O zero de $f$ é $2$ e o contradomínio é $]-8,+\\infty[$." },
+      { "tex": "O zero de $f$ é $2$ e o contradomínio é $]0,+\\infty[$." } ],
+    "certa": 2,
+    "verifica": ["ig(2**(2+1)-8, 0)", "not ig(2**(3+1)-8, 0)", "2**(t+1)-8>-8", "2**(-60+1)-8<-7.999"],
+    "explicacao": "Zero: $2^{x+1}-8=0\\Leftrightarrow2^{x+1}=2^3\\Leftrightarrow x+1=3\\Leftrightarrow x=2$ (e não $3$: o $1$ do expoente conta). Contradomínio: $2^{x+1}$ toma todos os valores de $]0,+\\infty[$ e subtrair 8 desce-os 8 unidades, ficando $]-8,+\\infty[$. Que $2^{x+1}>0$ não impede o zero: $f$ anula-se quando $2^{x+1}=8$, e isso é possível." }
+ ]
+}

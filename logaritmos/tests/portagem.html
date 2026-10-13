@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes da portagem dos widgets</title>
+<!-- Testes dos três widgets partilhados do tema Exponenciais e logaritmos (cartões, perguntas, treino).
+     Sem parâmetros corre os testes: abrir /logaritmos/tests/portagem.html ou
+       msedge --headless=new --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8802/logaritmos/tests/portagem.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?demo=<widget>&estado=<estado> monta só um widget com dados de amostra e leva-o a esse estado,
+     para tirar screenshots (marca <html data-demo="pronto"> no fim):
+       flashcards  inicio | frente | verso | fim
+       perguntas   inicio | pergunta | janela | janela-errada | fim
+       treino      inicio | pergunta | errada | escolha | fim
+       treino-sem-geradores   (monta o treino sem geradores.js: tem de mostrar o aviso)
+     Se logaritmos/geradores.js ainda não existir, o import map abaixo troca-o pelo da trigonometria
+     (mesmo contrato), para o treino conseguir carregar. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../widgets/flashcards.css">
+<link rel="stylesheet" href="../widgets/perguntas.css">
+<link rel="stylesheet" href="../widgets/treino.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+  body[data-modo="testes"] #palco { opacity: 0.4; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script>
+  // Tem de correr antes de qualquer módulo: decide se o treino importa o geradores.js do tema ou o da trigonometria.
+  (function () {
+    var existe = false;
+    try {
+      var x = new XMLHttpRequest();
+      x.open('HEAD', '../geradores.js', false);
+      x.send();
+      existe = x.status === 200;
+    } catch (e) { existe = false; }
+    window.GERADORES_DO_TEMA = existe;
+    // ?demo=treino-sem-geradores simula o ficheiro em falta: o treino tem de mostrar um aviso, não partir
+    var semEles = /[?&]demo=treino-sem-geradores/.test(location.search);
+    if (!existe || semEles) {
+      var s = document.createElement('script');
+      s.type = 'importmap';
+      s.textContent = JSON.stringify({ imports: { '../geradores.js': semEles ? './nao-existe.js' : '../../trigonometria/geradores.js' } });
+      document.head.appendChild(s);
+    }
+  })();
+</script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes da portagem dos widgets</h1></div>
+<pre id="resultado">A correr...</pre>
+<main>
+  <section class="seccao"><div class="envolve"><div id="palco"></div></div></section>
+</main>
+<script type="module">
+import { GRUPOS } from '../grupos.js';
+import * as M from '../../assets/motor/matematica.js';
+import * as P from '../../assets/motor/progresso.js';
+import { renderizar } from '../../assets/motor/katex.js';
+import * as flash from '../widgets/flashcards.js';
+import * as perg from '../widgets/perguntas.js';
+import * as trei from '../widgets/treino.js';
+
+const params = new URLSearchParams(location.search);
+const palco = document.getElementById('palco');
+const saida = document.getElementById('resultado');
+document.body.dataset.modo = params.get('demo') ? 'demo' : 'testes';
+
+// Regista cada secção do progresso que alguma vez foi gravada (mesmo as que um teste apagou depois).
+const seccoesEscritas = new Set();
+const setItemOriginal = Storage.prototype.setItem;
+Storage.prototype.setItem = function (chave, valor) {
+  try { for (const s of Object.keys(JSON.parse(valor))) seccoesEscritas.add(s); } catch (e) { /* não é o nosso JSON */ }
+  return setItemOriginal.call(this, chave, valor);
+};
+
+// ---------- dados de amostra ----------
+
+const G = GRUPOS.slice(0, 3).map((g) => g.id); // exponencial, logaritmo, propriedades
+const TITULO = Object.fromEntries(GRUPOS.map((g) => [g.id, g.titulo]));
+
+const CARTOES = [
+  { id: 'exp-contradominio', grupo: G[0], frente: 'Qual é o contradomínio de $f(x)=a^x$?', verso: '$\\mathbb{R}^+$, ou seja, $a^x>0$ para todo o $x$.', porque: 'Uma potência de base positiva nunca dá zero nem negativo.', verifica: ['a**t > 0'] },
+  { id: 'exp-decrescente', grupo: G[0], frente: 'Quando é que $f(x)=a^x$ é decrescente?', verso: 'Quando $0<a<1$.', porque: 'Com base entre 0 e 1, cada passo para a direita multiplica por um número menor que 1.' },
+  { id: 'log-definicao', grupo: G[1], frente: 'O que é $\\log_a y$?', verso: 'O expoente a que se eleva $a$ para obter $y$: $a^x=y\\Leftrightarrow x=\\log_a y$.', porque: 'O logaritmo responde à pergunta «a que expoente?».' },
+  { id: 'log-existencia', grupo: G[1], frente: 'Para que valores de $y$ existe $\\log_a y$?', verso: 'Só para $y>0$.', porque: 'Nenhuma potência de base positiva dá zero ou negativo.' },
+  { id: 'pro-produto', grupo: G[2], frente: 'Quanto vale $\\log_a(xy)$, com $x,y>0$?', verso: '$\\log_a x+\\log_a y$', porque: 'O logaritmo transforma produtos em somas, como os expoentes: $a^m a^n=a^{m+n}$.' },
+];
+
+const PERGUNTAS = [
+  { id: 'exp-01', tema: G[0], nivel: 1, enunciado: 'Qual é o contradomínio de $f(x)=2^x$?', certa: 0, ref: '1', verifica: ['2**t > 0'],
+    opcoes: [{ tex: '$\\mathbb{R}^+$' }, { tex: '$\\mathbb{R}$' }, { tex: '$[0,+\\infty[$' }, { tex: '$]1,+\\infty[$' }],
+    explicacao: 'Uma potência de base positiva é sempre positiva e toma todos os valores positivos, por isso o contradomínio é $]0,+\\infty[$.' },
+  { id: 'exp-02', tema: G[0], nivel: 1, enunciado: 'Quando é que $f(x)=a^x$ é decrescente?', certa: 1,
+    opcoes: [{ tex: '$a>1$' }, { tex: '$0<a<1$' }, { tex: '$a<0$' }, { tex: '$a\\geq 1$' }],
+    explicacao: 'Com $0<a<1$ cada passo para a direita multiplica por um número menor que 1, e o valor desce.' },
+  { id: 'log-01', tema: G[1], nivel: 1, enunciado: 'Quanto vale $\\log_2 8$?', certa: 2, ref: 'logb(2, 8)',
+    opcoes: [{ tex: '$4$', valor: '4' }, { tex: '$\\dfrac{1}{3}$', valor: '1/3' }, { tex: '$3$', valor: '3' }, { tex: '$16$', valor: '16' }],
+    explicacao: '$\\log_2 8$ é o expoente a que tens de elevar 2 para obter 8. Como $2^3=8$, vale 3.' },
+  { id: 'log-02', tema: G[1], nivel: 2, enunciado: 'Qual é o domínio de $f(x)=\\ln(2x-6)$?', certa: 3,
+    opcoes: [{ tex: '$]-\\infty,3[$' }, { tex: '$\\mathbb{R}$' }, { tex: '$]0,+\\infty[$' }, { tex: '$]3,+\\infty[$' }],
+    explicacao: 'O argumento do logaritmo tem de ser positivo: $2x-6>0\\Leftrightarrow x>3$.' },
+  { id: 'pro-01', tema: G[2], nivel: 2, enunciado: 'Para $x,y>0$, qual das igualdades é verdadeira?', certa: 1,
+    opcoes: [{ tex: '$\\ln(x+y)=\\ln x+\\ln y$' }, { tex: '$\\ln(xy)=\\ln x+\\ln y$' }, { tex: '$\\ln(xy)=\\ln x\\cdot\\ln y$' }, { tex: '$\\ln\\dfrac{x}{y}=\\dfrac{\\ln x}{\\ln y}$' }],
+    explicacao: 'O logaritmo transforma produtos em somas. Com $x=y=1$: $\\ln(x+y)=\\ln 2\\approx 0{,}69$, mas $\\ln x+\\ln y=0$.' },
+  { id: 'pro-02', tema: G[2], nivel: 3, enunciado: 'Simplifica $\\log_3 27-\\log_3 3$.', certa: 2, ref: '2',
+    opcoes: [{ tex: '$\\log_3 24$', valor: 'logb(3, 24)' }, { tex: '$1$', valor: '1' }, { tex: '$2$', valor: '2' }, { tex: '$3$', valor: '3' }],
+    explicacao: '$\\begin{aligned}\\log_3 27-\\log_3 3 &= 3-1\\\\ &= 2\\end{aligned}$' },
+];
+
+// ---------- infraestrutura de testes ----------
+
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const errosNaoApanhados = [];
+window.addEventListener('error', (e) => errosNaoApanhados.push(e.message));
+window.addEventListener('unhandledrejection', (e) => errosNaoApanhados.push('promessa: ' + (e.reason && e.reason.message)));
+
+const esperar = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const q = (el, s) => el.querySelector(s);
+const qa = (el, s) => [...el.querySelectorAll(s)];
+const texto = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+
+function clicar(el, s) {
+  const b = typeof s === 'string' ? el.querySelector(s) : s;
+  if (!b) throw new Error('não encontrei ' + s);
+  b.click();
+  return b;
+}
+function tecla(alvo, key, extra = {}) {
+  alvo.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra }));
+}
+function chipComTexto(el, parte) {
+  const c = qa(el, '.chip').find((b) => texto(b).includes(parte));
+  if (!c) throw new Error('não encontrei o botão «' + parte + '»');
+  return c;
+}
+
+const aLimpar = [];
+function novoEl() {
+  const d = document.createElement('div');
+  d.dataset.widget = 'teste';
+  palco.append(d);
+  aLimpar.push(d);
+  return d;
+}
+function limparTudo() {
+  while (aLimpar.length) {
+    const d = aLimpar.pop();
+    for (const j of d.querySelectorAll('dialog[open]')) { try { j.close(); } catch (e) { /* já fechada */ } }
+    d.remove();
+  }
+}
+
+/** Corre um teste. `fn(ok)` chama ok(condicao, mensagem); a primeira exceção também conta. */
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 4) erros.push(msg); }
+  };
+  try {
+    P.apagarTudo();
+    await fn(ok);
+  } catch (e) {
+    total++;
+    erros.push('exceção: ' + (e && e.message));
+  } finally {
+    limparTudo();
+  }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+/** Todas as secções atualmente no armazenamento. */
+function lerTudo() {
+  try { return JSON.parse(localStorage.getItem('mat100-estudo-v1')) || {}; } catch (e) { return {}; }
+}
+
+// ---------- montagens ----------
+
+async function montarFlash(cartoes = CARTOES) {
+  const el = novoEl();
+  await flash.montar(el, { cartoes: { cartoes } });
+  return el;
+}
+
+async function montarPerg(perguntas = PERGUNTAS, semente = 7) {
+  const el = novoEl();
+  await perg.montar(el, { perguntas: { perguntas } }, { semente });
+  return el;
+}
+
+// Tipos de treino falsos, com a forma dos geradores do tema. Cada pergunta leva uma marca «Pergunta N.»
+// no enunciado e fica em `registo`, para o teste saber a resposta certa a partir do ecrã.
+const registo = new Map();
+let contador = 0;
+function reg(p) {
+  const n = ++contador;
+  p.enunciado = `Pergunta ${n}. ${p.enunciado}`;
+  registo.set(n, p);
+  return p;
+}
+const TIPOS_FALSOS = [
+  { id: 'f-escolha', nome: 'Logaritmo de uma potência', tema: 'Teste',
+    gerar: (rng) => {
+      const k = M.inteiro(rng, 2, 9);
+      const opcoes = M.baralhar(rng, [
+        { tex: String(k), correta: true }, { tex: String(k + 1), correta: false },
+        { tex: String(2 * k), correta: false }, { tex: `\\frac{1}{${k}}`, correta: false },
+      ]);
+      return reg({ tipo: 'f-escolha', modo: 'escolha', enunciado: `Quanto vale $\\log_2 ${2 ** k}$?`, opcoes,
+        explicacao: `Como $2^{${k}}=${2 ** k}$, o logaritmo vale $${k}$.`, verificacao: { k } });
+    } },
+  { id: 'f-escrita', nome: 'Valor exato', tema: 'Teste',
+    gerar: (rng) => {
+      const k = M.inteiro(rng, 2, 9);
+      return reg({ tipo: 'f-escrita', modo: 'escrita', enunciado: `Calcula $\\log_4 ${2 ** (2 * k + 1)}$ em fração.`,
+        esperado: { expr: `${2 * k + 1}/2`, tex: `\\frac{${2 * k + 1}}{2}` },
+        explicacao: `Como $4^{${2 * k + 1}/2}=2^{${2 * k + 1}}$, o logaritmo vale $\\frac{${2 * k + 1}}{2}$.`, verificacao: { k } });
+    } },
+  { id: 'f-nao-existe', nome: 'Existe ou não existe', tema: 'Teste',
+    gerar: (rng) => {
+      const k = M.inteiro(rng, 1, 9);
+      return reg({ tipo: 'f-nao-existe', modo: 'escrita', enunciado: `Calcula $\\log_3 (-${k})$.`, esperado: { naoDefinida: true },
+        explicacao: `Só existe logaritmo de números positivos, e $-${k}$ é negativo.`, verificacao: { k } });
+    } },
+];
+
+async function montarTreino(tipos = TIPOS_FALSOS, semente = 11) {
+  const el = novoEl();
+  await trei.montar(el, {}, { tipos, semente });
+  return el;
+}
+
+const textoCerto = (p) => (p.esperado.naoDefinida ? 'não existe' : p.esperado.expr);
+function perguntaDoTreino(el) {
+  const m = /Pergunta (\d+)\./.exec(texto(q(el, '.tre-enunciado')));
+  return m ? registo.get(Number(m[1])) : null;
+}
+/** Responde à pergunta que está no ecrã: certa (a opção certa, ou o valor esperado) ou errada. */
+function responderTreino(el, certa = true) {
+  const p = perguntaDoTreino(el);
+  if (p.modo === 'escolha') {
+    qa(el, '.tre-opcao')[p.opcoes.findIndex((o) => o.correta === certa)].click();
+  } else {
+    q(el, '.tre-campo').value = certa ? textoCerto(p) : '99';
+    q(el, 'form.tre-escrita').requestSubmit();
+  }
+  return p;
+}
+function seguinteTreino(el) { clicar(el, '.tre-seguinte'); }
+
+/** Texto-fonte (LaTeX) da fórmula KaTeX de um elemento, para o comparar com os dados. */
+const fonte = (b) => ((b.querySelector('annotation') || {}).textContent || '').trim();
+function perguntaDoBanco(el) {
+  const enun = texto(q(el, '.per-enunciado'));
+  return PERGUNTAS.find((p) => enun.startsWith(p.enunciado.split('$')[0].trim()));
+}
+/** Botão da opção certa (ou de uma errada) da pergunta que está no ecrã. */
+function botaoDoBanco(el, certa = true) {
+  const p = perguntaDoBanco(el);
+  const alvo = p.opcoes[p.certa].tex.replace(/^\$|\$$/g, '');
+  const botoes = qa(el, '.per-opcao');
+  return certa ? botoes.find((b) => fonte(b) === alvo) : botoes.find((b) => fonte(b) !== alvo);
+}
+
+// =================================================================
+// DEMO (screenshots)
+// =================================================================
+
+async function demo(qual, estado) {
+  P.apagarTudo();
+  if (qual === 'flashcards') {
+    const el = await montarFlash();
+    if (estado !== 'inicio') {
+      clicar(el, '[data-acao="comecar"]');
+      if (estado === 'verso') clicar(el, '[data-acao="virar"]');
+      if (estado === 'fim') {
+        let primeiro = true;
+        for (let i = 0; i < 30 && !texto(el).includes('Ronda concluída'); i++) {
+          clicar(el, '[data-acao="virar"]');
+          clicar(el, primeiro ? '[data-acao="nao"]' : '[data-acao="sim"]');
+          primeiro = false;
+        }
+      }
+    }
+  } else if (qual === 'perguntas') {
+    const el = await montarPerg(PERGUNTAS, 3);
+    if (estado !== 'inicio') {
+      clicar(el, '.per-comecar');
+      if (estado === 'janela') clicar(el, botaoDoBanco(el, true));
+      if (estado === 'janela-errada') clicar(el, botaoDoBanco(el, false));
+      if (estado === 'fim') {
+        for (let i = 0; i < PERGUNTAS.length; i++) {
+          clicar(el, botaoDoBanco(el, i % 3 !== 0));
+          clicar(el, '.per-janela__seguinte');
+        }
+        await esperar(150);
+      }
+    }
+  } else if (qual === 'treino') {
+    const el = await montarTreino();
+    if (estado !== 'inicio') {
+      // 'pergunta' e 'errada' usam o tipo de escrita; 'escolha' o de escolha
+      if (estado === 'escolha') chipComTexto(el, 'Logaritmo de uma potência').click();
+      else if (estado === 'pergunta' || estado === 'errada') chipComTexto(el, 'Valor exato').click();
+      clicar(el, '.tre-comecar');
+      if (estado === 'errada') responderTreino(el, false);
+      if (estado === 'escolha') responderTreino(el, false);
+      if (estado === 'fim') {
+        for (let i = 0; i < 10; i++) {
+          responderTreino(el, i % 4 !== 1);
+          seguinteTreino(el);
+        }
+      }
+    }
+  } else if (qual === 'treino-sem-geradores') {
+    const el = novoEl();
+    await trei.montar(el, {});
+  } else {
+    throw new Error('demo desconhecida: ' + qual);
+  }
+  renderizar(palco);
+  await esperar(100);
+  document.documentElement.dataset.demo = 'pronto';
+}
+
+if (params.get('demo')) {
+  try {
+    await demo(params.get('demo'), params.get('estado') || 'inicio');
+  } catch (e) {
+    document.documentElement.dataset.demo = 'erro';
+    palco.textContent = 'ERRO DEMO: ' + e.message;
+  }
+} else {
+  await correrTestes();
+}
+
+// =================================================================
+// TESTES
+// =================================================================
+
+async function correrTestes() {
+  // ---------- avaliador (o texto de ajuda do treino promete estas escritas) ----------
+
+  const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+
+  await teste('avaliador: as escritas da ajuda do treino (3/2, ln(2), log2(5), e^2) são lidas', (ok) => {
+    const casos = [['3/2', 1.5], ['ln(2)', Math.LN2], ['log2(5)', Math.log2(5)], ['e^2', Math.E ** 2]];
+    for (const [txt, esperado] of casos) {
+      const r = M.avaliar(txt);
+      ok(r.ok && perto(r.valor, esperado, 1e-12), `«${txt}» devia dar ${esperado}, deu ${r.ok ? r.valor : r.erro}`);
+    }
+  });
+
+  await teste('corrigir: certo, decimal, errado, inválido e «não existe»', (ok) => {
+    const estado = (resp, esp) => M.corrigir(resp, esp).estado;
+    ok(estado('3/2', { expr: '3/2' }) === 'certo', '3/2 vs 3/2');
+    ok(estado('2/3', { expr: '3/2' }) === 'errado', '2/3 vs 3/2');
+    ok(estado('abc', { expr: '3/2' }) === 'invalido', 'abc');
+    ok(estado('3', { expr: '3' }) === 'certo', '3 vs 3');
+    ok(estado('3,0', { expr: '3' }) === 'certo', '3,0 vs 3');
+    ok(estado('ln(3)', { expr: 'ln(3)' }) === 'certo', 'ln(3)');
+    ok(estado('1,0986', { expr: 'ln(3)' }) === 'decimal', '1,0986 vs ln(3)');
+    ok(estado('log2(5)', { expr: 'logb(2, 5)' }) === 'certo', 'log2(5) vs logb(2, 5)');
+    ok(estado('e^2', { expr: 'exp(2)' }) === 'certo', 'e^2 vs exp(2)');
+    ok(estado('ln(9)', { expr: '2*ln(3)' }) === 'certo', 'ln(9) vs 2ln(3)');
+    ok(estado('não existe', { naoDefinida: true }) === 'certo', '«não existe»');
+    ok(estado('n.d.', { naoDefinida: true }) === 'certo', 'n.d.');
+    ok(estado('5', { naoDefinida: true }) === 'errado', '5 vs não existe');
+    ok(estado('não existe', { expr: '3' }) === 'errado', '«não existe» vs 3');
+  });
+
+  // ---------- flashcards ----------
+
+  await teste('flashcards: monta sem exceção, com o resumo e um botão por tema', async (ok) => {
+    const el = await montarFlash();
+    ok(!!q(el, '.fc'), 'sem .fc');
+    ok(texto(q(el, '.fc-resumo')).includes('5 cartões para rever hoje'), 'resumo: ' + texto(q(el, '.fc-resumo')));
+    const chips = qa(el, '.fc-grupos .chip');
+    ok(chips.length === 4, 'chips de tema: ' + chips.length);
+    ok(texto(chips[0]) === 'Todos (5)', 'primeiro chip: ' + texto(chips[0]));
+    ok(texto(chips[1]) === `${TITULO[G[0]]} (2)`, 'segundo chip: ' + texto(chips[1]));
+    ok(chips[0].getAttribute('aria-pressed') === 'true', 'Todos devia estar ligado');
+    ok(!!q(el, '[data-acao="comecar"]'), 'sem botão Começar');
+    ok(qa(el, '.katex-error').length === 0, 'erro de KaTeX');
+  });
+
+  await teste('flashcards: aceita o array direto em dados.cartoes e mostra «Ainda não há cartões» sem cartões', async (ok) => {
+    const a = novoEl();
+    await flash.montar(a, { cartoes: CARTOES });
+    ok(texto(q(a, '.fc-resumo')).includes('5 cartões'), 'array direto');
+    const b = novoEl();
+    await flash.montar(b, { cartoes: { cartoes: [] } });
+    ok(texto(b) === 'Ainda não há cartões.', 'vazio: ' + texto(b));
+  });
+
+  await teste('flashcards: escolher temas (um, vários, todos) e guardá-los em log-flashcards-temas', async (ok) => {
+    const el = await montarFlash();
+    clicar(el, `[data-grupo="${G[0]}"]`);
+    ok(texto(q(el, '.fc-resumo')).includes('2 cartões para rever hoje neste tema'), 'um tema: ' + texto(q(el, '.fc-resumo')));
+    ok(texto(q(el, '.fc-escolha')) === '1 tema escolhido, 2 cartões.', 'legenda: ' + texto(q(el, '.fc-escolha')));
+    ok(JSON.stringify(P.ler('log-flashcards-temas')) === JSON.stringify([G[0]]), 'guardado: ' + JSON.stringify(P.ler('log-flashcards-temas')));
+    clicar(el, `[data-grupo="${G[1]}"]`);
+    ok(texto(q(el, '.fc-resumo')).includes('4 cartões para rever hoje nestes temas'), 'dois temas: ' + texto(q(el, '.fc-resumo')));
+    ok(JSON.stringify(P.ler('log-flashcards-temas')) === JSON.stringify([G[0], G[1]]), 'guardado 2: ' + JSON.stringify(P.ler('log-flashcards-temas')));
+    clicar(el, `[data-grupo="${G[0]}"]`); // tirar um
+    clicar(el, `[data-grupo="${G[1]}"]`); // tirar o último: volta a todos
+    ok(texto(q(el, '.fc-escolha')) === 'Todos os temas escolhidos.', 'nunca fica sem nenhum: ' + texto(q(el, '.fc-escolha')));
+    clicar(el, `[data-grupo="${G[2]}"]`);
+    clicar(el, '[data-grupo="todos"]');
+    ok(JSON.stringify(P.ler('log-flashcards-temas')) === JSON.stringify(G), 'todos: ' + JSON.stringify(P.ler('log-flashcards-temas')));
+    // um tema escolhido antes volta ao montar de novo
+    clicar(el, `[data-grupo="${G[2]}"]`);
+    const outro = novoEl();
+    await flash.montar(outro, { cartoes: { cartoes: CARTOES } });
+    ok(texto(q(outro, '.fc-resumo')).includes('1 cartão para rever hoje neste tema'), 'escolha recordada: ' + texto(q(outro, '.fc-resumo')));
+  });
+
+  await teste('flashcards: ronda completa, caixas guardadas em log-flashcards, ← e → no teclado, ronda concluída', async (ok) => {
+    const el = await montarFlash();
+    clicar(el, '[data-acao="comecar"]');
+    ok(!!q(el, '.fc-cartao'), 'sem cartão');
+    ok(q(el, '.fc-verso').hidden, 'o verso devia estar escondido');
+    ok(texto(q(el, '.fc-meta')).includes('Novo'), 'etiqueta Novo: ' + texto(q(el, '.fc-meta')));
+    clicar(el, '[data-acao="virar"]');
+    ok(!q(el, '.fc-verso').hidden, 'o verso devia aparecer');
+    clicar(el, '[data-acao="sim"]');
+    let est = P.ler('log-flashcards');
+    ok(Object.keys(est).length === 1 && Object.values(est)[0].caixa === 2, 'primeiro «sabia»: ' + JSON.stringify(est));
+    const raiz = q(el, '.fc');
+    clicar(el, '[data-acao="virar"]');
+    tecla(raiz, 'ArrowLeft'); // não sabia
+    est = P.ler('log-flashcards');
+    ok(Object.values(est).filter((e) => e.caixa === 1).length === 1, '«não sabia» devia pôr uma caixa 1: ' + JSON.stringify(est));
+    for (let i = 0; i < 40 && !texto(el).includes('Ronda concluída'); i++) {
+      if (q(el, '[data-acao="virar"]')) clicar(el, '[data-acao="virar"]');
+      tecla(raiz, 'ArrowRight');
+    }
+    ok(texto(el).includes('Ronda concluída'), 'não chegou ao fim');
+    ok(texto(el).includes('4 cartões sabidos à primeira, 1 a repetir.'), 'resumo final: ' + texto(q(el, '.fc-palco')));
+    ok(Object.keys(P.ler('log-flashcards')).length === 5, 'cartões guardados: ' + Object.keys(P.ler('log-flashcards')).length);
+    ok(Object.keys(lerTudo()).every((s) => s.startsWith('log-')), 'secções: ' + Object.keys(lerTudo()));
+    ok(texto(q(el, '.fc-resumo')).includes('0 cartões para rever hoje'), 'depois da ronda já não há nada hoje: ' + texto(q(el, '.fc-resumo')));
+  });
+
+  await teste('flashcards: «Apagar o progresso» limpa log-flashcards só se confirmares', async (ok) => {
+    P.guardar('log-flashcards', { 'exp-contradominio': { caixa: 3, prox: '2999-01-01' } });
+    const el = await montarFlash();
+    const confirmOriginal = window.confirm;
+    try {
+      window.confirm = () => false;
+      clicar(el, '[data-acao="apagar"]');
+      ok(Object.keys(P.ler('log-flashcards')).length === 1, 'sem confirmar não devia apagar');
+      window.confirm = () => true;
+      clicar(el, '[data-acao="apagar"]');
+      ok(Object.keys(P.ler('log-flashcards')).length === 0, 'confirmado devia apagar');
+    } finally { window.confirm = confirmOriginal; }
+  });
+
+  await teste('flashcards: «<» e «&» dentro de $...$ chegam ao KaTeX e não partem o HTML', async (ok) => {
+    const el = await montarFlash([
+      { id: 'exp-x', grupo: G[0], frente: 'Quando é que $f(x)=a^x$ é decrescente? <em>Pensa na base.</em>', verso: 'Quando $0<a<1$ e $x>0$, com $\\begin{aligned}a&=\\tfrac12\\end{aligned}$.', porque: 'Porque $a<1$.' },
+    ]);
+    clicar(el, '[data-acao="comecar"]');
+    clicar(el, '[data-acao="virar"]');
+    const resposta = q(el, '.fc-resposta');
+    ok(qa(resposta, '.katex').length === 3, 'fórmulas na resposta: ' + qa(resposta, '.katex').length);
+    ok(texto(resposta).includes('0<a<1'), 'a fonte 0<a<1 devia estar na fórmula: ' + texto(resposta));
+    ok(!q(resposta, 'a'), 'apareceu uma etiqueta <a> a partir do «<»');
+    ok(qa(el, '.katex-error').length === 0, 'erro de KaTeX');
+    ok(!!q(el, '.fc-frente em'), 'o <em> fora das fórmulas devia manter-se');
+    ok(texto(q(el, '.fc-porque')).includes('a<1'), 'porque: ' + texto(q(el, '.fc-porque')));
+  });
+
+  // ---------- perguntas ----------
+
+  await teste('perguntas: monta sem exceção; ecrã inicial com temas, tamanhos e filtro', async (ok) => {
+    const el = await montarPerg();
+    ok(!!q(el, '.per-inicio'), 'sem ecrã inicial');
+    ok(texto(q(el, '.per-intro')) === '6 perguntas no banco. Responde e vê a explicação logo a seguir.', texto(q(el, '.per-intro')));
+    ok(texto(q(el, '.per-estat')) === 'Acertaste 0 de 6 perguntas até agora.', texto(q(el, '.per-estat')));
+    const chips = qa(el, '.per-temas .chip');
+    ok(chips.length === 4 && texto(chips[0]) === 'Todos (6)', 'chips de tema: ' + chips.map(texto));
+    ok(texto(chips[1]) === `${TITULO[G[0]]} (2)`, 'tema 1: ' + texto(chips[1]));
+    ok(qa(el, '.per-tamanhos .chip').length === 3, 'tamanhos');
+    ok(texto(q(el, '.per-estado')) === 'Todos os temas escolhidos. 6 perguntas nesta ronda.', texto(q(el, '.per-estado')));
+    ok(!q(el, '.per-comecar').disabled, 'Começar devia estar ativo');
+    ok(!!q(el, 'dialog.per-janela') && !q(el, 'dialog.per-janela').open, 'a janela devia existir fechada');
+  });
+
+  await teste('perguntas: escolher temas (um, vários, todos) e guardá-los em log-perguntas-temas', async (ok) => {
+    const el = await montarPerg();
+    clicar(el, `[data-tema="${G[1]}"]`);
+    ok(texto(q(el, '.per-estado')) === '1 tema escolhido. 2 perguntas nesta ronda.', texto(q(el, '.per-estado')));
+    ok(JSON.stringify(P.ler('log-perguntas-temas')) === JSON.stringify([G[1]]), 'guardado: ' + JSON.stringify(P.ler('log-perguntas-temas')));
+    clicar(el, `[data-tema="${G[2]}"]`);
+    ok(texto(q(el, '.per-estado')) === '2 temas escolhidos. 4 perguntas nesta ronda.', texto(q(el, '.per-estado')));
+    clicar(el, `[data-tema="${G[1]}"]`);
+    clicar(el, `[data-tema="${G[2]}"]`);
+    ok(texto(q(el, '.per-estado')).startsWith('Todos os temas escolhidos.'), 'nunca fica sem nenhum: ' + texto(q(el, '.per-estado')));
+    clicar(el, '[data-tema="todos"]');
+    ok(JSON.stringify(P.ler('log-perguntas-temas')) === JSON.stringify(G), 'todos: ' + JSON.stringify(P.ler('log-perguntas-temas')));
+    // o tamanho limita a ronda
+    clicar(el, '[data-tamanho="10"]');
+    ok(q(el, '[data-tamanho="10"]').getAttribute('aria-pressed') === 'true', 'tamanho 10 ligado');
+  });
+
+  await teste('perguntas: responder abre a janela com a resposta e a explicação; Seguinte fecha e avança', async (ok) => {
+    const el = await montarPerg();
+    clicar(el, '.per-comecar');
+    ok(texto(q(el, '.per-progresso__texto')) === 'Pergunta 1 de 6', texto(q(el, '.per-progresso__texto')));
+    const janela = q(el, 'dialog.per-janela');
+    ok(!janela.open, 'a janela devia estar fechada antes de responder');
+    const p = perguntaDoBanco(el);
+    ok(!!p, 'não reconheci a pergunta no ecrã');
+    clicar(el, botaoDoBanco(el, false)); // errada de propósito
+    ok(janela.open && janela.matches(':modal'), 'a janela devia estar aberta e modal');
+    ok(q(el, '.per-janela__cab').classList.contains('per-janela__cab--errado'), 'cabeçalho vermelho');
+    ok(texto(q(el, '.per-janela__titulo')).includes('Errado'), 'título: ' + texto(q(el, '.per-janela__titulo')));
+    ok(texto(q(el, '.per-janela__resposta')).startsWith('A resposta certa é'), 'resposta: ' + texto(q(el, '.per-janela__resposta')));
+    ok(texto(q(el, '.per-janela__expl')).includes('Explicação'), 'explicação: ' + texto(q(el, '.per-janela__expl')));
+    ok(qa(janela, '.katex').length >= 1 && qa(el, '.katex-error').length === 0, 'fórmulas da janela');
+    ok(qa(el, '.per-opcao--certa').length === 1 && qa(el, '.per-opcao--errada').length === 1, 'marcas nas opções');
+    ok(P.ler('log-perguntas')[p.id] === 0, 'resultado guardado: ' + JSON.stringify(P.ler('log-perguntas')));
+    ok(!q(el, '.per-seguinte').hidden && !q(el, '.per-reabrir').hidden, 'Seguinte e Ver a explicação devem aparecer na página');
+    clicar(el, '.per-janela__seguinte');
+    ok(!janela.open, 'a janela devia fechar');
+    ok(texto(q(el, '.per-progresso__texto')) === 'Pergunta 2 de 6', 'avançou: ' + texto(q(el, '.per-progresso__texto')));
+    // Esc fecha a janela sem avançar e o foco vai para o «Seguinte» da página
+    clicar(el, botaoDoBanco(el, true));
+    ok(janela.open, 'segunda janela aberta');
+    janela.close();
+    ok(texto(q(el, '.per-progresso__texto')) === 'Pergunta 2 de 6', 'fechar não avança');
+    clicar(el, '.per-reabrir');
+    ok(janela.open, 'Ver a explicação reabre a janela');
+    ok(P.ler('log-perguntas')[perguntaDoBanco(el).id] === 1, 'certa guardada como 1');
+  });
+
+  await teste('perguntas: teclado 1 a 4 e A a D escolhem a opção', async (ok) => {
+    const el = await montarPerg();
+    clicar(el, '.per-comecar');
+    tecla(q(el, '.per-enunciado'), '3');
+    ok(q(el, '.per-opcao--escolhida') === qa(el, '.per-opcao')[2], 'a tecla 3 devia escolher a terceira opção');
+    ok(q(el, 'dialog.per-janela').open, 'a janela devia abrir');
+    clicar(el, '.per-janela__seguinte');
+    tecla(q(el, '.per-enunciado'), 'B');
+    ok(q(el, '.per-opcao--escolhida') === qa(el, '.per-opcao')[1], 'a tecla B devia escolher a segunda opção');
+    clicar(el, '.per-janela__seguinte');
+    tecla(q(el, '.per-enunciado'), '5');
+    ok(!q(el, '.per-opcao--escolhida'), 'a tecla 5 não devia fazer nada');
+    tecla(q(el, '.per-enunciado'), 'a', { ctrlKey: true });
+    ok(!q(el, '.per-opcao--escolhida'), 'Ctrl+A não devia escolher');
+  });
+
+  await teste('perguntas: ronda inteira, anúncio por aria-live, tabela por tema, rever as que falhei', async (ok) => {
+    const el = await montarPerg();
+    clicar(el, '.per-comecar');
+    let certas = 0;
+    for (let i = 0; i < 6; i++) {
+      const acertar = i % 3 !== 0;
+      if (acertar) certas++;
+      clicar(el, botaoDoBanco(el, acertar));
+      ok(q(el, '.per-janela__seguinte').textContent === (i === 5 ? 'Ver resultado' : 'Seguinte'), `texto do botão na pergunta ${i + 1}`);
+      clicar(el, '.per-janela__seguinte');
+    }
+    ok(!!q(el, '.per-fim'), 'sem ecrã final');
+    ok(texto(q(el, '.per-pontuacao')) === `${certas} em 6 (${Math.round(100 * certas / 6)}%)`, 'pontuação: ' + texto(q(el, '.per-pontuacao')));
+    ok(qa(el, '.per-tabela tbody tr').length === 3, 'linhas da tabela: ' + qa(el, '.per-tabela tbody tr').length);
+    ok(qa(el, '.per-falhada').length === 6 - certas, 'falhadas: ' + qa(el, '.per-falhada').length);
+    await esperar(150);
+    ok(texto(q(el, '.per-vivo')) === `Fim da ronda. Acertaste ${certas} em 6, ${Math.round(100 * certas / 6)} por cento.`, 'anúncio: ' + texto(q(el, '.per-vivo')));
+    ok(q(el, '.per-vivo').getAttribute('aria-live') === 'polite', 'aria-live');
+    ok(Object.keys(P.ler('log-perguntas')).length === 6, 'resultados guardados: ' + Object.keys(P.ler('log-perguntas')).length);
+    clicar(el, qa(el, '.per-acoes--fim .botao').find((b) => texto(b).startsWith('Rever as que falhei')));
+    ok(texto(q(el, '.per-etiqueta')).includes('(a rever)'), 'rever: ' + texto(q(el, '.per-etiqueta')));
+    ok(texto(q(el, '.per-progresso__texto')) === `Pergunta 1 de ${6 - certas}`, 'tamanho da revisão: ' + texto(q(el, '.per-progresso__texto')));
+    clicar(el, '.per-sair');
+    ok(!!q(el, '.per-inicio'), '«Sair da ronda» devia voltar ao início');
+    ok(texto(q(el, '.per-estat')) === `Acertaste ${certas} de 6 perguntas até agora.`, 'estatística: ' + texto(q(el, '.per-estat')));
+  });
+
+  await teste('perguntas: «Só as que ainda não acertei» e perguntas inválidas ou repetidas são ignoradas', async (ok) => {
+    P.guardar('log-perguntas', Object.fromEntries(PERGUNTAS.map((p) => [p.id, 1])));
+    const el = await montarPerg();
+    clicar(el, '[data-filtro="nao-acertei"]');
+    ok(q(el, '.per-comecar').disabled, 'sem perguntas por acertar o Começar devia estar desligado');
+    ok(texto(q(el, '.per-estado')).startsWith('Já acertaste em todas as perguntas.'), texto(q(el, '.per-estado')));
+    P.apagarTudo();
+    const mau = [PERGUNTAS[0], { ...PERGUNTAS[0] }, { ...PERGUNTAS[1], opcoes: PERGUNTAS[1].opcoes.slice(0, 3) }, { ...PERGUNTAS[2], certa: 4 }, null, { ...PERGUNTAS[3], id: 'log-02', enunciado: '  ' }];
+    const b = await montarPerg(mau);
+    ok(texto(q(b, '.per-intro')).startsWith('1 pergunta no banco.'), 'só uma devia ficar: ' + texto(q(b, '.per-intro')));
+    const c = novoEl();
+    await perg.montar(c, { perguntas: [] });
+    ok(texto(c) === 'Ainda não há perguntas.', 'vazio: ' + texto(c));
+  });
+
+  await teste('perguntas: «<», «>» e «&» dentro de $...$ aparecem certos nas opções, no enunciado e na explicação', async (ok) => {
+    const el = await montarPerg();
+    clicar(el, '.per-comecar');
+    let viuMenor = false;
+    for (let i = 0; i < 6; i++) {
+      if (qa(el, '.per-opcao').some((b) => fonte(b).includes('<'))) viuMenor = true;
+      clicar(el, botaoDoBanco(el, true));
+      if (perguntaDoBanco(el).id === 'pro-02') {
+        // o «&» do aligned tem de chegar inteiro ao KaTeX (e não como «&amp;» visível)
+        const fonteExpl = fonte(q(el, '.per-janela__expl'));
+        ok(fonteExpl.includes('&=') && !fonteExpl.includes('&amp;'), 'fonte da explicação: ' + fonteExpl);
+        ok(!!q(el, '.per-janela__expl .katex-html') && !q(el, '.per-janela__expl .katex-error'), 'aligned por desenhar');
+      }
+      clicar(el, '.per-janela__seguinte');
+    }
+    ok(viuMenor, 'nunca vi uma opção com «<» na fonte da fórmula');
+    ok(qa(el, '.katex-error').length === 0, 'erro de KaTeX');
+    ok(qa(el, '.per-opcao b, .per-opcao a, .per-opcao i').length === 0, 'etiquetas HTML criadas pelo «<»');
+  });
+
+  // ---------- treino ----------
+
+  await teste('treino: monta sem exceção; ecrã inicial com o treino misto e um botão por tipo', async (ok) => {
+    const el = await montarTreino();
+    const chips = qa(el, '.tre-chips .chip').map(texto);
+    ok(chips.length === 4 && chips[0] === 'Treino misto (10 perguntas)', 'chips: ' + chips);
+    ok(chips.includes('Valor exato') && chips.includes('Existe ou não existe'), 'chips: ' + chips);
+    ok(texto(q(el, '.tre-inicio')).includes('Ainda não respondeste a nenhuma pergunta.'), 'sem estatísticas ainda');
+    ok(!!q(el, '.tre-comecar'), 'sem Começar');
+  });
+
+  await teste('treino: a caixa de texto explica como escrever (3/2, ln(2), log2(5) e e^2)', async (ok) => {
+    const el = await montarTreino();
+    chipComTexto(el, 'Valor exato').click();
+    clicar(el, '.tre-comecar');
+    const campo = q(el, '.tre-campo');
+    const ajuda = document.getElementById(campo.getAttribute('aria-describedby'));
+    ok(!!ajuda, 'a ajuda devia estar ligada ao campo por aria-describedby');
+    ok(texto(ajuda) === 'Escreve por exemplo 3/2, ln(2), log2(5) ou e^2. Se não existir, escreve «não existe».', 'ajuda: ' + texto(ajuda));
+    ok(!/√|sqrt|raiz|pi|π|n\.d\./.test(texto(ajuda)), 'a ajuda ainda fala da trigonometria');
+  });
+
+  await teste('treino: escrita certa é aceite e errada é recusada (mostra a resposta certa em LaTeX)', async (ok) => {
+    const el = await montarTreino();
+    chipComTexto(el, 'Valor exato').click();
+    clicar(el, '.tre-comecar');
+    // errada
+    let p = responderTreino(el, false);
+    ok(texto(q(el, '.tre-feedback')).startsWith('✗ Errado. A resposta certa é'), 'errada: ' + texto(q(el, '.tre-feedback')));
+    ok(!!q(el, '.tre-certa .katex'), 'a resposta certa devia vir em LaTeX');
+    ok(q(el, '.tre-certa annotation') && fonte(q(el, '.tre-certa')) === p.esperado.tex, 'fonte da resposta certa: ' + fonte(q(el, '.tre-certa')));
+    ok(texto(q(el, '.tre-explicacao')).includes('Explicação'), 'explicação em falta');
+    ok(q(el, '.tre-campo').readOnly && q(el, '.tre-verificar').disabled, 'o campo devia ficar bloqueado');
+    ok(P.ler('log-treino')['f-escrita'].certas === 0 && P.ler('log-treino')['f-escrita'].total === 1, 'estatística: ' + JSON.stringify(P.ler('log-treino')));
+    seguinteTreino(el);
+    ok(texto(q(el, '.tre-progresso__texto')) === 'Pergunta 2 de 10', 'avançou: ' + texto(q(el, '.tre-progresso__texto')));
+    // certa
+    p = responderTreino(el, true);
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'certa: ' + texto(q(el, '.tre-feedback')));
+    ok(P.ler('log-treino')['f-escrita'].certas === 1 && P.ler('log-treino')['f-escrita'].total === 2, 'estatística 2: ' + JSON.stringify(P.ler('log-treino')));
+    // a forma com espaços e vírgula decimal também conta
+    seguinteTreino(el);
+    q(el, '.tre-campo').value = ` ${perguntaDoTreino(el).esperado.expr.replace('/', ' / ')} `;
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'com espaços: ' + texto(q(el, '.tre-feedback')));
+  });
+
+  await teste('treino: decimal e ilegível deixam tentar de novo, com a dica certa', async (ok) => {
+    const el = await montarTreino();
+    chipComTexto(el, 'Valor exato').click();
+    clicar(el, '.tre-comecar');
+    const p = perguntaDoTreino(el);
+    const k = (Number(p.esperado.expr.split('/')[0]) / 2).toFixed(1).replace('.', ',');
+    const campo = q(el, '.tre-campo');
+    campo.value = k;
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')) === 'Está certo, mas escreve o valor exato, em fração (por exemplo 3/2).', 'decimal: ' + texto(q(el, '.tre-feedback')));
+    ok(!campo.readOnly && !q(el, '.tre-seguinte'), 'a pergunta devia continuar aberta');
+    campo.value = 'abc';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')) === 'Não consegui ler isto. Escreve, por exemplo, 3/2, ln(2), log2(5) ou e^2.', 'inválido: ' + texto(q(el, '.tre-feedback')));
+    ok(!campo.readOnly, 'o campo devia continuar livre');
+    ok(!P.ler('log-treino')['f-escrita'], 'nada devia ficar contado ainda');
+    campo.value = p.esperado.expr;
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'depois de corrigir: ' + texto(q(el, '.tre-feedback')));
+    ok(P.ler('log-treino')['f-escrita'].total === 1, 'contou uma vez');
+  });
+
+  await teste('treino: a dica de decimal muda com o valor esperado (logaritmo, raiz, fração)', async (ok) => {
+    const tipo = (id, esperado) => ({ id, nome: id, gerar: () => ({ tipo: id, modo: 'escrita', enunciado: `Pergunta ${id}.`, esperado, explicacao: 'Explicação de teste.', verificacao: {} }) });
+    const casos = [
+      [{ expr: 'ln(3)' }, '1,0986', 'Está certo, mas escreve o valor exato (por exemplo log₂ 5 ou ln 3).'],
+      [{ expr: 'logb(2, 5)' }, '2,3219', 'Está certo, mas escreve o valor exato (por exemplo log₂ 5 ou ln 3).'],
+      [{ expr: 'exp(2)' }, '7,389', 'Está certo, mas escreve o valor exato (por exemplo log₂ 5 ou ln 3).'],
+      [{ expr: 'sqrt(2)' }, '1,414', 'Está certo, mas escreve o valor exato, com a raiz (por exemplo √2).'],
+      [{ expr: '5/2' }, '2,5', 'Está certo, mas escreve o valor exato, em fração (por exemplo 3/2).'],
+    ];
+    for (const [esperado, resposta, dica] of casos) {
+      const el = await montarTreino([tipo('t', esperado)]);
+      clicar(el, '.tre-comecar');
+      q(el, '.tre-campo').value = resposta;
+      q(el, 'form.tre-escrita').requestSubmit();
+      ok(texto(q(el, '.tre-feedback')) === dica, `${esperado.expr} com ${resposta}: ${texto(q(el, '.tre-feedback'))}`);
+    }
+  });
+
+  await teste('treino: «não existe» (esperado.naoDefinida) aceita «não existe» e n.d., recusa números', async (ok) => {
+    const el = await montarTreino();
+    chipComTexto(el, 'Existe ou não existe').click();
+    clicar(el, '.tre-comecar');
+    q(el, '.tre-campo').value = 'não existe';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'não existe: ' + texto(q(el, '.tre-feedback')));
+    seguinteTreino(el);
+    q(el, '.tre-campo').value = 'n.d.';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'n.d.: ' + texto(q(el, '.tre-feedback')));
+    seguinteTreino(el);
+    q(el, '.tre-campo').value = '-2';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✗ Errado. A resposta certa é'), 'número: ' + texto(q(el, '.tre-feedback')));
+    ok(fonte(q(el, '.tre-certa')) === '\\text{não existe}', 'mostra «não existe» em LaTeX: ' + fonte(q(el, '.tre-certa')));
+    ok(!/definida/.test(texto(q(el, '.tre-feedback'))), 'ainda diz «definida»');
+  });
+
+  await teste('treino: «certo-forma» só fala de raiz quando a resposta tem raiz', async (ok) => {
+    const tipo = (esperado) => ({ id: 't', nome: 't', gerar: () => ({ tipo: 't', modo: 'escrita', enunciado: 'Pergunta de teste.', esperado, explicacao: 'Explicação de teste.', verificacao: {} }) });
+    // 1/√2 com raiz no denominador: certo-forma
+    let el = await montarTreino([tipo({ expr: 'sqrt(2)/2' })]);
+    clicar(el, '.tre-comecar');
+    q(el, '.tre-campo').value = '1/sqrt(2)';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo. Escreve a raiz no numerador.'), 'com raiz: ' + texto(q(el, '.tre-feedback')));
+    el = await montarTreino([tipo({ expr: 'sqrt(2)/2', tex: '\\frac{\\sqrt{2}}{2}' })]);
+    clicar(el, '.tre-comecar');
+    q(el, '.tre-campo').value = '1/sqrt(2)';
+    q(el, 'form.tre-escrita').requestSubmit();
+    ok(texto(q(el, '.tre-feedback')).includes('A forma pedida é'), 'com tex: ' + texto(q(el, '.tre-feedback')));
+  });
+
+  await teste('treino: escolha com cliques e com as teclas 1 a 4; a certa é mostrada quando falhas', async (ok) => {
+    const el = await montarTreino();
+    chipComTexto(el, 'Logaritmo de uma potência').click();
+    clicar(el, '.tre-comecar');
+    ok(qa(el, '.tre-opcao').length === 4, 'quatro opções');
+    let p = perguntaDoTreino(el);
+    const errada = p.opcoes.findIndex((o) => !o.correta);
+    tecla(q(el, '.tre-enunciado'), String(errada + 1));
+    ok(qa(el, '.tre-opcao')[errada].classList.contains('tre-opcao--errada'), 'a errada devia ficar vermelha');
+    ok(qa(el, '.tre-opcao--certa').length === 1 && texto(q(el, '.tre-opcao--certa')).includes('✓ Resposta certa'), 'a certa devia ficar marcada');
+    ok(texto(q(el, '.tre-feedback')).startsWith('✗ Errado. A resposta certa é'), 'texto: ' + texto(q(el, '.tre-feedback')));
+    ok(qa(el, '.tre-opcao').every((b) => b.disabled), 'opções bloqueadas');
+    tecla(q(el, '.tre-enunciado'), '1');
+    ok(P.ler('log-treino')['f-escolha'].total === 1, 'uma resposta só conta uma vez');
+    seguinteTreino(el);
+    p = perguntaDoTreino(el);
+    qa(el, '.tre-opcao')[p.opcoes.findIndex((o) => o.correta)].click();
+    ok(texto(q(el, '.tre-feedback')).startsWith('✓ Certo.'), 'certa: ' + texto(q(el, '.tre-feedback')));
+    ok(P.ler('log-treino')['f-escolha'].certas === 1, 'estatística: ' + JSON.stringify(P.ler('log-treino')));
+  });
+
+  await teste('treino: sessão mista de 10, resultado, estatísticas por tipo e rever o que falhei', async (ok) => {
+    const el = await montarTreino();
+    clicar(el, '.tre-comecar');
+    const tipos = new Set();
+    let certas = 0;
+    for (let i = 0; i < 10; i++) {
+      ok(texto(q(el, '.tre-progresso__texto')) === `Pergunta ${i + 1} de 10`, `contador na ${i + 1}`);
+      const acertar = i % 4 !== 1;
+      if (acertar) certas++;
+      tipos.add(responderTreino(el, acertar).tipo);
+      ok(q(el, '.tre-seguinte').textContent === (i === 9 ? 'Ver resultado' : 'Seguinte'), `botão na ${i + 1}`);
+      seguinteTreino(el);
+    }
+    ok(tipos.size === 3, 'o treino misto devia misturar os 3 tipos: ' + [...tipos]);
+    ok(!!q(el, '.tre-fim'), 'sem ecrã final');
+    ok(texto(q(el, '.tre-pontuacao')) === `Acertaste ${certas} de 10 (${certas * 10}%)`, 'pontuação: ' + texto(q(el, '.tre-pontuacao')));
+    ok(qa(el, '.tre-tabela tbody tr').length === 3, 'linhas da tabela: ' + qa(el, '.tre-tabela tbody tr').length);
+    const stats = P.ler('log-treino');
+    ok(Object.values(stats).reduce((s, a) => s + a.total, 0) === 10, 'total guardado: ' + JSON.stringify(stats));
+    ok(Object.values(stats).reduce((s, a) => s + a.certas, 0) === certas, 'certas guardadas: ' + JSON.stringify(stats));
+    const rever = qa(el, '.tre-acoes--fim .botao').find((b) => texto(b).startsWith('Rever o que falhei'));
+    ok(!!rever && texto(rever) === `Rever o que falhei (${10 - certas})`, 'botão de rever: ' + texto(rever));
+    rever.click();
+    ok(texto(q(el, '.tre-etiqueta')).includes('(a rever)'), 'etiqueta de revisão');
+    ok(texto(q(el, '.tre-progresso__texto')) === `Pergunta 1 de ${10 - certas}`, 'revisão: ' + texto(q(el, '.tre-progresso__texto')));
+    clicar(el, '.tre-sair');
+    ok(texto(q(el, '.tre-stats')).includes('As tuas estatísticas'), 'estatísticas no início');
+    ok(qa(el, '.tre-tabela tbody tr').length === 4, 'tabela do início: 3 tipos + Tudo: ' + qa(el, '.tre-tabela tbody tr').length);
+  });
+
+  await teste('treino: com os geradores ' + (window.GERADORES_DO_TEMA ? 'do tema (logaritmos/geradores.js)' : 'da trigonometria (os do tema ainda não existem), pelo mesmo contrato') + ', sessão mista até ao fim', async (ok) => {
+    let dados = {};
+    if (!window.GERADORES_DO_TEMA) {
+      const [valores, reducao] = await Promise.all([
+        fetch('../../trigonometria/dados/valores.json').then((r) => r.json()),
+        fetch('../../trigonometria/dados/reducao.json').then((r) => r.json()),
+      ]);
+      dados = { valores, reducao };
+    }
+    const el = novoEl();
+    await trei.montar(el, dados, { semente: 5 });
+    clicar(el, '.tre-comecar');
+    for (let i = 0; i < 10; i++) {
+      ok(!!q(el, '.tre-pergunta'), `pergunta ${i + 1} no ecrã`);
+      if (q(el, 'form.tre-escrita')) {
+        q(el, '.tre-campo').value = '0';
+        q(el, 'form.tre-escrita').requestSubmit();
+      } else {
+        clicar(el, '.tre-opcao');
+      }
+      ok(!!q(el, '.tre-seguinte'), `pergunta ${i + 1} sem botão Seguinte`);
+      seguinteTreino(el);
+    }
+    ok(!!q(el, '.tre-fim'), 'sem ecrã final');
+    ok(qa(el, '.katex-error').length === 0, 'erro de KaTeX');
+    ok(Object.keys(lerTudo()).every((s) => s.startsWith('log-')), 'secções: ' + Object.keys(lerTudo()));
+  });
+
+  // ---------- dados reais do tema (os outros agentes escrevem-nos; sem ficheiros, o teste não faz nada) ----------
+
+  await teste('com os dados reais do tema: todos os cartões e perguntas desenham sem erro de KaTeX nem «$» por desenhar', async (ok) => {
+    const ler = async (pasta, g) => {
+      try { const r = await fetch(`../dados/${pasta}/${g.id}.json`); return r.ok ? await r.json() : null; } catch (e) { return null; }
+    };
+    const cartoes = [];
+    const perguntas = [];
+    for (const g of GRUPOS) {
+      const c = await ler('cartoes', g);
+      if (c && Array.isArray(c.cartoes)) cartoes.push(...c.cartoes.map((x) => ({ ...x, grupo: x.grupo || c.grupo || g.id })));
+      const p = await ler('perguntas', g);
+      if (p && Array.isArray(p.perguntas)) perguntas.push(...p.perguntas.map((x) => ({ ...x, tema: p.tema || g.id })));
+    }
+    linhas.push(`   (dados reais lidos: ${cartoes.length} cartões, ${perguntas.length} perguntas)`);
+    const limpo = (no, onde) => {
+      ok(qa(no, '.katex-error').length === 0, `${onde}: erro de KaTeX`);
+      ok(!texto(no).includes('$'), `${onde}: «$» por desenhar: ${texto(no).slice(0, 80)}`);
+    };
+    if (cartoes.length > 0) {
+      const el = await montarFlash(cartoes);
+      clicar(el, '[data-modo="tudo"]');
+      clicar(el, '[data-acao="comecar"]');
+      for (let i = 0; i < cartoes.length; i++) {
+        const id = cartoes[i] && texto(q(el, '.fc-meta'));
+        clicar(el, '[data-acao="virar"]');
+        limpo(q(el, '.fc-cartao'), `cartão ${i + 1} (${id})`);
+        clicar(el, '[data-acao="sim"]');
+      }
+      ok(texto(el).includes('Ronda concluída'), 'a ronda de todos os cartões devia acabar');
+    }
+    if (perguntas.length > 0) {
+      const el = await montarPerg(perguntas, 3);
+      clicar(el, '[data-tamanho="Infinity"]');
+      clicar(el, '.per-comecar');
+      const n = Number(/de (\d+)$/.exec(texto(q(el, '.per-progresso__texto')))[1]);
+      ok(n === perguntas.length, `perguntas na ronda: ${n} de ${perguntas.length}`);
+      for (let i = 0; i < n; i++) {
+        limpo(q(el, '.per-pergunta'), `pergunta ${i + 1}: ecrã`);
+        clicar(el, '.per-opcao');
+        limpo(q(el, 'dialog.per-janela'), `pergunta ${i + 1}: janela`);
+        clicar(el, '.per-janela__seguinte');
+      }
+      ok(!!q(el, '.per-fim'), 'a ronda de todas as perguntas devia acabar');
+    }
+  });
+
+  // ---------- armazenamento e texto ----------
+
+  await teste('as secções guardadas começam todas por «log-» (e as cinco esperadas foram usadas)', (ok) => {
+    const vistas = [...seccoesEscritas];
+    ok(vistas.length > 0, 'nada foi guardado');
+    ok(vistas.every((s) => s.startsWith('log-')), 'secções sem o prefixo: ' + vistas.filter((s) => !s.startsWith('log-')));
+    for (const s of ['log-flashcards', 'log-flashcards-temas', 'log-perguntas', 'log-perguntas-temas', 'log-treino']) {
+      ok(vistas.includes(s), 'nunca se guardou ' + s);
+    }
+  });
+
+  const FICHEIROS = ['flashcards.js', 'flashcards.css', 'perguntas.js', 'perguntas.css', 'treino.js', 'treino.css'];
+  const fontes = {};
+  for (const f of FICHEIROS) fontes[f] = await fetch(new URL('../widgets/' + f, import.meta.url)).then((r) => r.text());
+
+  await teste('os seis ficheiros dos widgets: sem texto da trigonometria, sem travessões e sem o armazenamento direto', (ok) => {
+    const TRIG = /\b(sin|cos|tan|seno|cosseno|tangente|quadrantes?|ângulos?|graus|radianos?|trigonom\w*|circunferência)\b/i;
+    const tracos = [String.fromCharCode(0x2014), String.fromCharCode(0x2013)];
+    for (const [nome, src] of Object.entries(fontes)) {
+      const m = TRIG.exec(src);
+      ok(!m, `${nome}: palavra da trigonometria «${m && m[0]}»`);
+      ok(!tracos.some((t) => src.includes(t)), `${nome}: travessão`);
+      ok(!/localStorage|sessionStorage/.test(src), `${nome}: usa o armazenamento diretamente`);
+      ok(!/trigonometria|assets\/motor\/grupos\.js/.test(src), `${nome}: ainda aponta para a trigonometria`);
+    }
+    for (const nome of ['flashcards.js', 'perguntas.js', 'treino.js']) {
+      const secoes = [...fontes[nome].matchAll(/(?:P|progresso)\.(?:ler|guardar)\('([^']+)'/g)].map((m) => m[1]);
+      ok(secoes.length >= 2 && secoes.every((s) => s.startsWith('log-')), `${nome}: secções ${secoes}`);
+    }
+    ok(/from '\.\.\/grupos\.js'/.test(fontes['flashcards.js']) && /from '\.\.\/grupos\.js'/.test(fontes['perguntas.js']), 'GRUPOS devia vir de ../grupos.js');
+    ok(/import\('\.\.\/geradores\.js'\)/.test(fontes['treino.js']), 'treino devia importar ../geradores.js');
+  });
+
+  // ---------- ecrãs a 390 px: sem overflow horizontal nem texto da trigonometria ----------
+
+  const ECRAS = [
+    ['flashcards', 'inicio'], ['flashcards', 'frente'], ['flashcards', 'verso'], ['flashcards', 'fim'],
+    ['perguntas', 'inicio'], ['perguntas', 'pergunta'], ['perguntas', 'janela'], ['perguntas', 'janela-errada'], ['perguntas', 'fim'],
+    ['treino', 'inicio'], ['treino', 'pergunta'], ['treino', 'errada'], ['treino', 'escolha'], ['treino', 'fim'],
+  ];
+  await teste('a 390 px de largura (' + ECRAS.length + ' ecrãs): monta, sem overflow horizontal, sem texto da trigonometria', async (ok) => {
+    for (const [qual, estado] of ECRAS) {
+      const f = document.createElement('iframe');
+      f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:900px; border:0';
+      f.src = `${location.pathname}?demo=${qual}&estado=${estado}`;
+      document.body.append(f);
+      let d = null;
+      for (let i = 0; i < 100; i++) {
+        await esperar(50);
+        try { d = f.contentDocument; } catch (e) { d = null; }
+        if (d && d.documentElement && d.documentElement.dataset.demo) break;
+      }
+      const marca = d && d.documentElement.dataset.demo;
+      ok(marca === 'pronto', `${qual}/${estado}: demo ${marca}`);
+      if (marca === 'pronto') {
+        const raiz = d.documentElement;
+        ok(raiz.scrollWidth <= 390, `${qual}/${estado}: scrollWidth ${raiz.scrollWidth} > 390`);
+        ok(d.body.scrollWidth <= 390, `${qual}/${estado}: body.scrollWidth ${d.body.scrollWidth}`);
+        const t = d.getElementById('palco').textContent;
+        ok(!/\b(seno|cosseno|tangente|quadrante|ângulo|radianos?)\b/i.test(t), `${qual}/${estado}: texto da trigonometria`);
+        ok(d.querySelectorAll('.katex-error').length === 0, `${qual}/${estado}: erro de KaTeX`);
+        ok(d.querySelectorAll('.aviso-erro:not([hidden])').length === 0 || qual === 'treino', `${qual}/${estado}: aviso de erro visível`);
+      }
+      f.remove();
+    }
+  });
+
+  await teste('treino sem geradores.js: mostra um aviso simpático em vez de partir (e com extra.tipos nem precisa dele)', async (ok) => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:900px; border:0';
+    f.src = `${location.pathname}?demo=treino-sem-geradores`;
+    document.body.append(f);
+    let d = null;
+    for (let i = 0; i < 100; i++) {
+      await esperar(50);
+      try { d = f.contentDocument; } catch (e) { d = null; }
+      if (d && d.documentElement && d.documentElement.dataset.demo) break;
+    }
+    ok(d && d.documentElement.dataset.demo === 'pronto', 'demo: ' + (d && d.documentElement.dataset.demo));
+    const aviso = d && d.querySelector('#palco .aviso-erro');
+    ok(!!aviso && aviso.textContent === 'O treino ainda não está disponível neste tema.', 'aviso: ' + (aviso && aviso.textContent));
+    ok(!/recarrega/i.test(d.getElementById('palco').textContent), 'recarregar não resolve nada');
+    f.remove();
+  });
+
+  await teste('nenhum erro não apanhado durante os testes', (ok) => {
+    ok(errosNaoApanhados.length === 0, errosNaoApanhados.slice(0, 3).join(' | '));
+  });
+
+  // ---------- resumo ----------
+  const ms = Math.round(performance.now() - t0);
+  linhas.push('');
+  linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+  linhas.push('geradores usados no treino: ' + (window.GERADORES_DO_TEMA ? 'logaritmos/geradores.js' : 'trigonometria/geradores.js (o do tema ainda não existe)'));
+  saida.textContent = linhas.join('\n');
+  document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+</script>
+</body>
+</html>

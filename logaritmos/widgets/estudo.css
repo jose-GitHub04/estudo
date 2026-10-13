@@ -1,0 +1,129 @@
+/* Estudo de uma função (widgets/estudo.js). Prefixo .es- */
+
+.es [hidden] { display: none !important; }
+.es { padding: 0.75rem; }
+.es * { animation: none !important; }
+
+/* escolha da função */
+.es-chips { margin-top: 0; }
+.es .chip { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0.3rem 0.9rem; }
+.es .chip .katex { font-size: 1.02em; }
+.es-enunciado { margin: 0.9rem 0 0.9rem; font-size: 0.98rem; }
+.es-enunciado .katex { font-size: 1.05em; }
+
+/* disposição: tudo em coluna (a navegação por cima do gráfico, para ver logo o efeito), em ecrã largo
+   o gráfico fica à esquerda, fixo, e os passos à direita */
+.es-corpo { display: grid; gap: 1rem; }
+.es-corpo > * { min-width: 0; }
+
+/* navegação: os 7 números do roteiro, o estado e os botões */
+.es-roteiro { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin: 0; padding: 0; list-style: none; }
+.es-ponto {
+  width: 100%; min-width: 0; min-height: 2.75rem; padding: 0; border: 1px solid #cdbfae; border-radius: 0.4rem;
+  background: var(--creme); color: var(--castanho); font: inherit; font-weight: 600; cursor: pointer;
+}
+.es-ponto:hover:not(:disabled) { border-color: var(--castanho); }
+.es-ponto--feito { background: var(--dourado-fundo); border-color: var(--dourado); }
+.es-ponto[aria-current="step"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
+.es-ponto:disabled { opacity: 0.45; cursor: not-allowed; }
+.es-estado { margin: 0.6rem 0 0.5rem; color: var(--tinta-suave); font-size: 0.92rem; }
+.es-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.es-botao { flex: 1 1 0; min-width: 0; min-height: 2.75rem; padding: 0.5rem 0.6rem; font-size: 0.95rem; }
+.es-botao--seguinte { flex: 1 1 100%; }
+.es-botao--desligado { opacity: 0.5; cursor: default; }
+.es-botao--desligado:hover { background: inherit; }
+
+/* gráfico, legenda e leituras do cursor */
+.es-bloco-fig { min-width: 0; }
+.es-fig { max-width: 34rem; margin: 0 auto; }
+.es-fig .figura { max-width: 100%; }
+.es-legenda { min-height: 2.7em; margin: 0.4rem 0 0; color: var(--tinta); font-size: 0.92rem; }
+.es-ler { min-height: 2.75rem; margin: 0.4rem 0 0; }
+.es-leituras { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin: 0.7rem 0 0; }
+.es-leitura { padding: 0.3rem 0.55rem; }
+.es-leitura .leitura__valor { font-size: 1rem; }
+.es-leitura .es-pendente { color: var(--tinta-suave); font-size: 0.88rem; }
+.es-leitura--d1 .es-mais { color: var(--c-tg); font-weight: 600; }
+.es-leitura--d1 .es-menos { color: var(--c-log); font-weight: 600; }
+.es-leitura--d2 .es-mais { color: var(--c-der); font-weight: 600; }
+.es-leitura--d2 .es-menos { color: var(--c-id); font-weight: 600; }
+.es-leitura .es-neutro { font-weight: 600; }
+.es-leitura--d1 .leitura__rotulo { color: var(--tinta-suave); }
+.es-dica { margin: 0.5rem 0 0; font-size: 0.82rem; }
+
+/* passos revelados */
+.es-passos { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.es-passo { border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--papel); }
+.es-passo--aberto { border-color: var(--dourado); box-shadow: 0 1px 4px rgba(36, 23, 16, 0.08); }
+.es-passo__titulo { margin: 0; font-size: 1rem; }
+.es-passo__cab {
+  display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.6rem; align-items: start;
+  width: 100%; min-height: 2.75rem; padding: 0.55rem 0.7rem; border: 0; border-radius: 0.5rem;
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.es-passo__cab:hover { background: var(--creme); }
+.es-passo__num {
+  display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--dourado-fundo); color: var(--dourado-texto); font-family: var(--serif); font-size: 1.05rem;
+}
+.es-passo--aberto .es-passo__num { background: var(--castanho); color: var(--claro); }
+.es-passo__nome { display: block; font-family: var(--serif); font-size: 1.08rem; line-height: 1.3; }
+.es-passo__res { display: block; margin-top: 0.1rem; color: var(--tinta-suave); font-size: 0.88rem; line-height: 1.4; }
+.es-passo--aberto .es-passo__res { display: none; }
+.es-passo__corpo { padding: 0.1rem 0.8rem 0.9rem; }
+.es-passo__porque {
+  margin: 0 0 0.7rem; padding: 0.4rem 0.7rem; border-left: 3px solid var(--dourado); border-radius: 0 0.3rem 0.3rem 0;
+  background: var(--creme); color: var(--tinta-suave); font-size: 0.9rem;
+}
+.es-passo__texto p { margin: 0 0 0.7rem; }
+.es-passo__texto .katex-display, .es-tabela-caixa + .es-passo__texto .katex-display { margin: 0.7em 0; overflow-x: auto; overflow-y: hidden; padding: 0.1em 0; }
+.es-passo__depois { margin-top: 0.8rem; }
+.es-cuidado {
+  margin: 0.8rem 0 0; padding: 0.55rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--dourado-fundo); font-size: 0.92rem;
+}
+.es-voltar { margin-top: 0.9rem; min-height: 2.75rem; }
+
+/* tabelas de variação, de concavidades e de sinal */
+.es-tabela-caixa { margin: 0.6rem 0 0.2rem; }
+.es-tabela { width: 100%; font-size: 0.92rem; }
+.es-tabela th, .es-tabela td { padding: 0.3rem 0.25rem; vertical-align: middle; }
+.es-tabela th[scope="row"], .es-tabela .es-canto { width: 2.3rem; background: var(--creme); font-style: italic; }
+.es-tabela .es-x, .es-tabela .es-int { background: var(--dourado-fundo); }
+.es-tabela .es-x { min-width: 2.2rem; font-weight: 600; white-space: nowrap; }
+.es-tabela .es-int { width: 3rem; padding: 0; }
+.es-tabela .es-sinal { font-weight: 700; font-size: 1.05rem; }
+.es-tabela .es-ext, .es-tabela .es-lim { white-space: nowrap; }
+.es-tabela .es-tag { display: block; color: var(--tinta-suave); font-size: 0.7rem; letter-spacing: 0.03em; line-height: 1.2; }
+.es-tabela .es-ext--max, .es-tabela .es-ext--min, .es-tabela .es-ext--pi { background: var(--creme); }
+.es-tabela .es-seta { padding: 0.15rem 0; }
+.es-icone { display: block; width: 1.9rem; height: 1.35rem; margin: 0 auto; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.es-icone--cresce { color: var(--c-tg); }
+.es-icone--decresce { color: var(--c-log); }
+.es-icone--cima { color: var(--c-der); }
+.es-icone--baixo { color: var(--c-id); }
+.es-tabela .katex { font-size: 1em; }
+
+/* telemóvel pequeno: texto e tabelas um pouco mais compactos */
+@media (max-width: 24em) {
+  .es-tabela { font-size: 0.85rem; }
+  .es-tabela .es-int { width: 2.4rem; }
+}
+
+/* a partir de 40em volta o espaço do cartão normal */
+@media (min-width: 40em) {
+  .es { padding: 1rem; }
+}
+
+/* ecrã largo: gráfico fixo à esquerda, passos à direita; os botões «Ler o passo» e «Voltar ao gráfico» já não servem */
+@media (min-width: 52em) {
+  .es { padding: 1.25rem; }
+  .es-corpo { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1rem 1.6rem; align-items: start; }
+  .es-bloco-fig {
+    grid-column: 1; grid-row: 1 / span 2; position: sticky; top: var(--es-topo, 4.5rem);
+    max-height: calc(100vh - var(--es-topo, 4.5rem) - 0.5rem); overflow-y: auto; padding: 0 0.2rem 0.3rem;
+  }
+  .es-nav { grid-column: 2; grid-row: 1; }
+  .es-bloco-passos { grid-column: 2; grid-row: 2; }
+  .es-ler, .es-voltar { display: none; }
+}

@@ -1,0 +1,83 @@
+/* inversa: a exponencial e o logaritmo como espelhos na reta y = x. Desenhado a 390px; classes .inv-* */
+
+.inv [hidden] { display: none !important; }
+
+/* alvos de toque de pelo menos 44 px */
+.inv .chip, .inv .botao { min-height: 2.75rem; }
+.inv .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; padding-inline: 1rem; }
+.inv .chips { margin: 0; }
+
+.inv .widget__titulo { margin-bottom: 0.3rem; }
+.inv-intro { margin: 0 0 0.8rem; color: var(--tinta-suave); font-size: 0.95rem; }
+
+/* uma coluna no telemóvel; a partir de 46em o desenho fica ao lado do resto */
+.inv-corpo { display: grid; gap: 1rem; }
+.inv-esq, .inv-dir { min-width: 0; }
+
+.inv-fig .figura { max-width: 26rem; }
+
+.inv-legenda {
+  display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; max-width: 26rem; margin: 0.4rem auto 0; padding: 0;
+  list-style: none; color: var(--tinta); font-size: 0.92rem;
+}
+.inv-legenda li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.inv-amostra { flex: none; }
+.inv-amostra line { stroke-width: 3; stroke-linecap: round; }
+.inv-amostra--exp { stroke: var(--c-exp); }
+.inv-amostra--log { stroke: var(--c-log); }
+.inv-amostra--id { stroke: var(--c-id); stroke-dasharray: 5 4; }
+
+/* controlos: base, chips, dobrar o papel */
+.inv-controlos { display: grid; gap: 0.7rem; }
+.inv-base__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+.inv-base input[type="range"] { height: 2.75rem; margin: 0; }
+.inv-base__valor { font-size: 1.05rem; }
+.inv-aviso { margin: 0; padding: 0.55rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); color: var(--tinta); }
+.inv-acoes { gap: 0.5rem; }
+.inv-dobrar[aria-pressed="true"]::before { content: "\2713\00a0"; }
+.inv-nota-dobra { margin: 0; }
+
+/* leituras */
+.inv-leituras { margin-top: 1rem; }
+.inv-leituras .leitura { min-width: 0; }
+.inv-leituras .leitura__valor { white-space: nowrap; }
+.inv-leituras .inv-leitura--larga { grid-column: 1 / -1; }
+.inv-leituras .inv-equiv { overflow-x: auto; overflow-y: hidden; white-space: normal; }
+.inv-equiv .katex-display { margin: 0.3rem 0 0.1rem; }
+.inv-equiv .katex { font-size: 1.1em; }
+.inv-troca-nota { margin: 0.5rem 0 0; }
+
+/* tabela e notas, por baixo das duas colunas */
+.inv-baixo { margin-top: 1.25rem; }
+.inv-baixo .inv-tabela-lugar { max-width: 44rem; }
+.inv-tabela { font-size: 0.9rem; }
+.inv-tabela th, .inv-tabela td { padding: 0.4rem 0.45rem; }
+.inv-tabela tbody th { text-align: left; }
+.inv-tabela .inv-col-exp { color: var(--c-exp); }
+.inv-tabela .inv-col-log { color: var(--c-log); }
+.inv-tabela td.inv-par { background: var(--dourado-fundo); }
+.inv-tabela .katex { font-size: 1em; }
+
+/* a célula que mudou com a base pisca uma vez */
+@keyframes inv-pisca {
+  from { background-color: var(--dourado-fundo); box-shadow: inset 0 0 0 2px var(--dourado); }
+  to { background-color: transparent; box-shadow: inset 0 0 0 2px transparent; }
+}
+.inv-muda { animation: inv-pisca 1.1s ease-out; }
+
+.inv-notas { margin-top: 1rem; }
+.inv-notas p { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.inv-notas .nota { margin-top: 0; font-size: 0.9rem; }
+.inv-mono.inv-muda { border-radius: 0.3rem; }
+
+@media (max-width: 24em) {
+  .inv-tabela { font-size: 0.82rem; }
+  .inv-tabela th, .inv-tabela td { padding: 0.3rem 0.3rem; }
+}
+
+@media (min-width: 46em) {
+  .inv-corpo { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+}
+@media (min-width: 46em) and (min-height: 40em) {
+  .inv-esq { position: sticky; top: 4.75rem; }
+}

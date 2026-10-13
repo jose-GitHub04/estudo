@@ -1,0 +1,64 @@
+{
+ "grupo": "exponencial",
+ "cartoes": [
+  { "id": "exp-base", "grupo": "exponencial",
+    "frente": "Que valores pode ter a base $a$ em $f(x)=a^x$, e porquê?",
+    "verso": "$a>0$ e $a\\neq1$.",
+    "porque": "Se $a<0$, expoentes como $\\frac12$ dariam $\\sqrt{a}$, que não é real; se $a=0$, $0^{-1}$ não existe. Com $a=1$ tens $1^x=1$ para todo o $x$: uma função constante, sem inversa.",
+    "verifica": ["ig(a**t, exp(t*ln(a)))"] },
+
+  { "id": "exp-contradominio", "grupo": "exponencial",
+    "frente": "Quais são o domínio e o contradomínio de $f(x)=a^x$, com $a>0$ e $a\\neq1$?",
+    "verso": "$D_f=\\mathbb{R}$ e $D'_f=\\mathbb{R}^+$, ou seja, $a^x>0$ para todo o $x$.",
+    "porque": "Uma potência de base positiva nunca é zero nem negativa. Os valores chegam tão perto de 0 e sobem tão alto quanto quiseres e, como a função é contínua, passam por todos os valores positivos.",
+    "verifica": ["a**t>0"] },
+
+  { "id": "exp-pontos", "grupo": "exponencial",
+    "frente": "Quais são os dois pontos por onde passa sempre o gráfico de $f(x)=a^x$?",
+    "verso": "Por $(0,1)$ e por $(1,a)$.",
+    "porque": "$a^0=1$ para qualquer base e $a^1=a$. Por isso todos os gráficos se cruzam em $(0,1)$, e o de $\\left(\\frac12\\right)^x$ passa em $\\left(1,\\frac12\\right)$.",
+    "verifica": ["ig(a**0, 1)", "ig(a**1, a)"] },
+
+  { "id": "exp-monotonia", "grupo": "exponencial",
+    "frente": "Quando é que $f(x)=a^x$ é crescente e quando é decrescente?",
+    "verso": "Crescente se $a>1$; decrescente se $0<a<1$.",
+    "porque": "Por isso, para comparar $a^p$ e $a^q$ compara os expoentes: com $a>1$ o sentido mantém-se, com $0<a<1$ inverte-se. Exemplo: $\\left(\\frac12\\right)^3<\\left(\\frac12\\right)^2$, embora $3>2$.",
+    "verifica": ["(a**x>a**y) == ((x>y) == (a>1))"] },
+
+  { "id": "exp-limites", "grupo": "exponencial",
+    "frente": "Quais são os limites de $a^x$ quando $x\\to-\\infty$ e quando $x\\to+\\infty$, e que assíntota resulta deles?",
+    "verso": "Se $a>1$: $\\lim_{x\\to-\\infty}a^x=0$ e $\\lim_{x\\to+\\infty}a^x=+\\infty$. Se $0<a<1$: $\\lim_{x\\to-\\infty}a^x=+\\infty$ e $\\lim_{x\\to+\\infty}a^x=0$. A reta $y=0$ é assíntota horizontal do lado em que o limite é 0 ($x\\to-\\infty$ se $a>1$; $x\\to+\\infty$ se $0<a<1$).",
+    "porque": "Com $a=2$: $2^{-10}=\\frac{1}{1024}$ já está quase em 0. Com $a=\\frac12$ acontece o inverso: $\\left(\\frac12\\right)^{-10}=1024$ sobe muito e $\\left(\\frac12\\right)^{10}$ fica quase em 0.",
+    "verifica": ["(a**(-60/abs(ln(a)))<1e-6) == (a>1)", "(a**(-60/abs(ln(a)))>1e6) == (a<1)"] },
+
+  { "id": "exp-mesma-base", "grupo": "exponencial",
+    "frente": "Que propriedades usas quando duas potências têm a mesma base $a>0$?",
+    "verso": "$a^x\\times a^y=a^{x+y}$, $\\dfrac{a^x}{a^y}=a^{x-y}$, $(a^x)^y=a^{xy}$ e $a^{-x}=\\dfrac{1}{a^x}$.",
+    "porque": "Exemplo: $2^3\\times2^2=(2\\times2\\times2)\\times(2\\times2)=2^5$. Ao multiplicar potências somam-se os expoentes; só numa potência de potência é que eles se multiplicam.",
+    "verifica": ["ig(a**(t+x), a**t*a**x)", "ig(a**(t-x), a**t/a**x)", "ig((a**x)**y, a**(x*y))", "ig(a**(-t), 1/a**t)"] },
+
+  { "id": "exp-mesmo-expoente", "grupo": "exponencial",
+    "frente": "Como distribuis um expoente por um produto e por um quociente?",
+    "verso": "$(ab)^x=a^x\\,b^x$ e $\\left(\\dfrac{a}{b}\\right)^x=\\dfrac{a^x}{b^x}$, com $a,b>0$.",
+    "porque": "Isto vale para produtos e quocientes, mas não para somas: $(a+b)^x\\neq a^x+b^x$. Por exemplo, $(2+3)^2=25$, mas $2^2+3^2=13$.",
+    "verifica": ["ig((a*b)**t, a**t*b**t)", "ig((a/b)**t, a**t/b**t)", "not ig((a+b)**x, a**x+b**x)"] },
+
+  { "id": "exp-raizes", "grupo": "exponencial",
+    "frente": "Como escreves $\\sqrt[n]{a^m}$ como uma potência?",
+    "verso": "$\\sqrt[n]{a^m}=a^{\\frac{m}{n}}$, com $a>0$. Em particular, $\\sqrt[n]{a}=a^{\\frac1n}$.",
+    "porque": "O expoente $\\frac1n$ desfaz a potência $n$: $\\left(a^{\\frac1n}\\right)^n=a^{\\frac1n\\times n}=a$. Exemplo: $\\sqrt{8}=\\sqrt{2^3}=2^{\\frac32}$.",
+    "verifica": ["ig((x**(1/n))**n, x)", "ig((x**3)**(1/n), x**(3/n))"] },
+
+  { "id": "exp-equacao", "grupo": "exponencial",
+    "frente": "Como resolves uma equação em que os dois membros são potências da mesma base $a$?",
+    "verso": "Igualas os expoentes: $a^p=a^q\\Leftrightarrow p=q$, com $a>0$ e $a\\neq1$. Se as bases forem diferentes, tenta escrevê-las com a mesma base.",
+    "porque": "Uma exponencial é injetiva: valores diferentes de $x$ nunca dão a mesma imagem. Exemplo: $\\left(\\frac12\\right)^x=4\\Leftrightarrow2^{-x}=2^2\\Leftrightarrow x=-2$.",
+    "verifica": ["ig(a**(2*x), a**(x+x))", "not ig(a**(x+1), a**x)"] },
+
+  { "id": "exp-e", "grupo": "exponencial",
+    "frente": "O que é o número $e$ e que função define?",
+    "verso": "$e\\approx2{,}718$ é um número irracional, entre 2 e 3. A função $f(x)=e^x$ é a exponencial de base $e$ e é crescente, porque $e>1$.",
+    "porque": "É a base natural: é a única base $a$ para a qual a derivada de $a^x$ é a própria $a^x$ (vês isso nas derivadas), e por isso aparece em tantos fenómenos de crescimento.",
+    "verifica": ["2<e<3", "ig(der(lambda s: exp(s), t), exp(t))"] }
+ ]
+}

@@ -1,0 +1,74 @@
+/* derivadas: a derivada é o declive da tangente (prefixo dv-). Desenhado a 390 px. */
+
+.dv [hidden] { display: none !important; }
+
+.dv .widget__titulo { margin-bottom: 0.3rem; }
+.dv-intro { margin: 0 0 0.4rem; color: var(--tinta-suave); font-size: 0.95rem; }
+
+/* alvos de toque de pelo menos 44 px */
+.dv .chip, .dv .botao { min-height: 2.75rem; }
+.dv .chip { padding-inline: 0.85rem; }
+.dv .katex { font-size: 1.05em; }
+
+/* escolha da função */
+.dv-grupo { margin-top: 0.55rem; }
+.dv-grupo__rotulo { display: block; margin-bottom: 0.25rem; color: var(--tinta-suave); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.dv .dv-chips { margin: 0; }
+
+/* gráfico e legenda */
+.dv-layout { display: grid; gap: 0; margin-top: 0.4rem; }
+.dv-col { min-width: 0; }
+.dv-lienzo { width: 100%; margin: 0.6rem auto 0; }
+.dv .figura { max-width: 600px; }
+
+.dv-legenda {
+  display: flex; flex-wrap: wrap; gap: 0.15rem 1rem; margin: 0.4rem 0 0; padding: 0;
+  list-style: none; color: var(--tinta-suave); font-size: 0.85rem;
+}
+.dv-legenda li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dv-amostra { flex: none; }
+.dv-am { fill: none; stroke-width: 3; stroke-linecap: round; }
+.dv-am--exp { stroke: var(--c-exp); }
+.dv-am--log { stroke: var(--c-log); }
+.dv-am--tang { stroke: var(--c-der); }
+.dv-am--sec { stroke: var(--c-id); stroke-dasharray: 6 4; }
+.dv-am--sobe { stroke: var(--c-tg); }
+.dv-am--desce { stroke: var(--erro); }
+.dv-am--zero { stroke: var(--c-der); stroke-dasharray: 3 3; }
+
+.dv-acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.dv-dica { margin-top: 0.5rem; }
+
+/* controlos */
+.dv-controlos { gap: 0.5rem; margin-top: 0.5rem; }
+.dv-controlo__linha { display: flex; align-items: center; gap: 0.6rem; min-height: 2.75rem; }
+.dv-controlo__linha label { flex: 1 1 auto; }
+.dv-controlo__linha output { flex: none; }
+.dv-controlo__linha .botao { flex: none; padding-inline: 0.8rem; }
+.dv-controlo input[type="range"] { height: 2.75rem; margin: 0; }
+.dv-escala { display: flex; justify-content: space-between; margin-top: -0.35rem; color: var(--tinta-suave); font-size: 0.78rem; }
+.dv-formula-sec { margin: 0; }
+
+/* leituras */
+.dv-leituras { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0.9rem; }
+.dv-leitura { min-width: 0; }
+.dv-leitura--larga { grid-column: 1 / -1; }
+.dv-leitura .leitura__valor { overflow-x: auto; overflow-y: hidden; font-size: 1rem; }
+.dv-leitura--sec .leitura__rotulo { color: var(--c-id); }
+.dv-leitura--obs .leitura__rotulo { color: var(--c-exp); }
+.dv-leitura--erro .leitura__rotulo { color: var(--erro); }
+.dv-leitura--sinal .leitura__rotulo { color: var(--c-der); }
+.dv-nota-dominio, .dv-nota-q { margin-top: 0.6rem; }
+
+/* cartão com a função, a regra e a derivada */
+.dv-regra { margin-top: 0.9rem; padding: 0.3rem 0.7rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); }
+.dv-regra__linha { padding: 0.45rem 0; }
+.dv-regra__linha + .dv-regra__linha { border-top: 1px dashed var(--linha); }
+.dv-regra__rotulo { display: block; color: var(--tinta-suave); font-size: 0.78rem; }
+.dv-regra__valor { overflow-x: auto; overflow-y: hidden; }
+
+@media (min-width: 52em) {
+  .dv-layout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+  .dv-leituras { margin-top: 0.6rem; }
+  .dv-lienzo { margin-top: 0.2rem; }
+}

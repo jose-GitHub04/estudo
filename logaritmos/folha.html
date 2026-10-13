@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Folha de consulta · Exponenciais e logaritmos · Mat100limites</title>
+  <meta name="description" content="Folha de consulta de Exponenciais e logaritmos, Matemática A, 12.º ano, pronta a imprimir em A4.">
+  <link rel="icon" href="../assets/mat100_logo.png">
+  <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --tinta: #2a1c13;
+      --tinta-suave: #6b5a4e;
+      --creme: #fbf7f1;
+      --linha: #e6dbcf;
+      --grade: #d9cbb8;
+      --castanho: #5a3e2b;
+      --castanho-escuro: #241710;
+      --dourado: #c79a3f;
+      --dourado-texto: #8a6520;
+      --dourado-fundo: #f6ecd6;
+      --erro: #a3321f;
+      --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    @page { size: A4; margin: 9mm 10mm; }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--creme);
+      color: var(--tinta);
+      font-family: var(--sans);
+      font-size: 10pt;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    a { color: var(--castanho); }
+    :focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; }
+
+    /* ---------- barra do ecrã (não se imprime) ---------- */
+    .barra {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      max-width: 210mm; margin: 0 auto; padding: 0.75rem 1rem;
+    }
+    .barra a, .barra button {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 2.75rem; padding: 0.5rem 1.2rem; border-radius: 0.35rem;
+      font-family: var(--sans); font-size: 1rem; font-weight: 600; line-height: 1.25;
+      text-decoration: none; cursor: pointer;
+    }
+    .barra a { border: 1px solid #cdbfae; background: #fff; color: var(--castanho); }
+    .barra a:hover { border-color: var(--castanho); background: var(--dourado-fundo); }
+    .barra button {
+      border: 1px solid #a87f2b; color: var(--castanho-escuro);
+      background: linear-gradient(180deg, #e6c479 0%, #c79a3f 100%);
+      box-shadow: 0 1px 2px rgba(36, 23, 16, 0.25);
+    }
+    .barra button:hover { background: linear-gradient(180deg, #efd49a 0%, #d2a748 100%); }
+
+    /* ---------- a folha ---------- */
+    .folha {
+      max-width: 210mm; margin: 0 auto 2rem; padding: 12mm;
+      background: #fff; border: 1px solid var(--linha); box-shadow: 0 1px 3px rgba(36, 23, 16, 0.08);
+    }
+    .folha .katex { font-size: 1em; }
+
+    .cab {
+      display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.2rem 1rem;
+      margin: 0 0 3.5mm; padding-bottom: 1.6mm; border-bottom: 1.5pt solid var(--dourado);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .cab h1 { margin: 0; font-family: var(--serif); font-size: 16pt; font-weight: 400; letter-spacing: -0.01em; line-height: 1.15; color: var(--castanho); }
+    .cab p { margin: 0; color: var(--dourado-texto); font-family: var(--serif); font-size: 10pt; letter-spacing: 0.04em; }
+
+    /* uma página A4 = duas colunas de caixas */
+    .pagina { display: grid; grid-template-columns: 1fr; gap: 4mm; }
+    .pagina + .pagina { margin-top: 6mm; padding-top: 6mm; border-top: 1px dashed var(--grade); }
+    .col { display: flex; flex-direction: column; gap: 4mm; min-width: 0; }
+    @media (min-width: 52em) { .pagina { grid-template-columns: 1fr 1fr; gap: 5mm; } }
+
+    /* ---------- caixas ---------- */
+    .caixa {
+      min-width: 0; padding: 0 2.6mm 2.2mm;
+      border: 0.6pt solid var(--grade); border-radius: 1.4mm; background: #fff;
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    .caixa h2 {
+      margin: 0 -2.6mm 1.8mm; padding: 1.1mm 2.6mm 1mm;
+      border-bottom: 0.8pt solid var(--dourado); border-radius: 1.4mm 1.4mm 0 0;
+      background: var(--dourado-fundo);
+      font-family: var(--serif); font-size: 11.5pt; font-weight: 400; line-height: 1.2; color: var(--castanho);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .caixa p { margin: 0 0 1.3mm; }
+    .def { font-weight: 600; }
+    .sub {
+      margin: 2mm 0 1mm !important; color: var(--castanho); font-family: var(--serif);
+      font-size: 9.5pt; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .sub small { font-weight: 400; font-size: 8.5pt; color: var(--tinta-suave); letter-spacing: 0; }
+
+    /* listas de fórmulas: duas por linha quando cabem */
+    .fl { list-style: none; margin: 0 0 1.3mm; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.7mm 3mm; }
+    .fl--1 { grid-template-columns: 1fr; }
+    .fl li { min-width: 0; margin: 0; padding: 0; }
+    .cd { color: var(--tinta-suave); font-size: 8.5pt; display: inline-block; }
+    .nb { white-space: nowrap; }
+
+    /* listas de texto (passos, técnicas) */
+    .lt { margin: 0 0 1.3mm; padding: 0 0 0 4.4mm; }
+    .lt li { margin: 0 0 0.7mm; padding-left: 0.4mm; }
+    .lt li::marker { color: var(--castanho); font-weight: 700; }
+
+    /* exemplo mínimo */
+    .ex {
+      margin: 1.4mm 0 1.3mm !important; padding: 0.9mm 1.8mm;
+      border-left: 1.2mm solid var(--dourado); background: #faf6ef;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .ex strong { color: var(--castanho); }
+
+    /* aviso do que NÃO se pode fazer */
+    .cuidado {
+      margin: 1.6mm 0 1.3mm; padding: 1mm 2mm 0.6mm;
+      border: 0.8pt solid var(--castanho); border-left-width: 1.6mm; border-radius: 0.8mm;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .cuidado .sub { margin-top: 0 !important; }
+    .cuidado ul { list-style: none; margin: 0; padding: 0; }
+    .cuidado li { margin: 0 0 0.9mm; }
+
+    .nota { margin: 1.4mm 0 0 !important; color: var(--tinta-suave); font-size: 8.5pt; line-height: 1.3; }
+
+    /* tabelas */
+    .tabela-rolante { overflow-x: auto; margin: 0 0 1.3mm; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 0.8mm 1.4mm; border: 0.5pt solid var(--grade); text-align: center; vertical-align: middle; }
+    thead th {
+      background: var(--dourado-fundo); font-weight: 600; font-size: 9pt; line-height: 1.2;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    tbody th { font-weight: 600; text-align: left; }
+    td.esq { text-align: left; }
+
+    .aviso { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 0.4rem; background: #f8e4df; color: var(--erro); }
+
+    /* ---------- ecrã estreito ---------- */
+    @media (max-width: 40em) {
+      .folha { padding: 1rem; border-left: 0; border-right: 0; box-shadow: none; }
+      body { font-size: 10.5pt; }
+      .fl { grid-template-columns: 1fr; }
+      .caixa h2 { font-size: 12pt; }
+    }
+
+    /* ---------- impressão ---------- */
+    @media print {
+      html, body { background: #fff; }
+      body { font-size: 9.5pt; line-height: 1.27; }
+      .nao-imprimir { display: none !important; }
+      .folha { max-width: none; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; }
+      .pagina { grid-template-columns: 1fr 1fr; gap: 4.5mm; }
+      .pagina + .pagina { margin-top: 0; padding-top: 0; border-top: 0; break-before: page; page-break-before: always; }
+      .col { gap: 3.5mm; }
+      .fl { grid-template-columns: 1fr 1fr; }
+      .fl--1 { grid-template-columns: 1fr; }
+      .tabela-rolante { overflow: visible; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+  <script defer src="../assets/katex/katex.min.js"></script>
+  <script defer src="../assets/katex/auto-render.min.js"></script>
+  <script type="module">
+    import { renderizar } from '../assets/motor/katex.js';
+
+    renderizar(document.getElementById('folha'));
+    document.documentElement.dataset.pronto = 'sim'; // para os testes automáticos
+  </script>
+</head>
+<body>
+  <div class="barra nao-imprimir">
+    <a class="nao-imprimir" href="index.html">Voltar</a>
+    <button class="nao-imprimir" type="button" onclick="window.print()">Imprimir</button>
+  </div>
+
+  <main class="folha" id="folha">
+    <header class="cab">
+      <h1>Exponenciais e logaritmos · Folha de consulta</h1>
+      <p>Mat100limites</p>
+    </header>
+
+    <noscript><p class="aviso" role="alert">Esta folha precisa de JavaScript para desenhar as fórmulas.</p></noscript>
+
+    <!-- ================= PÁGINA 1 ================= -->
+    <div class="pagina">
+      <div class="col">
+
+        <section class="caixa" aria-labelledby="t-exp">
+          <h2 id="t-exp">Função exponencial</h2>
+          <p class="def">$f(x)=a^x$, com $a&gt;0$ e $a\neq1$</p>
+          <p>$D_f=\mathbb{R}$ e $D'_f=\mathbb{R}^+$ (ou seja, $a^x&gt;0$ sempre). Contínua e injetiva. Passa em $(0,1)$ e em $(1,a)$. Assíntota horizontal: $y=0$.</p>
+          <div class="tabela-rolante">
+            <table>
+              <thead><tr><th scope="col"></th><th scope="col">$a&gt;1$</th><th scope="col">$0&lt;a&lt;1$</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Monotonia</th><td>crescente</td><td>decrescente</td></tr>
+                <tr><th scope="row">$\lim_{x\to-\infty}a^x$</th><td>$0$</td><td>$+\infty$</td></tr>
+                <tr><th scope="row">$\lim_{x\to+\infty}a^x$</th><td>$+\infty$</td><td>$0$</td></tr>
+                <tr><th scope="row">$y=0$ é assíntota se</th><td>$x\to-\infty$</td><td>$x\to+\infty$</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Número de Neper: $e\approx2{,}718$. A função $e^x$ é crescente, porque $e&gt;1$.</p>
+          <p>$a^x+k$ sobe $k$ unidades e a assíntota passa a $y=k$. &nbsp; $a^{-x}=\left(\dfrac{1}{a}\right)^x$ é a reflexão de $a^x$ no eixo $Oy$.</p>
+          <p class="sub">Potências <small>($a,b&gt;0$)</small></p>
+          <ul class="fl">
+            <li>$a^x\times a^y=a^{x+y}$</li>
+            <li>$\dfrac{a^x}{a^y}=a^{x-y}$</li>
+            <li>$(a^x)^y=a^{xy}$</li>
+            <li>$a^{-x}=\dfrac{1}{a^x}$</li>
+            <li>$(ab)^x=a^x\,b^x$</li>
+            <li>$\left(\dfrac{a}{b}\right)^x=\dfrac{a^x}{b^x}$</li>
+          </ul>
+          <p>$\sqrt[n]{a^m}=a^{m/n}$ &nbsp; e &nbsp; $a^p=a^q\Leftrightarrow p=q$ <span class="cd">(se $a\neq1$)</span></p>
+          <p class="ex"><strong>Ex.</strong> $9^x=3^{x+1}\Leftrightarrow 3^{2x}=3^{x+1}\Leftrightarrow 2x=x+1\Leftrightarrow x=1$</p>
+        </section>
+
+        <section class="caixa" aria-labelledby="t-log">
+          <h2 id="t-log">Logaritmo</h2>
+          <p class="def">$a^x=y\Leftrightarrow x=\log_a y$</p>
+          <p class="cd">com $a&gt;0$, $a\neq1$ e $y&gt;0$. O logaritmo é um <strong>expoente</strong>: $\log_a y$ é o expoente a que elevas $a$ para obteres $y$.</p>
+          <ul class="fl">
+            <li>$\log_a 1=0$</li>
+            <li>$\log_a a=1$</li>
+            <li>$\log_a a^x=x$ <span class="cd">($x\in\mathbb{R}$)</span></li>
+            <li>$a^{\log_a x}=x$ <span class="cd">($x&gt;0$)</span></li>
+          </ul>
+          <p>Só existe logaritmo de números <strong>positivos</strong>: $\log_a 0$ e $\log_a(-3)$ não existem.</p>
+          <ul class="fl">
+            <li>$\log x=\log_{10}x$ <span class="cd">(decimal)</span></li>
+            <li>$\ln x=\log_e x$ <span class="cd">(neperiano)</span></li>
+          </ul>
+          <p class="ex"><strong>Ex.</strong> $5^{-2}=\dfrac{1}{25}\Leftrightarrow\log_5\dfrac{1}{25}=-2$. &nbsp; $\ln e^5=5$. &nbsp; $\log 1000=3$.<br>
+            $\log_4 32=x\Leftrightarrow 4^x=32\Leftrightarrow 2^{2x}=2^5\Leftrightarrow x=\dfrac52$</p>
+          <p class="nota">Sem calculadora: ou reescreves o argumento como potência da base ($32=4^{5/2}$), ou resolves a equação exponencial.</p>
+        </section>
+
+      </div>
+      <div class="col">
+
+        <section class="caixa" aria-labelledby="t-pro">
+          <h2 id="t-pro">Propriedades dos logaritmos</h2>
+          <p class="cd">Com $x,y&gt;0$ e $a,b\in\mathbb{R}^+\setminus\{1\}$:</p>
+          <ul class="fl fl--1">
+            <li>$\log_a(xy)=\log_a x+\log_a y$</li>
+            <li>$\log_a\dfrac{x}{y}=\log_a x-\log_a y$, &nbsp; $\log_a\dfrac{1}{y}=-\log_a y$</li>
+            <li>$\log_a(x^p)=p\log_a x$, &nbsp; $\log_a\sqrt[n]{x}=\dfrac{1}{n}\log_a x$</li>
+            <li>$\log_a x=\dfrac{\log_b x}{\log_b a}=\dfrac{\ln x}{\ln a}$ &nbsp; <span class="cd">(mudança de base)</span></li>
+            <li>$\log_b a=\dfrac{1}{\log_a b}$</li>
+            <li>$a^x=e^{x\ln a}$</li>
+          </ul>
+          <p class="ex"><strong>Ex.</strong> Condensar: $2\log_a x-\log_a y+\log_a z=\log_a\dfrac{x^2z}{y}$</p>
+          <div class="cuidado">
+            <p class="sub">Cuidado: isto não existe</p>
+            <ul>
+              <li>$\log_a(x+y)\neq\log_a x+\log_a y$: o logaritmo de uma soma não se simplifica.</li>
+              <li>$\log_a(xy)$ é a <em>soma</em> dos logaritmos, nunca o produto.</li>
+              <li>$\dfrac{\log_a x}{\log_a y}=\log_y x$, e não $\log_a\dfrac{x}{y}$.</li>
+              <li>$\ln x^2=2\ln|x|$ (só dá $2\ln x$ se $x&gt;0$) e $(\ln x)^2\neq\ln x^2$.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="caixa" aria-labelledby="t-fun">
+          <h2 id="t-fun">Função logarítmica</h2>
+          <p class="def">$f(x)=\log_a x$, com $a&gt;0$ e $a\neq1$</p>
+          <p>$D_f=\mathbb{R}^+$ e $D'_f=\mathbb{R}$. Zero em $x=1$. Passa em $(1,0)$ e em $(a,1)$. Contínua e injetiva. Assíntota vertical $x=0$; não tem horizontal.</p>
+          <div class="tabela-rolante">
+            <table>
+              <thead><tr><th scope="col"></th><th scope="col">$a&gt;1$</th><th scope="col">$0&lt;a&lt;1$</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Monotonia</th><td>crescente</td><td>decrescente</td></tr>
+                <tr><th scope="row">$\lim_{x\to0^+}\log_a x$</th><td>$-\infty$</td><td>$+\infty$</td></tr>
+                <tr><th scope="row">$\lim_{x\to+\infty}\log_a x$</th><td>$+\infty$</td><td>$-\infty$</td></tr>
+                <tr><th scope="row">Sinal em $]0,1[$</th><td>$-$</td><td>$+$</td></tr>
+                <tr><th scope="row">Sinal em $]1,+\infty[$</th><td>$+$</td><td>$-$</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>Inversa</strong> de $a^x$: os gráficos são simétricos em relação a $y=x$. Se $(p,q)$ está em $a^x$, então $(q,p)$ está em $\log_a x$.</p>
+          <p><strong>Transformações.</strong> $\ln(x-c)$: translação de $c$, assíntota $x=c$, $D=\mathopen{]}c,+\infty[$. $\ln(-x)$: reflexão em $Oy$, $D=\mathopen{]}-\infty,0[$. $a+b\ln x$: $a$ sobe ou desce, $b$ estica (se $b&lt;0$, reflete em $Ox$).</p>
+          <p><strong>Domínio de $\ln u$:</strong> $u&gt;0$. Se houver mais condições (denominadores $\neq0$, outros logaritmos), têm de valer todas.</p>
+          <p class="ex"><strong>Ex.</strong> $\ln(3x-6)$: $3x-6&gt;0\Leftrightarrow x&gt;2$, logo $D=\mathopen{]}2,+\infty[$.</p>
+          <p>Inversa de $f(x)=a+b\ln(x-c)$, com $b\neq0$:<br><span class="nb">$f^{-1}(x)=c+e^{(x-a)/b}$</span></p>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ================= PÁGINA 2 ================= -->
+    <div class="pagina">
+      <div class="col">
+
+        <section class="caixa" aria-labelledby="t-equ">
+          <h2 id="t-equ">Equações e inequações</h2>
+          <p class="cd">Com $a&gt;0$ e $a\neq1$:</p>
+          <ul class="fl fl--1">
+            <li>$a^{f(x)}=a^{g(x)}\Leftrightarrow f(x)=g(x)$</li>
+            <li>$a^{f(x)}=k\Leftrightarrow f(x)=\log_a k$ &nbsp; <span class="cd">($k&gt;0$)</span></li>
+            <li>$\log_a f(x)=c\Leftrightarrow f(x)=a^c$</li>
+            <li>$\log_a f(x)=\log_a g(x)\Leftrightarrow f(x)=g(x)$ &nbsp; <span class="cd">(com $f(x),g(x)&gt;0$)</span></li>
+          </ul>
+          <p class="sub">Equações com logaritmos, 3 passos</p>
+          <ol class="lt">
+            <li><strong>Domínio:</strong> argumentos $&gt;0$ e denominadores $\neq0$.</li>
+            <li><strong>Resolver:</strong> propriedades, depois forma exponencial ou igualar argumentos.</li>
+            <li><strong>Verificar:</strong> rejeitar o que fica fora do domínio.</li>
+          </ol>
+          <p class="sub">Equações exponenciais: que técnica</p>
+          <ul class="lt">
+            <li>Mesma base (ou redutível a ela): igualar os expoentes.</li>
+            <li>Uma potência isolada: passar a logaritmo.</li>
+            <li>$e^{x+2}$ junto de $e^x$: $e^{x+2}=e^x\times e^2$ e pôr $e^x$ em evidência.</li>
+            <li>$e^{2x}$ e $e^x$: $u=e^x$ com <strong>$u&gt;0$</strong>; rejeitar $u\le0$; depois $x=\ln u$.</li>
+            <li>Bases diferentes: aplicar $\ln$, $2^x=3^{x-1}\Leftrightarrow x\ln2=(x-1)\ln3$.</li>
+          </ul>
+          <p class="ex"><strong>Ex.</strong> $4^x-5\times2^x+4=0$. Com $u=2^x$: $u^2-5u+4=0\Leftrightarrow u=1$ ou $u=4$, logo $x=0$ ou $x=2$.</p>
+          <p class="sub">Inequações <small>(só dentro do domínio)</small></p>
+          <div class="tabela-rolante">
+            <table>
+              <thead><tr><th scope="col"></th><th scope="col">$a&gt;1$: mantém</th><th scope="col">$0&lt;a&lt;1$: inverte</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">$a^u&lt;a^v$</th><td>$\Leftrightarrow u&lt;v$</td><td>$\Leftrightarrow u&gt;v$</td></tr>
+                <tr><th scope="row">$\log_a u&lt;\log_a v$</th><td>$\Leftrightarrow u&lt;v$</td><td>$\Leftrightarrow u&gt;v$</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="ex"><strong>Ex.</strong> $\log_2(x-1)&lt;3$: domínio $x&gt;1$; $x-1&lt;8\Leftrightarrow x&lt;9$; a solução é a interseção: $]1,9[$.</p>
+        </section>
+
+        <section class="caixa" aria-labelledby="t-der">
+          <h2 id="t-der">Derivadas</h2>
+          <p class="cd">$u=u(x)$; $a&gt;0$, $a\neq1$; nos logaritmos, $u&gt;0$. Combinam com produto, quociente e função composta.</p>
+          <div class="tabela-rolante">
+            <table>
+              <thead><tr><th scope="col"></th><th scope="col">com $x$</th><th scope="col">com $u$</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">base $e$</th><td>$(e^x)'=e^x$</td><td>$(e^u)'=u'\,e^u$</td></tr>
+                <tr><th scope="row">base $a$</th><td>$(a^x)'=a^x\ln a$</td><td>$(a^u)'=u'\,a^u\ln a$</td></tr>
+                <tr><th scope="row">$\ln$</th><td>$(\ln x)'=\dfrac{1}{x}$</td><td>$(\ln u)'=\dfrac{u'}{u}$</td></tr>
+                <tr><th scope="row">$\log_a$</th><td>$(\log_a x)'=\dfrac{1}{x\ln a}$</td><td>$(\log_a u)'=\dfrac{u'}{u\ln a}$</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Em $2^x$ a variável está no <strong>expoente</strong>: $(2^x)'=2^x\ln2$, e não $x\,2^{x-1}$.</p>
+          <p class="ex"><strong>Ex.</strong> $(e^{3x-1})'=3e^{3x-1}$ &nbsp; e &nbsp; $\left(\ln(x^2+1)\right)'=\dfrac{2x}{x^2+1}$<br>
+            Simplificar antes: $\ln(x^2e^{3x})=2\ln x+3x$, que dá $\dfrac{2}{x}+3$.</p>
+          <p class="sub">Reta tangente em $x_0$</p>
+          <p>$y=f'(x_0)\,(x-x_0)+f(x_0)$. &nbsp; O declive é $f'(x_0)$ e o ponto é $\left(x_0,\,f(x_0)\right)$. Tangente horizontal: $f'(x_0)=0$.</p>
+        </section>
+
+      </div>
+      <div class="col">
+
+        <section class="caixa" aria-labelledby="t-lim">
+          <h2 id="t-lim">Limites e assíntotas</h2>
+          <p class="sub">Imediatos</p>
+          <ul class="fl">
+            <li>$\lim_{x\to+\infty}e^x=+\infty$</li>
+            <li>$\lim_{x\to-\infty}e^x=0$</li>
+            <li>$\lim_{x\to0^+}\ln x=-\infty$</li>
+            <li>$\lim_{x\to+\infty}\ln x=+\infty$</li>
+          </ul>
+          <p class="sub">Notáveis <small>($p&gt;0$)</small></p>
+          <ul class="fl">
+            <li>$\lim_{x\to+\infty}\dfrac{e^x}{x^p}=+\infty$</li>
+            <li>$\lim_{x\to+\infty}\dfrac{\ln x}{x^p}=0$</li>
+            <li>$\lim_{x\to0}\dfrac{e^x-1}{x}=1$</li>
+            <li>$\lim_{x\to0}\dfrac{\ln(1+x)}{x}=1$</li>
+            <li>$\lim_{x\to0^+}x\ln x=0$</li>
+          </ul>
+          <p><strong>Quem vence</strong> quando $x\to+\infty$: $\ln x\ \ll\ x^p\ \ll\ e^x$. A exponencial vence a potência, que vence o logaritmo.</p>
+          <p class="ex"><strong>Mudança de variável.</strong> $\lim_{x\to0}\dfrac{e^{5x}-1}{x}$: com $y=5x$ fica $5\lim_{y\to0}\dfrac{e^y-1}{y}=5$.<br>
+            <strong>Indeterminações:</strong> $0\times\infty$ passa a fração ($x\,e^{-x}=\dfrac{x}{e^x}$); $\infty-\infty$ põe em evidência o termo que manda.</p>
+          <p class="sub">Assíntotas</p>
+          <ul class="lt">
+            <li><strong>Vertical</strong> $x=c$: $c$ é extremo finito do domínio (fora dele) e algum limite lateral em $c$ é $\pm\infty$.</li>
+            <li><strong>Horizontal</strong> $y=b$: $\lim_{x\to\pm\infty}f(x)=b$.</li>
+            <li><strong>Oblíqua</strong> $y=mx+b$, em $+\infty$ e em $-\infty$ em separado: $m=\lim\dfrac{f(x)}{x}$ e $b=\lim\left(f(x)-mx\right)$. Só há assíntota se $m$ e $b$ forem reais; com $m=0$ é a horizontal.</li>
+          </ul>
+          <p class="nota">Regra de Cauchy (só se o teu professor permitir): se $\lim\dfrac{f}{g}$ dá $\frac00$ ou $\frac{\infty}{\infty}$ e existe $\lim\dfrac{f'}{g'}$, então $\lim\dfrac{f}{g}=\lim\dfrac{f'}{g'}$.</p>
+        </section>
+
+        <section class="caixa" aria-labelledby="t-est">
+          <h2 id="t-est">Estudo de funções</h2>
+          <ol class="lt">
+            <li><strong>Domínio e zeros.</strong> Em $\ln u$, $u&gt;0$. Zeros: $f(x)=0$.</li>
+            <li><strong>Limites e assíntotas</strong> nas extremidades do domínio.</li>
+            <li><strong>$f'$ e variação.</strong> Tabela com o sinal de $f'$: $f'&gt;0$ dá $f\nearrow$, $f'&lt;0$ dá $f\searrow$.</li>
+            <li><strong>Extremos.</strong> Só há extremo onde $f'$ <em>muda de sinal</em> ($f'(c)=0$ não chega). $+$ para $-$: máximo. $-$ para $+$: mínimo. O valor é $f(c)$, não $f'(c)$.</li>
+            <li><strong>$f''$ e concavidade.</strong> $f''&gt;0$: para cima $\cup$. $f''&lt;0$: para baixo $\cap$. Inflexão em $(c,f(c))$ se $f''$ muda de sinal.</li>
+            <li><strong>Contradomínio:</strong> extremos absolutos e limites nas extremidades do domínio.</li>
+          </ol>
+          <p class="ex"><strong>Ex.</strong> $f(x)=2x-\ln x$. &nbsp; $D_f=\mathbb{R}^+$. &nbsp; $f'(x)=2-\dfrac{1}{x}=0\Leftrightarrow x=\dfrac12$.</p>
+          <div class="tabela-rolante">
+            <table>
+              <tbody>
+                <tr><th scope="row">$x$</th><td>$0$</td><td></td><td>$\dfrac12$</td><td></td><td>$+\infty$</td></tr>
+                <tr><th scope="row">$f'$</th><td></td><td>$-$</td><td>$0$</td><td>$+$</td><td></td></tr>
+                <tr><th scope="row">$f$</th><td>$+\infty$</td><td>$\searrow$</td><td>$1+\ln2$</td><td>$\nearrow$</td><td>$+\infty$</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="nota">Mínimo absoluto $1+\ln 2$ e $D'_f=[1+\ln2,+\infty[$.</p>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</body>
+</html>

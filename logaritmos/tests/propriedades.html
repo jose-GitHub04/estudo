@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget propriedades</title>
+<!-- Testes das funções puras do widget «Propriedades dos logaritmos» e da sua montagem no DOM.
+     Abrir /logaritmos/tests/propriedades.html ou:
+       msedge --headless=new --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8814/logaritmos/tests/propriedades.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?demo=<aba> monta só o widget, para tirar screenshots (marca <html data-demo="pronto">):
+       aba=produto|quociente|potencia|inverso|mudanca|cuidado  base=2|10|e|3  nova=2|10|e|3
+       x=8  y=4  p=3  caso=soma|razao|quadrado -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/propriedades.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+  body[data-modo="testes"] #palco { opacity: 0.4; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes do widget propriedades</h1></div>
+<pre id="resultado">A correr...</pre>
+<main><section class="seccao"><div class="envolve"><div id="palco" data-widget="propriedades"></div></div></section></main>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+import * as P from '../widgets/propriedades.js';
+
+const params = new URLSearchParams(location.search);
+const palco = document.getElementById('palco');
+
+// ======================================================================
+// Modo demo: monta o widget e leva-o a um estado, para screenshots
+// ======================================================================
+if (params.has('medir')) {
+  // ?medir=390&demo=...: carrega a demo num iframe dessa largura e mede o que sai do ecrã e os alvos de toque
+  document.body.dataset.modo = 'demo';
+  const largura = Number(params.get('medir')) || 390;
+  const q = new URLSearchParams(location.search);
+  q.delete('medir');
+  const f = document.createElement('iframe');
+  f.style.cssText = `border:0;width:${largura}px;height:900px`;
+  f.src = `?${q}`;
+  document.body.append(f);
+  await new Promise((r) => { f.onload = r; });
+  await new Promise((r) => setTimeout(r, 1500));
+  const d = f.contentDocument;
+  const cw = d.documentElement.clientWidth;
+  const sw = d.documentElement.scrollWidth;
+  const fora = [...d.querySelectorAll('.pro *')].filter((e) => e.getBoundingClientRect().right > cw + 0.5 && !e.closest('svg'))
+    .slice(0, 8).map((e) => `${e.tagName}.${String(e.className).slice(0, 30)} dir=${Math.round(e.getBoundingClientRect().right)}`);
+  const pequenos = [...d.querySelectorAll('.pro button, .pro input')].filter((e) => !e.hidden && e.offsetParent && (e.getBoundingClientRect().height < 43.5 || e.getBoundingClientRect().width < 43.5))
+    .map((e) => `${e.tagName}.${String(e.className).slice(0, 20)} ${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`);
+  const pre = document.createElement('pre');
+  pre.id = 'medida';
+  pre.textContent = `largura ${cw}, scrollWidth ${sw}, horizontal ${sw > cw ? 'SIM' : 'não'}
+fora: ${JSON.stringify(fora)}
+pequenos: ${JSON.stringify(pequenos)}
+svg: ${(d.querySelector('.pro-svg') || {}).clientWidth}x${(d.querySelector('.pro-svg') || {}).clientHeight}`;
+  document.body.append(pre);
+  f.remove();
+  document.documentElement.dataset.medido = 'sim';
+} else if (params.has('demo')) {
+  document.body.dataset.modo = 'demo';
+  window.onerror = (m) => { document.title = 'ERRO: ' + m; };
+  const { montar } = P;
+  await montar(palco, {});
+  const sel = (s) => palco.querySelector(s);
+  const mudar = (input, valor) => {
+    input.value = String(valor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const aba = params.get('demo') || 'produto';
+  sel(`[data-aba="${aba}"]`).click();
+  if (params.get('caso')) sel(`[data-caso="${params.get('caso')}"]`).click();
+  if (params.get('base')) sel(`.pro-base:not(.pro-base--nova) [data-base="${params.get('base')}"]`).click();
+  if (params.get('nova')) sel(`.pro-base--nova [data-base="${params.get('nova')}"]`).click();
+  if (params.get('x')) mudar(sel('.pro-ctl--x input'), P.indiceDe(Number(params.get('x'))));
+  if (params.get('y')) mudar(sel('.pro-ctl--y input'), P.indiceDe(Number(params.get('y'))));
+  if (params.get('p')) mudar(sel('.pro-ctl--p input'), Number(params.get('p')));
+  window.renderMathInElement && window.renderMathInElement(palco, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+  document.documentElement.dataset.demo = 'pronto';
+} else {
+  document.body.dataset.modo = 'testes';
+  await correrTestes();
+}
+
+// ======================================================================
+// Testes
+// ======================================================================
+async function correrTestes() {
+  const saida = document.getElementById('resultado');
+  const linhas = [];
+  let nFalhas = 0;
+  const t0 = performance.now();
+
+  async function teste(nome, fn) {
+    const erros = [];
+    let total = 0;
+    const ok = (cond, msg) => {
+      if (!cond) { total++; if (erros.length < 3) erros.push(typeof msg === 'function' ? msg() : msg); }
+    };
+    try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.stack ? e.stack.split('\n').slice(0, 2).join(' ') : e)); }
+    if (total === 0) linhas.push('OK: ' + nome);
+    else {
+      nFalhas++;
+      linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+    }
+  }
+
+  const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+  const TRACO_LONGO = String.fromCharCode(0x2014);
+  const TRACO_CURTO = String.fromCharCode(0x2013);
+  const PS = [];
+  for (let p = P.P_MIN; p <= P.P_MAX + 1e-9; p += P.P_PASSO) PS.push(p);
+  const [B2, B10, BE, B3] = P.BASES;
+  const base = (id) => P.baseDe(id);
+
+  /** Sorteio com semente: bases, x e y (da lista dos sliders ou contínuos em [0,1; 100]), p, base nova. */
+  function sorteio(rng, continuo) {
+    const b = M.escolher(rng, P.BASES);
+    const nova = M.escolher(rng, P.BASES.filter((c) => c !== b));
+    const val = () => (continuo ? Math.pow(10, -1 + 3 * rng()) : M.escolher(rng, P.VALORES));
+    return { base: b, nova, x: val(), y: val(), p: M.escolher(rng, PS) };
+  }
+  const ESTADO = (prop, s, caso) => ({ prop, base: s.base, nova: s.nova, x: s.x, y: s.y, p: s.p, caso });
+
+  // ---------- cálculo: logaritmos e formatação ----------
+  await teste('logB: resultados exatos nos casos redondos', (ok) => {
+    const casos = [[2, 8, 3], [2, 0.125, -3], [2, 1, 0], [2, 64, 6], [10, 1000, 3], [10, 0.1, -1], [10, 100, 2],
+      [3, 81, 4], [3, 27, 3], [3, 9, 2], [Math.E, Math.E, 1], [2, 1024, 10], [10, 1, 0]];
+    for (const [a, x, esperado] of casos) ok(P.logB(a, x) === esperado, `log base ${a} de ${x} = ${P.logB(a, x)} (esperado ${esperado})`);
+    ok(perto(P.logB(2, 3), 1.584962500721156), 'log2 3');
+    ok(perto(P.logB(10, 2), 0.3010299956639812), 'log10 2');
+    ok(perto(P.logB(Math.E, 10), 2.302585092994046), 'ln 10');
+  });
+
+  await teste('num e numTex: vírgula, menos «−», sem zeros no fim, sem notação científica', (ok) => {
+    const casos = [[5, '5'], [0.9031, '0,9031'], [-1.5, '−1,5'], [0.5, '0,5'], [2.30258509, '2,3026'], [1e-12, '0'], [-1e-12, '0'],
+      [100, '100'], [10000, '10000'], [0.125, '0,125'], [-3, '−3'], [3.00004, '3'], [1234567.5, '1234567,5']];
+    for (const [v, esperado] of casos) ok(P.num(v) === esperado, `num(${v}) = «${P.num(v)}» (esperado «${esperado}»)`);
+    ok(P.num(1.23456, 2) === '1,23', 'duas casas');
+    ok(P.num(NaN) === '?', 'NaN não rebenta');
+    ok(P.numTex(-1.5) === '-1{,}5', 'numTex ' + P.numTex(-1.5));
+    ok(P.numTex(0.125) === '0{,}125', 'numTex 0,125');
+    for (const v of P.VALORES) {
+      const s = P.num(v, 3);
+      ok(!/e/i.test(s) && Number(s.replace(',', '.')) === v, `valor ${v} escreve-se «${s}»`);
+    }
+  });
+
+  await teste('ehExato distingue números redondos de aproximações', (ok) => {
+    ok(P.ehExato(3) && P.ehExato(0.125) && P.ehExato(-1.5), 'exatos');
+    ok(!P.ehExato(Math.LN2) && !P.ehExato(P.logB(10, 2)) && !P.ehExato(P.logB(2, 3)), 'aproximados');
+  });
+
+  // ---------- sliders ----------
+  await teste('VALORES: crescentes, de 0,1 a 100, espaçados em escala logarítmica, com os valores redondos', (ok) => {
+    const V = P.VALORES;
+    ok(V[0] === 0.1 && V[V.length - 1] === 100, 'extremos');
+    for (let i = 1; i < V.length; i++) {
+      ok(V[i] > V[i - 1], `ordem em ${V[i]}`);
+      ok(V[i] / V[i - 1] <= 1.34, `salto grande de ${V[i - 1]} para ${V[i]}`);
+    }
+    for (const v of [0.125, 0.5, 1, 2, 3, 4, 8, 9, 10, 16, 27, 32, 64, 81, 100]) ok(V.includes(v), `falta ${v}`);
+    for (const v of P.ATALHOS) ok(V.includes(v), `o atalho ${v} tem de estar no slider`);
+    ok(V.length <= 40, 'slider com demasiados passos');
+  });
+
+  await teste('indiceDe: valor exato e vizinho mais próximo', (ok) => {
+    for (let i = 0; i < P.VALORES.length; i++) ok(P.indiceDe(P.VALORES[i]) === i, `índice de ${P.VALORES[i]}`);
+    ok(P.VALORES[P.indiceDe(7.9)] === 8, '7,9 -> 8');
+    ok(P.VALORES[P.indiceDe(0.01)] === 0.1 && P.VALORES[P.indiceDe(1e6)] === 100, 'fora do intervalo');
+  });
+
+  await teste('p: de −3 a 5 em meios, 17 valores, inclui inteiros e meios', (ok) => {
+    ok(PS.length === 17 && PS[0] === -3 && PS[16] === 5, 'extremos e quantidade');
+    ok(PS.includes(0) && PS.includes(2.5) && PS.includes(-0.5), 'valores');
+  });
+
+  await teste('controlosDe: que sliders cada aba usa', (ok) => {
+    ok(P.controlosDe('produto').join() === 'x,y' && P.controlosDe('quociente').join() === 'x,y', 'produto e quociente');
+    ok(P.controlosDe('potencia').join() === 'x,p', 'potência');
+    ok(P.controlosDe('inverso').join() === 'x' && P.controlosDe('mudanca').join() === 'x', 'inverso e mudança');
+    ok(P.controlosDe('cuidado', 'soma').join() === 'x,y' && P.controlosDe('cuidado', 'razao').join() === 'x,y' && P.controlosDe('cuidado', 'quadrado').join() === 'x', 'cuidado');
+  });
+
+  // ---------- as 5 propriedades: os dois lados são iguais ----------
+  const PROPS = ['produto', 'quociente', 'potencia', 'inverso', 'mudanca'];
+  for (const prop of PROPS) {
+    await teste(`${prop}: lado esquerdo = lado direito (40 sorteios dos sliders + 40 reais, sementes fixas)`, (ok) => {
+      for (const [semente, continuo] of [[1000 + PROPS.indexOf(prop), false], [2000 + PROPS.indexOf(prop), true]]) {
+        const rng = M.criarRng(semente);
+        for (let i = 0; i < 40; i++) {
+          const s = sorteio(rng, continuo);
+          const r = P.analisar(ESTADO(prop, s));
+          ok(Number.isFinite(r.esq) && Number.isFinite(r.dir), () => `${prop} não finito: ${JSON.stringify(s)}`);
+          ok(Math.abs(r.esq - r.dir) <= 1e-9, () => `${prop} base ${s.base.id} x=${s.x} y=${s.y} p=${s.p}: ${r.esq} != ${r.dir}`);
+          ok(r.iguais && r.estado === 'iguais' && !r.indef, () => `${prop}: veredicto ${r.estado}`);
+        }
+      }
+    });
+  }
+
+  await teste('produto, quociente, potência, inverso e mudança: varrimento completo (todas as bases e todos os valores)', (ok) => {
+    let n = 0;
+    for (const b of P.BASES) {
+      const c = P.BASES.find((o) => o !== b);
+      for (const x of P.VALORES) {
+        for (const y of P.VALORES) {
+          for (const prop of ['produto', 'quociente']) {
+            const r = P.analisar({ prop, base: b, nova: c, x, y });
+            ok(Math.abs(r.esq - r.dir) <= 1e-9, () => `${prop} ${b.id} x=${x} y=${y}: ${r.esq} != ${r.dir}`);
+            n++;
+          }
+        }
+        for (const p of PS) {
+          const r = P.analisar({ prop: 'potencia', base: b, nova: c, x, p });
+          ok(Math.abs(r.esq - r.dir) <= 1e-9 * Math.max(1, Math.abs(r.esq)), () => `potência ${b.id} x=${x} p=${p}: ${r.esq} != ${r.dir}`);
+          n++;
+        }
+        for (const prop of ['inverso', 'mudanca']) {
+          for (const nova of P.BASES.filter((o) => o !== b)) {
+            const r = P.analisar({ prop, base: b, nova, x });
+            ok(Math.abs(r.esq - r.dir) <= 1e-9, () => `${prop} ${b.id}->${nova.id} x=${x}: ${r.esq} != ${r.dir}`);
+            n++;
+          }
+        }
+      }
+    }
+    ok(n > 10000, 'varrimento pequeno demais: ' + n);
+  });
+
+  // ---------- comprimentos da régua ----------
+  await teste('régua: os termos da cadeia somam o comprimento de baixo (produto, quociente, potência)', (ok) => {
+    const rng = M.criarRng(77);
+    for (let i = 0; i < 300; i++) {
+      const s = sorteio(rng, i % 2 === 0);
+      for (const prop of ['produto', 'quociente', 'potencia']) {
+        const r = P.analisar(ESTADO(prop, s));
+        const { fim } = P.cadeia(r);
+        ok(Math.abs(fim - r.total.v) <= 1e-9, () => `${prop}: cadeia acaba em ${fim}, resultado em ${r.total.v}`);
+      }
+      const ri = P.analisar(ESTADO('inverso', s));
+      ok(ri.termos.length === 1 && Math.abs(ri.termos[0].v + ri.total.v) <= 1e-9, 'inverso: simétricos');
+    }
+  });
+
+  await teste('régua da potência: |p| cópias inteiras e, se p acaba em ,5, meia cópia; sentido dado pelo sinal de p', (ok) => {
+    for (const p of PS) {
+      for (const x of [0.5, 8, 100]) {
+        const r = P.analisar({ prop: 'potencia', base: B2, nova: B10, x, p });
+        const lx = P.logB(2, x);
+        const inteiras = Math.floor(Math.abs(p));
+        const meia = Math.abs(p) % 1 !== 0;
+        ok(r.termos.length === inteiras + (meia ? 1 : 0), `p=${p}: ${r.termos.length} termos`);
+        r.termos.forEach((t, i) => {
+          const esperado = (p < 0 ? -1 : 1) * lx * (meia && i === r.termos.length - 1 ? 0.5 : 1);
+          ok(Math.abs(t.v - esperado) <= 1e-12, `p=${p} x=${x}: termo ${i} = ${t.v}, esperado ${esperado}`);
+        });
+        ok((p === 0) === (r.termos.length === 0) && (p === 0) === (r.aviso !== ''), `p=${p}: aviso de nenhuma cópia`);
+      }
+    }
+  });
+
+  await teste('régua: comprimentos negativos quando x < 1 (e positivos quando x > 1) em todas as bases', (ok) => {
+    for (const b of P.BASES) {
+      for (const x of P.VALORES) {
+        const r = P.analisar({ prop: 'produto', base: b, x, y: 2 });
+        ok(x < 1 ? r.termos[0].v < 0 : x > 1 ? r.termos[0].v > 0 : r.termos[0].v === 0, `base ${b.id} x=${x}: ${r.termos[0].v}`);
+      }
+    }
+  });
+
+  await teste('janela: contém o 0 e todas as posições, escala em degraus, marcas nos inteiros (todas as combinações)', (ok) => {
+    let pior = 0;
+    const verificar = (r, nome) => {
+      const { posicoes } = P.cadeia(r);
+      const jan = P.janela(posicoes);
+      const min = Math.min(0, ...posicoes);
+      const max = Math.max(0, ...posicoes);
+      ok(Number.isInteger(jan.lo) && P.SPANS.includes(jan.span), `${nome}: lo/span`);
+      ok(jan.lo <= min + 1e-9 && jan.lo + jan.span >= max - 1e-9, () => `${nome}: [${min}, ${max}] fora de [${jan.lo}, ${jan.hi}]`);
+      const { maiores, menores } = P.marcas(jan);
+      ok(maiores.length >= 2 && maiores.length <= 13, () => `${nome}: ${maiores.length} marcas grandes (span ${jan.span})`);
+      ok(maiores.every((v) => Math.abs(v - Math.round(v)) < 1e-9), `${nome}: marcas não inteiras`);
+      ok(maiores.includes(0) || jan.lo > 0 || jan.hi < 0, `${nome}: falta a marca do 0`);
+      ok(menores.every((v) => !maiores.some((m) => Math.abs(m - v) < 1e-9)), `${nome}: marca pequena repetida`);
+      pior = Math.max(pior, jan.span);
+    };
+    for (const b of P.BASES) {
+      for (const x of P.VALORES) {
+        for (const y of P.VALORES) {
+          for (const prop of ['produto', 'quociente']) verificar(P.analisar({ prop, base: b, x, y }), `${prop} ${b.id} ${x} ${y}`);
+          for (const caso of ['soma', 'razao']) verificar(P.analisar({ prop: 'cuidado', base: b, x, y, caso }), `${caso} ${b.id} ${x} ${y}`);
+        }
+        for (const p of PS) verificar(P.analisar({ prop: 'potencia', base: b, x, p }), `potência ${b.id} ${x} ${p}`);
+        verificar(P.analisar({ prop: 'inverso', base: b, x }), `inverso ${b.id} ${x}`);
+        verificar(P.analisar({ prop: 'cuidado', base: b, x, y: 1, caso: 'quadrado' }), `quadrado ${b.id} ${x}`);
+      }
+    }
+    ok(pior <= 64, 'span máximo ' + pior);
+  });
+
+  await teste('janela: exemplos concretos', (ok) => {
+    let j = P.janela([0, 3, 5]);
+    ok(j.lo === 0 && j.span === 6 && j.passo === 1, `0..5 -> ${JSON.stringify(j)}`);
+    j = P.janela([0, -0.3, 0.9]);
+    ok(j.lo === -1 && j.span === 2, `-0,3..0,9 -> ${JSON.stringify(j)}`);
+    j = P.janela([0, -3, 0]);
+    ok(j.lo === -3 && j.span === 3, `-3..0 -> ${JSON.stringify(j)}`);
+    j = P.janela([0, 33.2]);
+    ok(j.span === 40 && j.passo === 5, `0..33,2 -> ${JSON.stringify(j)}`);
+    j = P.janela([0]);
+    ok(j.span === 1, 'só o zero');
+    const m = P.marcas(P.janela([0, 5]));
+    ok(m.maiores.join() === '0,1,2,3,4,5,6' && m.menores.length === 6, `marcas: ${m.maiores} | ${m.menores.length}`);
+  });
+
+  // ---------- Cuidado: as falsas igualdades ----------
+  await teste('Cuidado: o exemplo fixo de cada caso dá «diferentes» em todas as bases', (ok) => {
+    for (const b of P.BASES) {
+      for (const c of P.CASOS) {
+        const r = P.analisar({ prop: 'cuidado', base: b, x: c.exemplo.x, y: c.exemplo.y, caso: c.id });
+        ok(!r.iguais && r.estado === 'diferentes', () => `${c.id} base ${b.id}: ${r.esq} vs ${r.dir} (${r.estado})`);
+        ok(Math.abs(r.dif) > 0.05, () => `${c.id} base ${b.id}: diferença pequena demais para se ver (${r.dif})`);
+      }
+    }
+  });
+
+  await teste('Cuidado: log(x+y) ≠ log x + log y exceto quando x+y = xy (ex.: 2+2 = 2×2)', (ok) => {
+    for (const b of P.BASES) {
+      const dois = P.analisar({ prop: 'cuidado', base: b, x: 2, y: 2, caso: 'soma' });
+      ok(dois.iguais && dois.estado === 'acaso', `2 e 2 base ${b.id} coincidem`);
+      const um = P.analisar({ prop: 'cuidado', base: b, x: 1, y: 1, caso: 'soma' });
+      ok(Math.abs(um.dir) < 1e-12 && Math.abs(um.esq - P.logB(b.valor, 2)) < 1e-12, 'x=y=1: 0 e log 2');
+    }
+    for (const b of P.BASES) {
+      for (const x of P.VALORES) {
+        for (const y of P.VALORES) {
+          const r = P.analisar({ prop: 'cuidado', base: b, x, y, caso: 'soma' });
+          const somaIgualProduto = Math.abs(x + y - x * y) < 1e-12;
+          ok(r.iguais === somaIgualProduto, () => `soma base ${b.id} x=${x} y=${y}: iguais=${r.iguais}, x+y=xy ${somaIgualProduto}`);
+        }
+      }
+    }
+  });
+
+  await teste('Cuidado: log x ÷ log y ≠ log(x÷y); y = 1 deixa o lado direito sem existir', (ok) => {
+    const r = P.analisar({ prop: 'cuidado', base: B2, x: 8, y: 2, caso: 'razao' });
+    ok(r.dir === 3 && r.esq === 2 && !r.iguais, `8 e 2: ${r.esq} vs ${r.dir}`);
+    const c = P.analisar({ prop: 'cuidado', base: B2, x: 16, y: 4, caso: 'razao' });
+    ok(c.iguais && c.estado === 'acaso', 'coincidência 16 e 4 na base 2');
+    for (const b of P.BASES) {
+      const u = P.analisar({ prop: 'cuidado', base: b, x: 8, y: 1, caso: 'razao' });
+      ok(u.indef && !u.iguais && u.estado === 'diferentes' && u.termos.length === 0 && u.aviso !== '', `y=1 base ${b.id}`);
+    }
+    // concordância com a definição, em todos os pares
+    for (const b of P.BASES) {
+      for (const x of P.VALORES) {
+        for (const y of P.VALORES) {
+          const rr = P.analisar({ prop: 'cuidado', base: b, x, y, caso: 'razao' });
+          if (y === 1) { ok(rr.indef, 'y=1 indefinido'); continue; }
+          const igual = Math.abs(P.logB(b.valor, x / y) - P.logB(b.valor, x) / P.logB(b.valor, y)) < 1e-9;
+          ok(rr.iguais === igual && !rr.indef, () => `razão base ${b.id} x=${x} y=${y}`);
+        }
+      }
+    }
+  });
+
+  await teste('Cuidado: (log x)² ≠ log x²; coincidem só para x = 1 ou x = a²', (ok) => {
+    for (const b of P.BASES) {
+      for (const x of P.VALORES) {
+        const r = P.analisar({ prop: 'cuidado', base: b, x, y: 1, caso: 'quadrado' });
+        const lx = P.logB(b.valor, x);
+        ok(Math.abs(r.esq - 2 * lx) < 1e-12 && Math.abs(r.dir - lx * lx) < 1e-12, 'valores dos lados');
+        ok(r.iguais === (Math.abs(lx) < 1e-9 || Math.abs(lx - 2) < 1e-9), () => `quadrado base ${b.id} x=${x}: iguais=${r.iguais}, log=${lx}`);
+      }
+    }
+    ok(P.analisar({ prop: 'cuidado', base: B2, x: 4, y: 1, caso: 'quadrado' }).estado === 'acaso', 'x = 4 na base 2');
+    ok(P.analisar({ prop: 'cuidado', base: B10, x: 100, y: 1, caso: 'quadrado' }).estado === 'acaso', 'x = 100 na base 10');
+    ok(P.analisar({ prop: 'cuidado', base: B3, x: 9, y: 1, caso: 'quadrado' }).estado === 'acaso', 'x = 9 na base 3');
+  });
+
+  await teste('Cuidado: sorteios com sementes fixas, a falsa igualdade dá diferente quase sempre', (ok) => {
+    const rng = M.criarRng(31415);
+    const conta = { soma: 0, razao: 0, quadrado: 0 };
+    const N = 120;
+    for (let i = 0; i < N; i++) {
+      const s = sorteio(rng, true);
+      for (const caso of ['soma', 'razao', 'quadrado']) {
+        const r = P.analisar(ESTADO('cuidado', s, caso));
+        if (!r.iguais) conta[caso]++;
+        ok(r.iguais === (!r.indef && Math.abs(r.esq - r.dir) <= 1e-9 * Math.max(1, Math.abs(r.esq))), 'veredicto coerente');
+      }
+    }
+    for (const caso of Object.keys(conta)) ok(conta[caso] >= N - 2, `${caso}: só ${conta[caso]} de ${N} diferentes`);
+  });
+
+  // ---------- textos ----------
+  await teste('textos: sem travessões, sem NaN/undefined/null, cifrões emparelhados (todas as abas, bases e valores)', (ok) => {
+    const rng = M.criarRng(2718);
+    const visitar = (r, nome) => {
+      const textos = [r.formula, r.linhaEsq, r.linhaDir, r.total.rot, r.aviso || '', r.resumo || '', r.rotA || '', r.rotB || '',
+        ...r.termos.map((t) => t.rot), ...r.porque, P.descricao(r)];
+      for (const t of textos) {
+        ok(!t.includes(TRACO_LONGO) && !t.includes(TRACO_CURTO), () => `${nome}: travessão em «${t.slice(0, 60)}»`);
+        ok(!/NaN|undefined|null|Infinity|\?/.test(t), () => `${nome}: valor inválido em «${t.slice(0, 90)}»`);
+      }
+      for (const t of r.porque) ok((t.match(/\$/g) || []).length % 2 === 0, () => `${nome}: cifrões ímpares em «${t.slice(0, 60)}»`);
+      for (const t of [r.formula, r.linhaEsq, r.linhaDir]) ok(!t.includes('$'), `${nome}: cifrão numa fórmula pura`);
+      const chavetas = (t) => (t.match(/\{/g) || []).length === (t.match(/\}/g) || []).length;
+      for (const t of [r.formula, r.linhaEsq, r.linhaDir, ...r.porque]) ok(chavetas(t), () => `${nome}: chavetas desemparelhadas em «${t.slice(0, 80)}»`);
+    };
+    for (let i = 0; i < 400; i++) {
+      const s = sorteio(rng, i % 3 === 0);
+      for (const prop of PROPS) visitar(P.analisar(ESTADO(prop, s)), `${prop} ${i}`);
+      for (const caso of ['soma', 'razao', 'quadrado']) visitar(P.analisar(ESTADO('cuidado', s, caso)), `${caso} ${i}`);
+    }
+    for (const b of P.BASES) {
+      for (const caso of ['soma', 'razao', 'quadrado']) visitar(P.analisar({ prop: 'cuidado', base: b, x: 8, y: 1, caso }), `${caso} y=1`);
+      for (const p of [0, 0.5, -3, 5]) visitar(P.analisar({ prop: 'potencia', base: b, x: 100, p }), `potência extremos ${p}`);
+    }
+  });
+
+  await teste('KaTeX: todas as fórmulas compilam sem erro (todas as abas, bases e valores)', (ok) => {
+    ok(window.katex, 'KaTeX não carregou');
+    const compila = (s, nome) => {
+      try { window.katex.renderToString(s, { throwOnError: true }); } catch (e) { ok(false, () => `${nome}: ${e.message}`); }
+    };
+    const visitar = (r, nome) => {
+      compila(`\\displaystyle ${r.formula}`, nome + ' fórmula');
+      compila(r.linhaEsq, nome + ' lado esq.');
+      compila(r.linhaDir, nome + ' lado dir.');
+      for (const t of r.porque) for (const m of t.matchAll(/\$([^$]+)\$/g)) compila(m[1], nome + ' porquê');
+    };
+    const rng = M.criarRng(555);
+    for (let i = 0; i < 500; i++) {
+      const s = sorteio(rng, i % 3 === 0);
+      for (const prop of PROPS) visitar(P.analisar(ESTADO(prop, s)), `${prop} ${i}`);
+      for (const caso of ['soma', 'razao', 'quadrado']) visitar(P.analisar(ESTADO('cuidado', s, caso)), `${caso} ${i}`);
+    }
+    for (const b of P.BASES) {
+      for (const nova of P.BASES.filter((o) => o !== b)) visitar(P.analisar({ prop: 'mudanca', base: b, nova, x: 0.125 }), `mudança ${b.id} ${nova.id}`);
+      for (const caso of ['soma', 'razao', 'quadrado']) visitar(P.analisar({ prop: 'cuidado', base: b, x: 8, y: 1, caso }), `${caso} y=1`);
+    }
+  });
+
+  await teste('textos: exemplo do produto na base 2 com x=8 e y=4 (3+2=5)', (ok) => {
+    const r = P.analisar({ prop: 'produto', base: B2, nova: B10, x: 8, y: 4 });
+    ok(r.esq === 5 && r.dir === 5 && r.termos[0].v === 3 && r.termos[1].v === 2 && r.total.v === 5, 'valores');
+    ok(r.linhaEsq.includes('\\log_{2}(8\\times4)') && r.linhaEsq.includes('\\log_{2}32') && r.linhaEsq.endsWith('=5\\end{aligned}'), r.linhaEsq);
+    ok(r.linhaDir.includes('3+2') && r.linhaDir.includes('=5'), r.linhaDir);
+    ok(r.termos[0].rot === 'log₂ 8 = 3' && r.termos[1].rot === 'log₂ 4 = 2' && r.total.rot === 'log₂ (8×4) = 5', JSON.stringify([r.termos[0].rot, r.termos[1].rot, r.total.rot]));
+    ok(r.porque[0].includes('8=2^{3}') && r.porque[1].includes('2^{3+2}') && r.porque[2].includes('=3+2=5'), r.porque.join(' | '));
+    ok(!r.arredondado, 'todos os valores são exatos');
+    const d = P.analisar({ prop: 'produto', base: B10, nova: B2, x: 2, y: 3 });
+    ok(d.arredondado && d.linhaDir.includes('\\approx') && d.linhaEsq.includes('\\log 6'), d.linhaEsq + ' | ' + d.linhaDir);
+  });
+
+  await teste('textos: números com vírgula decimal nas contas (x = 0,125)', (ok) => {
+    const r = P.analisar({ prop: 'produto', base: B2, x: 0.125, y: 0.5 });
+    ok(r.linhaEsq.includes('0{,}125\\times0{,}5') && r.termos[0].rot === 'log₂ 0,125 = −3', r.linhaEsq + ' | ' + r.termos[0].rot);
+    ok(r.linhaDir.includes('+(-1)'), r.linhaDir);
+  });
+
+  await teste('partirRotulo, semMarcas e larguraRotulo', (ok) => {
+    const p = P.partirRotulo('log₂ (8^{3}) = 9');
+    ok(p.length === 3 && p[0].t === 'log₂ (8' && p[1].sup === '3' && p[2].t === ') = 9', JSON.stringify(p));
+    ok(P.partirRotulo('sem expoente').length === 1 && P.partirRotulo('').length === 0, 'casos simples');
+    ok(P.semMarcas('(log 8)^{2} = 9') === '(log 8) elevado a 2 = 9', P.semMarcas('(log 8)^{2} = 9'));
+    ok(P.larguraRotulo('abcd') > 20 && P.larguraRotulo('x^{2}') < P.larguraRotulo('x2222'), 'larguras');
+  });
+
+  await teste('descricao: texto para leitores de ecrã sem marcas nem números inválidos', (ok) => {
+    const a = P.descricao(P.analisar({ prop: 'produto', base: B2, x: 8, y: 4 }));
+    ok(a.includes('log₂ 8 = 3') && a.includes('log₂ 4 = 2') && a.includes('Acabam no mesmo ponto'), a);
+    const b = P.descricao(P.analisar({ prop: 'cuidado', base: B2, x: 1, y: 1, caso: 'soma' }));
+    ok(b.includes('Não acabam no mesmo ponto'), b);
+    const c = P.descricao(P.analisar({ prop: 'potencia', base: B2, x: 8, p: 3 }));
+    ok(c.includes('3 comprimentos colados') && c.includes('elevado a 3'), c);
+    const d = P.descricao(P.analisar({ prop: 'mudanca', base: B2, nova: B10, x: 8 }));
+    ok(d.includes('log₂ 8 = 3') && d.includes('log 8'), d);
+    const e = P.descricao(P.analisar({ prop: 'inverso', base: B2, x: 8 }));
+    ok(e.includes('sentidos opostos'), e);
+  });
+
+  // ---------- montagem no DOM ----------
+  await teste('montar: abas, bases, sliders com aria-valuetext e conferência em aria-live', async (ok) => {
+    const host = document.createElement('div');
+    host.dataset.widget = 'propriedades';
+    document.body.append(host);
+    await P.montar(host, {});
+    const q = (s) => host.querySelector(s);
+    const qa = (s) => [...host.querySelectorAll(s)];
+    const abas = qa('[role="tab"]');
+    ok(abas.length === 6 && abas.filter((a) => a.getAttribute('aria-selected') === 'true').length === 1, 'abas');
+    ok(q('[role="tablist"]') && q('[role="tabpanel"]') && abas.every((a) => a.getAttribute('aria-controls') === q('[role="tabpanel"]').id), 'tablist e painel');
+    ok(q('.pro-conf').getAttribute('aria-live') === 'polite', 'aria-live na conferência');
+    ok(q('.pro-ctl--x input').getAttribute('aria-valuetext') === 'x igual a 8', q('.pro-ctl--x input').getAttribute('aria-valuetext'));
+    ok(q('.pro-ctl--y input').getAttribute('aria-valuetext') === 'y igual a 4', 'y');
+    ok(q('.pro-selo').classList.contains('pro-selo--iguais') && q('.pro-selo__texto').textContent === 'iguais', 'selo inicial');
+    ok(qa('.pro-svg path').length >= 3 && q('.pro-svg').getAttribute('aria-label').includes('log₂ 8 = 3'), 'régua desenhada');
+    ok(qa('.pro-base:not(.pro-base--nova) .pro-chip').length === 4 && q('.pro-base--nova').hidden, 'bases');
+    ok(q('.pro-ctl--p').hidden && !q('.pro-ctl--x').hidden && !q('.pro-ctl--y').hidden, 'p escondido no produto');
+    ok(qa('.pro-ctl--x .pro-atalhos button').map((b) => b.textContent).join() === '0,5,2,4,8,10', 'atalhos de x');
+    ok(qa('.pro-chip, .pro-aba, .pro-slider').every((b) => b.tagName === 'INPUT' || b.type === 'button'), 'botões do tipo button');
+    ok(!/NaN|undefined|null/.test(host.textContent), 'texto sem valores inválidos: ' + host.textContent.match(/.{0,30}(NaN|undefined|null).{0,30}/));
+    host.remove();
+  });
+
+  await teste('montar: percorrer todas as abas, bases, casos e valores sem erros; selo coerente com a análise', async (ok) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    await P.montar(host, {});
+    const q = (s) => host.querySelector(s);
+    const mudar = (input, valor) => { input.value = String(valor); input.dispatchEvent(new Event('input', { bubbles: true })); };
+    const rng = M.criarRng(99);
+    let leituras = 0;
+    for (const a of P.ABAS) {
+      q(`[data-aba="${a.id}"]`).click();
+      ok(q(`[data-aba="${a.id}"]`).getAttribute('aria-selected') === 'true', `aba ${a.id} selecionada`);
+      ok(q('[role="tabpanel"]').getAttribute('aria-labelledby') === q(`[data-aba="${a.id}"]`).id, 'painel etiquetado');
+      const casos = a.id === 'cuidado' ? ['soma', 'razao', 'quadrado'] : [null];
+      for (const caso of casos) {
+        if (caso) q(`[data-caso="${caso}"]`).click();
+        const usa = P.controlosDe(a.id, caso || 'soma');
+        ok(q('.pro-ctl--x').hidden === !usa.includes('x') && q('.pro-ctl--y').hidden === !usa.includes('y') && q('.pro-ctl--p').hidden === !usa.includes('p'),
+          `controlos de ${a.id}/${caso}`);
+        ok(q('.pro-base--nova').hidden === (a.id !== 'mudanca') && q('.pro-caso').hidden === (a.id !== 'cuidado'), `bases/casos de ${a.id}`);
+        for (let i = 0; i < 12; i++) {
+          const b = M.escolher(rng, P.BASES);
+          q(`.pro-base:not(.pro-base--nova) [data-base="${b.id}"]`).click();
+          if (a.id === 'mudanca') q(`.pro-base--nova [data-base="${M.escolher(rng, P.BASES).id}"]`).click();
+          const ix = M.inteiro(rng, 0, P.VALORES.length - 1);
+          const iy = M.inteiro(rng, 0, P.VALORES.length - 1);
+          const p = M.escolher(rng, PS);
+          mudar(q('.pro-ctl--x input'), ix);
+          mudar(q('.pro-ctl--y input'), iy);
+          mudar(q('.pro-ctl--p input'), p);
+          const x = P.VALORES[usa.includes('x') ? ix : ix];
+          ok(q('.pro-ctl--x input').getAttribute('aria-valuetext') === `x igual a ${P.num(x, 3)}`, `valuetext de x em ${a.id}`);
+          const estado = q('.pro-selo').className.replace('pro-selo pro-selo--', '');
+          const esperado = a.id === 'cuidado' ? ['diferentes', 'acaso'] : ['iguais'];
+          ok(esperado.includes(estado), () => `${a.id}/${caso}: selo «${estado}»`);
+          ok(!/NaN|undefined|null/.test(q('.pro-conf').textContent + q('.pro-porque').textContent + q('.pro-svg').getAttribute('aria-label')), `${a.id}: texto inválido`);
+          ok(q('.pro-svg').children.length > 3, 'svg desenhado');
+          leituras++;
+        }
+      }
+    }
+    ok(leituras >= 12 * 8, 'leituras ' + leituras);
+    host.remove();
+  });
+
+  await teste('montar: o Cuidado abre no exemplo claro (x = y = 1 → ✗ diferentes) e «Voltar ao exemplo» repõe-no', async (ok) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    await P.montar(host, {});
+    const q = (s) => host.querySelector(s);
+    q('[data-aba="cuidado"]').click();
+    ok(q('.pro-selo').classList.contains('pro-selo--diferentes') && q('.pro-selo__simbolo').textContent === '✗', 'selo ✗');
+    ok(q('.pro-ctl--x input').getAttribute('aria-valuetext') === 'x igual a 1' && q('.pro-ctl--y input').getAttribute('aria-valuetext') === 'y igual a 1', 'x = y = 1');
+    q('.pro-ctl--x .pro-atalhos [data-v="2"]').click();
+    q('.pro-ctl--y .pro-atalhos [data-v="2"]').click();
+    ok(q('.pro-selo').classList.contains('pro-selo--acaso'), '2 e 2 coincidem');
+    ok(/coincid/.test(q('.pro-porque').textContent), 'explica a coincidência');
+    q('.pro-exemplo').click();
+    ok(q('.pro-selo').classList.contains('pro-selo--diferentes'), 'voltou ao exemplo');
+    q('[data-caso="razao"]').click();
+    q('.pro-ctl--y input').value = String(P.indiceDe(1));
+    q('.pro-ctl--y input').dispatchEvent(new Event('input', { bubbles: true }));
+    ok(/não existe/.test(q('.pro-conf').textContent) && q('.pro-svg .pro-t-aviso'), 'y = 1: o lado direito não existe');
+    // os valores das outras abas não se perdem
+    q('[data-aba="produto"]').click();
+    ok(q('.pro-ctl--x input').getAttribute('aria-valuetext') === 'x igual a 8', 'x do produto intacto');
+    host.remove();
+  });
+
+  await teste('montar: trocar de base na mudança nunca deixa as duas iguais', async (ok) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    await P.montar(host, {});
+    const q = (s) => host.querySelector(s);
+    q('[data-aba="mudanca"]').click();
+    for (const a of ['10', 'e', '3', '2']) {
+      for (const n of ['10', 'e', '3', '2']) {
+        q(`.pro-base:not(.pro-base--nova) [data-base="${a}"]`).click();
+        q(`.pro-base--nova [data-base="${n}"]`).click();
+        const A = q('.pro-base:not(.pro-base--nova) [aria-pressed="true"]').dataset.base;
+        const N = q('.pro-base--nova [aria-pressed="true"]').dataset.base;
+        ok(A !== N && q('.pro-selo').classList.contains('pro-selo--iguais'), `a=${a} nova=${n}: ficou ${A} e ${N}`);
+      }
+    }
+    host.remove();
+  });
+
+  await teste('montar: teclado nas abas (setas, Home, End)', async (ok) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    await P.montar(host, {});
+    const abas = [...host.querySelectorAll('[role="tab"]')];
+    abas[0].focus();
+    const tecla = (k) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+    tecla('ArrowRight');
+    ok(abas[1].getAttribute('aria-selected') === 'true' && document.activeElement === abas[1], 'seta direita');
+    tecla('End');
+    ok(abas[5].getAttribute('aria-selected') === 'true', 'End');
+    tecla('ArrowRight');
+    ok(abas[0].getAttribute('aria-selected') === 'true', 'volta ao princípio');
+    tecla('ArrowLeft');
+    ok(abas[5].getAttribute('aria-selected') === 'true', 'seta esquerda dá a volta');
+    tecla('Home');
+    ok(abas[0].getAttribute('aria-selected') === 'true' && abas.filter((a) => a.tabIndex === 0).length === 1, 'Home e roving tabindex');
+    host.remove();
+  });
+
+  // ---------- resumo ----------
+  const ms = Math.round(performance.now() - t0);
+  linhas.push('');
+  linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+  saida.textContent = linhas.join('\n');
+  document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+</script>
+</body>
+</html>

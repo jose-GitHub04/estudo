@@ -1,0 +1,71 @@
+/* Limites e assíntotas (widgets/limites.js). Desenhado a 390px; classes .li- */
+
+.li { padding: 1rem; }
+.li button { font-family: inherit; }
+.li [hidden] { display: none !important; }
+
+/* abas e escolhas: alvos de toque de 44px */
+.li .chip { min-height: 2.75rem; padding: 0.45rem 0.95rem; }
+.li .chip .katex { font-size: 1em; }
+.li-abas { margin-top: 0.2rem; }
+.li-extra > * + * { margin-top: 0.5rem; }
+.li-extra .chips { margin-top: 0.5rem; }
+
+.li-cabeca { margin: 1.1rem 0 0.4rem; text-align: center; }
+.li-pergunta { margin: 0; font-size: 1.02rem; }
+.li-formula { overflow-x: auto; overflow-y: hidden; }
+.li-formula .katex-display { margin: 0.5rem 0 0.3rem; }
+.li-formula--calculo .katex-display { margin: 0.3rem 0; text-align: left; }
+.li-formula--calculo .katex { font-size: 1.05em; }
+
+/* duas colunas (gráfico e controlos | tabela e conclusão) quando há espaço */
+.li-corpo { display: grid; gap: 1.1rem; margin-top: 0.6rem; }
+.li-col { min-width: 0; }
+@media (min-width: 50em) {
+  .li-corpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 1.5rem; }
+}
+
+.li-nota { font-size: 0.85rem; }
+.li-nota:empty { display: none; }
+
+/* sliders */
+.li input[type="range"] { display: block; height: 2.75rem; margin: 0; }
+.li-controlo { margin-top: 0.6rem; }
+.li-controlo__linha { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.1rem 0.75rem; }
+
+/* leituras em direto */
+.li-leituras { margin-top: 0.6rem; }
+.li-leitura { min-width: 0; overflow-wrap: anywhere; }
+.li-leitura .katex { font-size: 1em; }
+.li-estado {
+  margin: 0.7rem 0 0; padding: 0.55rem 0.8rem; min-height: 3.1rem;
+  border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--creme); font-size: 0.95rem;
+}
+.li-estado .katex, .li-mais .katex { font-size: 1.04em; }
+
+/* tabela de valores */
+.li-tabela-caixa { min-width: 0; }
+.li-tabela { font-size: 0.85rem; }
+.li-tabela th, .li-tabela td { padding: 0.4rem 0.3rem; }
+.li-tabela .katex { font-size: 1em; }
+.li-tabela .li-ganha th, .li-tabela .li-ganha td { background: var(--certo-fundo); }
+.li-tabela .li-zero th, .li-tabela .li-zero td { color: var(--tinta-suave); }
+.li-rolante:focus-visible { outline-offset: 2px; }
+
+.li-mais { margin-top: 0.8rem; font-size: 0.95rem; }
+.li-mais:empty { display: none; }
+.li-mais strong { color: var(--castanho); }
+
+/* conclusão e regra */
+.li-conclusao, .li-regra {
+  margin: 0.9rem 0 0; padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo);
+}
+.li-regra { border-left-color: var(--c-exp); background: var(--creme); }
+.li-rotulo {
+  margin: 0 0 0.25rem; color: var(--dourado-texto); font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.li-regra .li-rotulo { color: var(--c-exp); }
+.li-texto { margin: 0; font-size: 0.97rem; }
+.li-texto .katex { font-size: 1.04em; }

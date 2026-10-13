@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget de exercícios</title>
+<!-- Testes do widget widgets/exercicios.js (Exponenciais e logaritmos), com exercícios de amostra e, se existir,
+     com logaritmos/dados/exercicios.json. Sem parâmetros corre os testes:
+       msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8821/logaritmos/tests/exercicios.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?demo=<qual> monta só o widget, para screenshots (marca <html data-demo="pronto"> no fim):
+       amostras   os 4 exercícios de amostra     real   os dados reais
+       &passos=N  revela N passos em cada unidade (&tudo=1 revela tudo)   &indice=1  abre o índice
+       &so=ex-05  mostra só esse exercício (dos dados reais ou das amostras)
+     Com ?cenario=semstorage corre só o cenário sem armazenamento (o localStorage lança): é o que o iframe do teste usa. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/exercicios.css">
+<style>
+  html { scroll-behavior: auto !important; } /* sem rolagem suave: os screenshots apanhavam-na a meio */
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+  body[data-modo="testes"] #palco { opacity: 0.4; }
+</style>
+<script>
+  // Tem de correr antes de qualquer módulo: faz o localStorage lançar, como numa janela privada com tudo bloqueado.
+  if (/[?&]cenario=semstorage/.test(location.search)) {
+    Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('bloqueado', 'SecurityError'); } });
+  }
+</script>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes do widget de exercícios</h1></div>
+<pre id="resultado">A correr...</pre>
+<main>
+  <section class="seccao"><div class="envolve"><div id="palco"></div></div></section>
+</main>
+<script type="module">
+import { GRUPOS } from '../grupos.js';
+import * as P from '../../assets/motor/progresso.js';
+import { renderizar } from '../../assets/motor/katex.js';
+import * as ex from '../widgets/exercicios.js';
+
+const params = new URLSearchParams(location.search);
+const palco = document.getElementById('palco');
+const saida = document.getElementById('resultado');
+const cenario = params.get('cenario');
+document.body.dataset.modo = params.get('demo') || cenario ? 'demo' : 'testes';
+
+// Regista cada secção do progresso que alguma vez foi gravada (mesmo as que um teste apagou depois).
+const seccoesEscritas = new Set();
+if (!cenario) {
+  const setItemOriginal = Storage.prototype.setItem;
+  Storage.prototype.setItem = function (chave, valor) {
+    try { for (const s of Object.keys(JSON.parse(valor))) seccoesEscritas.add(s); } catch (e) { /* não é o nosso JSON */ }
+    return setItemOriginal.call(this, chave, valor);
+  };
+}
+
+// ---------- dados de amostra ----------
+
+const FIG_EXP = { tipo: 'grafico', x: [-3, 4], y: [-1, 9], curvas: [{ expr: '2^x', rotulo: 'f' }], retasH: [0], pontos: [{ x: 0, y: 1, rotulo: '(0, 1)' }], legenda: 'Gráfico de f(x) = 2^x, sempre acima do eixo dos xx' };
+const FIG_LOG = {
+  tipo: 'grafico', x: [-1, 9], y: [-3, 4], curvas: [{ expr: 'ln(x)', rotulo: 'g', cor: 'log' }], retasV: [0],
+  retas: [{ declive: 1, ordenada: -1, rotulo: 't' }], pontos: [{ x: 1, y: 0, rotulo: '(1, 0)' }], area: { expr: 'ln(x)', de: 1, ate: 3 },
+  legenda: 'Gráfico de g(x) = ln x, com a reta tangente em x = 1',
+};
+
+const AMOSTRAS = [
+  { id: 'ex-a1', titulo: 'Equação com substituição de variável', tema: 'equacoes', nivel: 2,
+    enunciado: 'Resolve em $\\mathbb{R}$ a equação $4^x-5\\times2^x+4=0$.',
+    dica: 'Pensa em $4^x$ como uma potência de $2^x$.',
+    passos: [
+      { titulo: 'Reduzir à mesma base', texto: 'Como $4^x=(2^2)^x=(2^x)^2$, a equação fica $$(2^x)^2-5\\times2^x+4=0.$$' },
+      { titulo: 'Mudar de variável', texto: 'Seja $u=2^x$, com $u>0$. Então $$u^2-5u+4=0.$$' },
+      { titulo: 'Resolver o 2.º grau', texto: '$u=\\dfrac{5\\pm\\sqrt{25-16}}{2}$, logo $u=1$ ou $u=4$. Os dois valores são positivos, servem.' },
+      { titulo: 'Voltar a $x$', texto: '$2^x=1\\Leftrightarrow x=0$ e $2^x=4\\Leftrightarrow x=2$.' },
+    ],
+    resposta: '$S=\\{0,\\,2\\}$',
+    erroComum: 'Parar em $u=1$ e $u=4$ e esquecer de voltar a $x$.',
+    verifica: ['ig(4**t-5*2**t+4, (2**t-1)*(2**t-4))'] },
+  { id: 'ex-a2', titulo: 'Domínio e zeros de uma função', tema: 'funcao', nivel: 1,
+    enunciado: 'Seja $f(x)=\\ln(2x-6)$.',
+    dica: 'O argumento do logaritmo tem de ser positivo.',
+    alineas: [
+      { id: 'a', enunciado: 'Determina o domínio de $f$.',
+        passos: [
+          { titulo: 'Condição de existência', texto: 'Só existe $\\ln$ de números positivos: $2x-6>0$.' },
+          { titulo: 'Resolver a inequação', texto: '$2x>6\\Leftrightarrow x>3$.' },
+        ],
+        resposta: '$D_f=]3,+\\infty[$' },
+      { id: 'b', enunciado: 'Calcula o zero de $f$.',
+        passos: [
+          { titulo: 'Igualar a zero', texto: '$\\ln(2x-6)=0$.' },
+          { titulo: 'Passar à forma exponencial', texto: '$\\ln(2x-6)=0\\Leftrightarrow 2x-6=e^0=1$.' },
+          { titulo: 'Resolver e verificar', texto: '$2x=7\\Leftrightarrow x=\\frac72$. Como $\\frac72>3$, pertence ao domínio.' },
+        ],
+        resposta: '$x=\\dfrac{7}{2}$' },
+    ],
+    erroComum: 'Resolver $2x-6=0$ em vez de $2x-6=1$: o logaritmo vale zero quando o argumento vale 1, não zero.' },
+  { id: 'ex-a3', titulo: 'Retas e curvas com figuras', tema: 'exponencial', nivel: 3,
+    enunciado: 'Estuda a função $f(x)=2^x$ e depois a sua inversa.',
+    passos: [
+      { titulo: 'Ler a expressão', texto: 'A base é $2>1$, por isso $f$ é crescente.' },
+      { titulo: 'Desenhar $f$', texto: 'Passa em $(0,1)$ e fica sempre acima do eixo dos $xx$.', figura: FIG_EXP },
+      { titulo: 'Contradomínio', texto: '$D_f'+"'"+'=\\mathbb{R}^+$, porque $2^x>0$.' },
+      { titulo: 'A inversa', texto: 'A inversa é $g(x)=\\log_2 x$; aqui desenha-se $\\ln x$ com a tangente em $x=1$.', figura: FIG_LOG },
+      { titulo: 'Conclusão', texto: 'Os gráficos são simétricos em relação à reta $y=x$.' },
+    ],
+    resposta: '$D_g=\\mathbb{R}^+$ e $D_g'+"'"+'=\\mathbb{R}$' },
+  { id: 'ex-a4', titulo: 'Figura ilegível', tema: 'derivadas', nivel: 1,
+    enunciado: 'Calcula $f'+"'"+'(x)$ para $f(x)=\\ln x$.',
+    passos: [
+      { titulo: 'Expressão que não se lê', texto: 'Primeiro passo.', figura: { tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: '2^^x+' }], legenda: 'Não devia aparecer' } },
+      { titulo: 'Sem figura', texto: 'Com $0<a<1$ e $b>1$ tem-se $a<b$; e R&D fica fora das fórmulas.' },
+      { titulo: 'Figura boa', texto: 'Esta sim.', figura: FIG_EXP },
+      { titulo: 'Janela inválida', texto: 'A figura deste passo falha e a anterior fica.', figura: { tipo: 'grafico', x: [3, -3], y: [-1, 5], curvas: [{ expr: 'x' }], legenda: 'Não devia aparecer' } },
+    ],
+    resposta: '$f'+"'"+'(x)=\\dfrac{1}{x}$' },
+];
+
+// ---------- infraestrutura de testes ----------
+
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const errosNaoApanhados = [];
+window.addEventListener('error', (e) => errosNaoApanhados.push(e.message));
+window.addEventListener('unhandledrejection', (e) => errosNaoApanhados.push('promessa: ' + (e.reason && e.reason.message)));
+
+const esperar = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const q = (el, s) => el.querySelector(s);
+const qa = (el, s) => [...el.querySelectorAll(s)];
+const texto = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+const visivel = (el) => !!el && !el.hidden && !el.closest('[hidden]');
+const unidades = (c) => qa(c, '.ex-unidade');
+const acao = (u, nome) => q(u, `[data-acao="${nome}"]`);
+const passosDe = (u) => qa(u, '.ex-passo');
+const cartao = (el, id) => q(el, '#' + id);
+const lerArmazenado = () => { try { return JSON.parse(localStorage.getItem('mat100-estudo-v1')) || {}; } catch (e) { return {}; } };
+
+const aLimpar = [];
+function novoEl() {
+  const d = document.createElement('div');
+  d.dataset.widget = 'teste';
+  palco.append(d);
+  aLimpar.push(d);
+  return d;
+}
+function limparTudo() {
+  while (aLimpar.length) aLimpar.pop().remove();
+}
+
+async function montarAmostras(lista = AMOSTRAS) {
+  const el = novoEl();
+  await ex.montar(el, { exercicios: { exercicios: lista } });
+  return el;
+}
+
+/** Corre um teste. `fn(ok)` chama ok(condicao, mensagem); a primeira exceção também conta. */
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 4) erros.push(msg); }
+  };
+  try {
+    P.apagarTudo();
+    await fn(ok);
+  } catch (e) {
+    total++;
+    erros.push('exceção: ' + (e && e.message));
+  } finally {
+    limparTudo();
+  }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+async function esperarIframe(f, campo, tentativas = 200) {
+  let d = null;
+  for (let i = 0; i < tentativas; i++) {
+    await esperar(50);
+    try { d = f.contentDocument; } catch (e) { d = null; }
+    if (d && d.documentElement && d.documentElement.dataset[campo]) break;
+  }
+  return d;
+}
+
+// ---------- modo demo (screenshots) ----------
+
+async function demo() {
+  Element.prototype.scrollIntoView = () => {}; // nos screenshots a página fica no topo (num iframe a rolagem também mexia na página de fora)
+  const qual = params.get('demo');
+  let lista = AMOSTRAS;
+  if (qual === 'real' || qual === 'figuras') {
+    const r = await fetch('../dados/exercicios.json');
+    lista = (await r.json()).exercicios;
+  }
+  const so = params.get('so');
+  if (so) lista = lista.filter((e) => e.id === so);
+  if (qual === 'figuras') { // todas as figuras de um exercício, uma debaixo da outra (para as ver por inteiro)
+    const el = novoEl();
+    aLimpar.length = 0;
+    el.className = 'ex-raiz';
+    for (const e of ex.normalizar({ exercicios: lista })) {
+      for (const u of e.unidades) {
+        u.passos.forEach((p, i) => {
+          if (!p.figura) return;
+          const r = ex.desenharFigura(p.figura);
+          el.append(Object.assign(document.createElement('div'), { className: 'ex-figura' }));
+          const caixa = el.lastElementChild;
+          caixa.append(Object.assign(document.createElement('p'), { className: 'ex-figura__nome', textContent: `${u.chave}, passo ${i + 1}${r ? '' : ' (NÃO DESENHA)'}` }));
+          if (r) caixa.append(r.svg);
+        });
+      }
+    }
+    document.documentElement.dataset.demo = 'pronto';
+    return;
+  }
+  const el = novoEl();
+  aLimpar.length = 0;
+  await ex.montar(el, { exercicios: { exercicios: lista } });
+  renderizar(document.body);
+  const passos = Number(params.get('passos') || 0);
+  const tudo = params.get('tudo') === '1';
+  if (params.get('indice') === '1') q(el, '.ex-indice').open = true;
+  if (params.get('dica') === '1') qa(el, '[data-acao="dica"]').forEach((b) => b.click());
+  for (const u of qa(el, '.ex-unidade')) {
+    if (tudo) acao(u, 'tudo')?.click();
+    else for (let i = 0; i < passos; i++) acao(u, 'seguinte')?.click();
+  }
+  if (params.get('marcar') === '1') {
+    qa(el, '[data-acao="acertei"]').forEach((b, i) => { if (visivel(b) && i % 2 === 0) b.click(); });
+    qa(el, '[data-acao="nao-acertei"]').forEach((b, i) => { if (visivel(b) && i % 2 === 1) b.click(); });
+  }
+  await esperar(100);
+  window.scrollTo(0, 0); // o «Mostrar tudo» rola a página; o screenshot sai melhor do topo
+  document.documentElement.dataset.demo = 'pronto';
+}
+
+// ---------- cenário sem armazenamento (corre dentro de um iframe) ----------
+
+async function cenarioSemStorage() {
+  try {
+    let storageLanca = false;
+    try { window.localStorage.getItem('x'); } catch (e) { storageLanca = true; }
+    if (!storageLanca) throw new Error('o localStorage devia lançar neste cenário');
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a1');
+    const u = unidades(c)[0];
+    acao(u, 'tudo').click();
+    if (passosDe(u).length !== 4) throw new Error('mostrar tudo: ' + passosDe(u).length + ' passos');
+    q(u, '[data-acao="acertei"]').click();
+    if (!/Marcaste\s*1\s*de\s*4/.test(texto(q(el, '.ex-resumo__texto')))) throw new Error('resumo: ' + texto(q(el, '.ex-resumo__texto')));
+    if (!visivel(q(el, '.ex-aviso'))) throw new Error('faltou o aviso de que não guardou');
+    if (!visivel(q(c, '.ex-selo'))) throw new Error('faltou o selo');
+    acao(u, 'recomecar').click();
+    if (passosDe(u).length !== 0) throw new Error('recomeçar');
+    document.documentElement.dataset.cenario = 'ok';
+  } catch (e) {
+    document.documentElement.dataset.cenario = 'falhou: ' + (e && e.message);
+  }
+}
+
+// ---------- os testes ----------
+
+async function testes() {
+  await teste('monta as amostras sem exceção: um article com h3 e âncora por exercício, índice, resumo', async (ok) => {
+    const el = await montarAmostras();
+    const cs = qa(el, 'article.ex-cartao');
+    ok(cs.length === 4, 'cartões: ' + cs.length);
+    ok(cs.map((c) => c.id).join() === 'ex-a1,ex-a2,ex-a3,ex-a4', 'ids: ' + cs.map((c) => c.id).join());
+    ok(cs.every((c) => q(c, 'h3.ex-titulo') && c.getAttribute('aria-labelledby') === q(c, 'h3').id), 'h3 / aria-labelledby');
+    ok(q(el, 'h2') && /exerc/i.test(texto(q(el, 'h2'))), 'h2 escondido para a hierarquia');
+    ok(qa(el, '.ex-indice__lista a').map((a) => a.getAttribute('href')).join() === '#ex-a1,#ex-a2,#ex-a3,#ex-a4', 'índice');
+    ok(/Marcaste\s*0\s*de\s*4\s*exercícios/.test(texto(q(el, '.ex-resumo__texto'))), 'resumo: ' + texto(q(el, '.ex-resumo__texto')));
+    ok(qa(el, '.ex-caderno').every((p) => p.textContent === 'Resolve primeiro no caderno.'), 'texto «Resolve primeiro no caderno.»');
+    ok(q(cs[0], '.ex-enunciado .katex'), 'enunciado com KaTeX');
+    ok(qa(el, '.katex-error').length === 0, 'katex-error');
+    ok(qa(cs[0], '.ex-passo').length === 0 && !visivel(q(cs[0], '.ex-final')) && !visivel(q(cs[0], '.ex-aval')) && !visivel(q(cs[0], '.ex-figura')), 'nada revelado ao início');
+  });
+
+  await teste('exercício sem alíneas: passo a passo, resposta no fim, erro típico, foco sem roubar', async (ok) => {
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a1');
+    const u = unidades(c)[0];
+    const seg = acao(u, 'seguinte');
+    ok(texto(seg) === 'Mostrar o passo seguinte' && texto(acao(u, 'tudo')) === 'Mostrar tudo', 'botões: ' + texto(seg) + ' / ' + texto(acao(u, 'tudo')));
+    ok(visivel(seg) && visivel(acao(u, 'tudo')) && !visivel(acao(u, 'recomecar')), 'botões no início');
+    seg.focus();
+    seg.click();
+    let ps = passosDe(u);
+    ok(ps.length === 1, 'após 1 clique: ' + ps.length);
+    ok(texto(q(ps[0], '.ex-passo__titulo')) === 'Reduzir à mesma base', 'título do passo 1: ' + texto(q(ps[0], '.ex-passo__titulo')));
+    ok(texto(q(ps[0], '.ex-passo__num')) === '1', 'número');
+    ok(q(ps[0], '.ex-passo__texto .katex-display'), 'fórmula em destaque no passo 1');
+    ok(document.activeElement === seg, 'o foco ficou no botão');
+    ok(visivel(acao(u, 'recomecar')), '«Recomeçar» aparece depois do 1.º passo');
+    ok(!visivel(q(u, '.ex-final')) && !visivel(q(u, '.ex-aval')), 'resposta ainda escondida');
+    seg.click();
+    ok(passosDe(u).length === 2 && document.activeElement === seg, 'passo 2, foco no botão');
+    ok(q(u, '.ex-vivo').getAttribute('aria-live') === 'polite', 'aria-live polite');
+    seg.click();
+    ok(passosDe(u).length === 3 && !visivel(q(u, '.ex-final')), 'passo 3');
+    seg.click();
+    ps = passosDe(u);
+    ok(ps.length === 4, 'passo 4: ' + ps.length);
+    ok(texto(q(ps[3], '.ex-passo__titulo')) === 'Voltar a x' || /Voltar a/.test(texto(q(ps[3], '.ex-passo__titulo'))), 'título do passo 4');
+    const fin = q(u, '.ex-final');
+    ok(visivel(fin) && /Resposta final/.test(texto(fin)) && q(fin, '.katex'), 'resposta final: ' + texto(fin));
+    ok(visivel(q(u, '.ex-erro')) && /Erro típico/.test(texto(q(u, '.ex-erro'))), 'erro típico depois da resposta');
+    ok(q(u, '.ex-final').compareDocumentPosition(q(u, '.ex-erro')) & Node.DOCUMENT_POSITION_FOLLOWING, 'o erro vem depois da resposta');
+    ok(visivel(q(u, '.ex-aval')) && visivel(q(u, '[data-acao="acertei"]')) && visivel(q(u, '[data-acao="nao-acertei"]')), '«Acertei» e «Não acertei»');
+    ok(!visivel(seg) && !visivel(acao(u, 'tudo')), 'sem mais passos, os botões de avançar escondem-se');
+    ok(document.activeElement === fin, 'o foco foi para a resposta final');
+    acao(u, 'recomecar').click();
+    ok(passosDe(u).length === 0 && !visivel(q(u, '.ex-final')) && !visivel(q(u, '.ex-erro')) && !visivel(q(u, '.ex-aval')), 'recomeçar limpa');
+    ok(visivel(seg) && !visivel(acao(u, 'recomecar')) && document.activeElement === seg, 'recomeçar devolve o foco ao «passo seguinte»');
+    ok(qa(el, '.katex-error').length === 0, 'katex-error');
+  });
+
+  await teste('«Mostrar tudo» mostra todos os passos e a resposta', async (ok) => {
+    const el = await montarAmostras();
+    const u = unidades(cartao(el, 'ex-a1'))[0];
+    acao(u, 'tudo').click();
+    ok(passosDe(u).length === 4, 'passos: ' + passosDe(u).length);
+    ok(qa(u, '.ex-passo__num').map(texto).join() === '1,2,3,4', 'numeração');
+    ok(visivel(q(u, '.ex-final')) && /0,.*2/.test(q(u, '.ex-final annotation').textContent), 'resposta: ' + texto(q(u, '.ex-final')));
+    ok(document.activeElement === q(u, '.ex-final'), 'foco na resposta');
+    acao(u, 'recomecar').click();
+    ok(passosDe(u).length === 0, 'recomeçar depois de tudo');
+    acao(u, 'seguinte').click();
+    ok(passosDe(u).length === 1, 'recomeça a contar do 1');
+  });
+
+  await teste('dica: abre e fecha com aria-expanded / aria-controls', async (ok) => {
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a1');
+    const b = q(c, '[data-acao="dica"]');
+    const corpo = document.getElementById(b.getAttribute('aria-controls'));
+    ok(!!corpo && !visivel(corpo) && b.getAttribute('aria-expanded') === 'false' && texto(b) === 'Ver a dica', 'estado inicial');
+    b.click();
+    ok(visivel(corpo) && b.getAttribute('aria-expanded') === 'true' && /Pensa em/.test(texto(corpo)) && q(corpo, '.katex'), 'aberta: ' + texto(corpo));
+    ok(texto(b) === 'Esconder a dica', 'rótulo ao abrir');
+    b.click();
+    ok(!visivel(corpo) && b.getAttribute('aria-expanded') === 'false', 'fechada');
+    ok(!q(cartao(el, 'ex-a3'), '[data-acao="dica"]'), 'sem dica, sem botão');
+  });
+
+  await teste('alíneas: cada uma tem os seus passos; erro geral só no fim de todas', async (ok) => {
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a2');
+    const us = unidades(c);
+    ok(us.length === 2, 'unidades: ' + us.length);
+    ok(qa(c, 'h4.ex-alinea__letra').length === 2 && /Alínea a/.test(texto(q(c, 'h4'))), 'títulos das alíneas');
+    ok(/Determina o domínio/.test(texto(us[0])) && /zero de/.test(texto(us[1])), 'enunciados das alíneas');
+    ok(/ln\(2x-6\)|\\ln/.test(q(c, '.ex-enunciado annotation').textContent), 'contexto geral');
+    ok(q(c, ':scope > .ex-dica'), 'dica geral no cartão');
+    acao(us[0], 'seguinte').click();
+    ok(passosDe(us[0]).length === 1 && passosDe(us[1]).length === 0, 'a alínea b não mexeu');
+    acao(us[0], 'tudo').click();
+    ok(visivel(q(us[0], '.ex-final')) && !visivel(q(us[1], '.ex-final')), 'resposta só na alínea a');
+    ok(!visivel(q(c, '.ex-erro--geral')), 'erro geral escondido');
+    acao(us[1], 'tudo').click();
+    ok(visivel(q(c, '.ex-erro--geral')) && /Erro típico/.test(texto(q(c, '.ex-erro--geral'))), 'erro geral depois de todas');
+    acao(us[1], 'recomecar').click();
+    ok(!visivel(q(c, '.ex-erro--geral')), 'recomeçar volta a esconder o erro geral');
+  });
+
+  await teste('figuras: a do último passo revelado que tenha figura; recomeçar esconde', async (ok) => {
+    const el = await montarAmostras();
+    const u = unidades(cartao(el, 'ex-a3'))[0];
+    const fig = q(u, '.ex-figura');
+    const seg = acao(u, 'seguinte');
+    const svgAtual = () => q(fig, 'svg');
+    seg.click();
+    ok(!visivel(fig), 'passo 1: sem figura');
+    seg.click();
+    ok(visivel(fig) && /passo 2/.test(texto(q(fig, '.ex-figura__nome'))), 'passo 2: figura do passo 2: ' + texto(q(fig, '.ex-figura__nome')));
+    ok(svgAtual() && svgAtual().getAttribute('aria-label') === FIG_EXP.legenda && svgAtual().getAttribute('role') === 'img', 'legenda vira aria-label: ' + (svgAtual() && svgAtual().getAttribute('aria-label')));
+    ok(svgAtual().querySelectorAll('path[data-tracos]').length >= 1, 'a curva desenhou-se');
+    const svg2 = svgAtual();
+    seg.click();
+    ok(visivel(fig) && svgAtual() === svg2 && /passo 2/.test(texto(q(fig, '.ex-figura__nome'))), 'passo 3: mantém a figura do passo 2');
+    seg.click();
+    ok(visivel(fig) && /passo 4/.test(texto(q(fig, '.ex-figura__nome'))) && svgAtual() !== svg2, 'passo 4: figura nova');
+    ok(svgAtual().getAttribute('aria-label') === FIG_LOG.legenda, 'legenda do passo 4');
+    ok(qa(fig, 'svg').length === 1, 'só uma figura de cada vez');
+    seg.click();
+    ok(/passo 4/.test(texto(q(fig, '.ex-figura__nome'))), 'passo 5: mantém a do passo 4');
+    ok(qa(u, '.ex-passo')[1].textContent.includes('Figura: ' + FIG_EXP.legenda), 'a legenda também é lida na lista de passos');
+    acao(u, 'recomecar').click();
+    ok(!visivel(fig) && fig.querySelectorAll('svg').length === 0, 'recomeçar esconde a figura');
+    acao(u, 'tudo').click();
+    ok(visivel(fig) && /passo 4/.test(texto(q(fig, '.ex-figura__nome'))), 'mostrar tudo: figura do último passo com figura');
+  });
+
+  await teste('figura ilegível ou impossível é ignorada sem partir o widget', async (ok) => {
+    const el = await montarAmostras();
+    const u = unidades(cartao(el, 'ex-a4'))[0];
+    const fig = q(u, '.ex-figura');
+    const seg = acao(u, 'seguinte');
+    seg.click();
+    ok(passosDe(u).length === 1 && !visivel(fig), 'passo 1: figura ilegível ignorada, passo mostrado');
+    seg.click();
+    ok(!visivel(fig), 'passo 2 sem figura');
+    const t2 = q(qa(u, '.ex-passo')[1], '.ex-passo__texto');
+    ok(t2.querySelectorAll('.katex').length >= 3 && !t2.querySelector('.katex-error') && !/\$/.test(t2.textContent), 'fórmulas com < no passo 2: ' + texto(t2));
+    ok(qa(t2, 'annotation').some((a) => a.textContent === 'a<b'), '«a<b» ficou como matemática');
+    seg.click();
+    ok(visivel(fig) && /passo 3/.test(texto(q(fig, '.ex-figura__nome'))), 'passo 3: figura boa');
+    seg.click();
+    ok(visivel(fig) && /passo 3/.test(texto(q(fig, '.ex-figura__nome'))), 'passo 4: figura má ignorada, fica a do passo 3');
+    ok(visivel(q(u, '.ex-final')), 'a resposta aparece na mesma');
+    ok(ex.desenharFigura({ tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: '2^^x+' }] }) === null, 'desenharFigura: expressão ilegível');
+    ok(ex.desenharFigura({ tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: '100+x' }] }) === null, 'desenharFigura: curva fora da janela');
+    ok(ex.desenharFigura({ tipo: 'outro' }) === null && ex.desenharFigura(null) === null && ex.desenharFigura('x') === null, 'desenharFigura: tipos errados');
+    const f = ex.desenharFigura({ tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: 'x^2' }], retas: [{ declive: 1, ordenada: 0 }], retasV: [1, { x: 2, rotulo: 'x = 2' }], retasH: [{ y: 1 }], pontos: [{ x: 1, y: 1 }], area: { expr: 'x^2', de: 0, ate: 1 } });
+    ok(f && f.svg.getAttribute('aria-label').length > 10, 'sem legenda gera uma descrição: ' + (f && f.svg.getAttribute('aria-label')));
+  });
+
+  await teste('figura: tracejado, cor, posRotulo, rótulo vazio e nomes dos eixos chegam ao gráfico', async (ok) => {
+    const f = ex.desenharFigura({
+      tipo: 'grafico', x: [-3, 40], y: [0, 100], rotuloX: 't (min)', rotuloY: 'T (°C)', legenda: 'teste',
+      curvas: [{ expr: '20+70*exp(-0.08*x)', rotulo: 'T', cor: 'exp' }],
+      retas: [{ declive: -1, ordenada: 90, rotulo: 'oblíqua', cor: 'assint', tracejado: true }, { declive: 0.5, ordenada: 10, rotulo: '' }],
+      retasH: [{ y: 20, rotulo: 'y = 20', posRotulo: 'esq' }, { y: 50, rotulo: 'y = 50', posRotulo: 'dir', cor: 'log' }],
+      retasV: [{ x: 10, rotulo: 'x = 10', posRotulo: 'baixo', tracejado: false }],
+      pontos: [{ x: 10, y: 51.4, rotulo: 'P', posRotulo: 'cima', cor: 'tg' }],
+    });
+    ok(!!f, 'a figura desenha-se');
+    const svg = f.svg;
+    const textos = qa(svg, 'text').map((t) => t.textContent);
+    ok(textos.includes('t (min)') && textos.includes('T (°C)'), 'nomes dos eixos: ' + textos.join('|'));
+    ok(!textos.includes('x') || textos.filter((t) => t === 'x').length === 0, 'o eixo já não se chama x');
+    const retas = qa(svg, '[data-camada="retas"] > g');
+    const traco = (g) => g.querySelector('path').getAttribute('stroke-dasharray');
+    const porTexto = (t) => retas.find((g) => g.textContent === t);
+    ok(porTexto('oblíqua') && /\d/.test(traco(porTexto('oblíqua'))) && traco(porTexto('oblíqua')) !== 'none', 'reta com tracejado: ' + (porTexto('oblíqua') && traco(porTexto('oblíqua'))));
+    ok(retas.some((g) => g.textContent === '' && !/\d/.test(traco(g) || '')), 'reta sem rótulo e sem tracejado (rotulo vazio = sem texto)');
+    ok(!/\d/.test(traco(porTexto('x = 10')) || ''), 'tracejado: false numa guia vertical');
+    ok(/var\(--c-log/.test(porTexto('y = 50').querySelector('path').getAttribute('style')), 'cor da guia horizontal');
+    const y20 = porTexto('y = 20').querySelector('text');
+    const y50 = porTexto('y = 50').querySelector('text');
+    ok(y20.getAttribute('text-anchor') === 'start' && y50.getAttribute('text-anchor') === 'end', 'posRotulo esq/dir: ' + y20.getAttribute('text-anchor') + '/' + y50.getAttribute('text-anchor'));
+    const ponto = qa(svg, '[data-camada="pontos"] text')[0];
+    ok(ponto && ponto.getAttribute('text-anchor') === 'middle' && /var\(--c-tg/.test(ponto.getAttribute('style')), 'ponto com posRotulo cima e cor');
+    const g2 = ex.desenharFigura({ tipo: 'grafico', x: [0, 5], y: [0, 5], rotuloX: '', rotuloY: '', curvas: [{ expr: 'x' }], legenda: 'a' });
+    ok(g2 && !qa(g2.svg, 'text').some((t) => t.textContent === 'x' || t.textContent === 'y'), 'rotuloX/rotuloY vazios tiram o nome dos eixos');
+  });
+
+  await teste('marcar «Acertei» / «Não acertei»: guarda em log-exercicios, atualiza resumo, selo e índice', async (ok) => {
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a1');
+    const u = unidades(c)[0];
+    acao(u, 'tudo').click();
+    q(u, '[data-acao="acertei"]').click();
+    ok(JSON.stringify(P.ler('log-exercicios', null)) === '{"ex-a1":1}', 'guardado: ' + JSON.stringify(P.ler('log-exercicios', null)));
+    ok(JSON.stringify(lerArmazenado()['log-exercicios']) === '{"ex-a1":1}', 'no localStorage');
+    ok(q(u, '[data-acao="acertei"]').getAttribute('aria-pressed') === 'true' && q(u, '[data-acao="nao-acertei"]').getAttribute('aria-pressed') === 'false', 'aria-pressed');
+    ok(/Marcaste\s*1\s*de\s*4/.test(texto(q(el, '.ex-resumo__texto'))), 'resumo: ' + texto(q(el, '.ex-resumo__texto')));
+    ok(visivel(q(c, '.ex-selo')) && /✓/.test(texto(q(c, '.ex-selo'))) && /Acertado/.test(texto(q(c, '.ex-selo'))), 'selo ✓ com texto: ' + texto(q(c, '.ex-selo')));
+    ok(c.classList.contains('ex-cartao--ok'), 'cartão marcado');
+    ok(visivel(q(el, '.ex-indice__lista li:first-child .ex-indice__selo')), 'índice com ✓');
+    ok(q(el, '.ex-barra__cheia').style.width === '25%', 'barra: ' + q(el, '.ex-barra__cheia').style.width);
+    q(u, '[data-acao="nao-acertei"]').click();
+    ok(JSON.stringify(P.ler('log-exercicios', null)) === '{"ex-a1":0}', 'mudou para 0: ' + JSON.stringify(P.ler('log-exercicios', null)));
+    ok(/Marcaste\s*0\s*de\s*4/.test(texto(q(el, '.ex-resumo__texto'))) && /1 para repetir/.test(texto(q(el, '.ex-resumo__texto'))), 'resumo com «para repetir»: ' + texto(q(el, '.ex-resumo__texto')));
+    ok(/Para repetir/.test(texto(q(c, '.ex-selo'))) && !c.classList.contains('ex-cartao--ok'), 'selo «Para repetir»');
+    ok(!visivel(q(el, '.ex-indice__lista li:first-child .ex-indice__selo')), 'índice sem ✓');
+    ok(!visivel(q(el, '.ex-aviso')), 'sem aviso quando guarda');
+    // as marcas vivem depois de recomeçar (o progresso não se perde) mas o «Como correu?» volta a esconder-se
+    acao(u, 'recomecar').click();
+    ok(!visivel(q(u, '.ex-aval')) && JSON.stringify(P.ler('log-exercicios', null)) === '{"ex-a1":0}', 'recomeçar não apaga a marca');
+  });
+
+  await teste('marcas por alínea (id/alínea); exercício só conta quando todas estão a 1', async (ok) => {
+    const el = await montarAmostras();
+    const c = cartao(el, 'ex-a2');
+    const us = unidades(c);
+    acao(us[0], 'tudo').click();
+    q(us[0], '[data-acao="acertei"]').click();
+    ok(JSON.stringify(P.ler('log-exercicios', null)) === '{"ex-a2/a":1}', 'chave: ' + JSON.stringify(P.ler('log-exercicios', null)));
+    ok(/1 de 2 alíneas acertadas/.test(texto(q(c, '.ex-selo'))) && !c.classList.contains('ex-cartao--ok'), 'selo parcial: ' + texto(q(c, '.ex-selo')));
+    ok(visivel(q(us[0], '.ex-alinea__selo')) && !visivel(q(us[1], '.ex-alinea__selo')), 'selo da alínea');
+    ok(/Marcaste\s*0\s*de\s*4/.test(texto(q(el, '.ex-resumo__texto'))), 'resumo ainda a 0');
+    acao(us[1], 'tudo').click();
+    q(us[1], '[data-acao="acertei"]').click();
+    ok(JSON.stringify(P.ler('log-exercicios', null)) === '{"ex-a2/a":1,"ex-a2/b":1}', 'chaves: ' + JSON.stringify(P.ler('log-exercicios', null)));
+    ok(c.classList.contains('ex-cartao--ok') && /Acertado/.test(texto(q(c, '.ex-selo'))) && /Marcaste\s*1\s*de\s*4/.test(texto(q(el, '.ex-resumo__texto'))), 'completo: ' + texto(q(el, '.ex-resumo__texto')));
+  });
+
+  await teste('as marcas voltam ao montar de novo; só secções log- no armazenamento', async (ok) => {
+    const el = await montarAmostras();
+    const u = unidades(cartao(el, 'ex-a1'))[0];
+    acao(u, 'tudo').click();
+    q(u, '[data-acao="acertei"]').click();
+    const u3 = unidades(cartao(el, 'ex-a3'))[0];
+    acao(u3, 'tudo').click();
+    q(u3, '[data-acao="nao-acertei"]').click();
+    const el2 = await montarAmostras();
+    ok(/Marcaste\s*1\s*de\s*4/.test(texto(q(el2, '.ex-resumo__texto'))), 'resumo recuperado: ' + texto(q(el2, '.ex-resumo__texto')));
+    ok(visivel(q(cartao(el2, 'ex-a1'), '.ex-selo')) && /Para repetir/.test(texto(q(cartao(el2, 'ex-a3'), '.ex-selo'))), 'selos recuperados');
+    ok(!visivel(q(unidades(cartao(el2, 'ex-a1'))[0], '.ex-aval')), 'o «Como correu?» só aparece depois de ver a resposta');
+    const chaves = Object.keys(lerArmazenado());
+    ok(chaves.length > 0 && chaves.every((k) => k.startsWith('log-')), 'chaves no armazenamento: ' + chaves.join());
+    const escritas = [...seccoesEscritas];
+    ok(escritas.length > 0 && escritas.every((k) => k.startsWith('log-')), 'secções escritas: ' + escritas.join());
+    // marcas de exercícios que já não existem são ignoradas na contagem
+    P.guardar('log-exercicios', { 'ex-a1': 1, 'ex-fantasma': 1, 'ex-a2/z': 1, 'ex-a4': 'sim' });
+    const el3 = await montarAmostras();
+    ok(/Marcaste\s*1\s*de\s*4/.test(texto(q(el3, '.ex-resumo__texto'))), 'fantasmas ignorados: ' + texto(q(el3, '.ex-resumo__texto')));
+    P.guardar('log-exercicios', [1, 2]);
+    const el4 = await montarAmostras();
+    ok(/Marcaste\s*0\s*de\s*4/.test(texto(q(el4, '.ex-resumo__texto'))), 'valor guardado inválido ignorado');
+  });
+
+  await teste('filtros por tema e por nível, e o caso sem resultados', async (ok) => {
+    const el = await montarAmostras();
+    const visiveis = () => qa(el, '.ex-cartao').filter((c) => !c.hidden).map((c) => c.id).join();
+    const chip = (parte) => qa(el, '.chip').find((b) => texto(b).includes(parte));
+    ok(visiveis() === 'ex-a1,ex-a2,ex-a3,ex-a4', 'início: ' + visiveis());
+    ok(/^4 exercícios/.test(texto(q(el, '.ex-contagem-filtro'))), 'contagem inicial: ' + texto(q(el, '.ex-contagem-filtro')));
+    ok(qa(el, '.ex-filtro').every(visivel), 'os dois filtros aparecem');
+    ok(chip('Todos (4)').getAttribute('aria-pressed') === 'true', 'Todos premido');
+    chip('Função logarítmica').click();
+    ok(visiveis() === 'ex-a2', 'tema função: ' + visiveis());
+    ok(chip('Função logarítmica').getAttribute('aria-pressed') === 'true' && chip('Todos (4)').getAttribute('aria-pressed') === 'false', 'aria-pressed do tema');
+    ok(qa(el, '.ex-indice__lista li').filter((li) => !li.hidden).length === 1, 'o índice também filtra');
+    ok(/A mostrar 1 de 4/.test(texto(q(el, '.ex-contagem-filtro'))), 'contagem: ' + texto(q(el, '.ex-contagem-filtro')));
+    chip('Todos (4)').click();
+    chip('Nível 1 (2)').click();
+    ok(visiveis() === 'ex-a2,ex-a4', 'nível 1: ' + visiveis());
+    chip('Equações e inequações').click();
+    ok(visiveis() === '' && visivel(q(el, '.ex-vazio')), 'combinação vazia: ' + visiveis());
+    qa(q(el, '.ex-vazio'), 'button')[0].click();
+    ok(visiveis() === 'ex-a1,ex-a2,ex-a3,ex-a4' && !visivel(q(el, '.ex-vazio')), '«Ver todos»');
+    // estado dentro do cartão filtrado não se perde
+    const u = unidades(cartao(el, 'ex-a1'))[0];
+    acao(u, 'seguinte').click();
+    chip('Função logarítmica').click();
+    chip('Todos (4)').click();
+    ok(passosDe(u).length === 1, 'o cartão escondido guarda os passos já mostrados');
+    // com um só tema não há filtro de tema
+    const el2 = await montarAmostras(AMOSTRAS.slice(0, 1));
+    ok(qa(el2, '.ex-filtro').every((f) => !visivel(f)), 'um só tema e nível: sem filtros');
+  });
+
+  await teste('ligação direta #ex-... mostra o cartão mesmo escondido por um filtro', async (ok) => {
+    const el = await montarAmostras();
+    const chip = (parte) => qa(el, '.chip').find((b) => texto(b).includes(parte));
+    chip('Derivadas').click();
+    ok(cartao(el, 'ex-a1').hidden, 'a1 escondido');
+    const feito = new Promise((r) => { window.addEventListener('hashchange', () => r(true), { once: true }); setTimeout(() => r(false), 1500); });
+    location.hash = '#ex-a1';
+    ok(await feito, 'hashchange');
+    await esperar(50);
+    ok(!cartao(el, 'ex-a1').hidden && chip('Todos (4)').getAttribute('aria-pressed') === 'true', 'filtros repostos');
+    history.replaceState(null, '', location.pathname + location.search);
+  });
+
+  await teste('dados estranhos: sem dados, array direto, exercícios inválidos e duplicados', async (ok) => {
+    const mont = async (dados) => { const el = novoEl(); await ex.montar(el, dados); return el; };
+    ok(/Ainda não há exercícios/.test(texto(await mont({}))), 'dados vazios');
+    ok(/Ainda não há exercícios/.test(texto(await mont(undefined))), 'sem dados');
+    ok(/Ainda não há exercícios/.test(texto(await mont({ exercicios: { exercicios: [] } }))), 'lista vazia');
+    const el = await mont({ exercicios: AMOSTRAS });
+    ok(qa(el, '.ex-cartao').length === 4, 'array direto');
+    const mau = [
+      null, 'x', 5, {},
+      { id: 'sem-passos', titulo: 'x', passos: [] },
+      { id: 'passo-vazio', titulo: 'x', passos: [{}, { titulo: '' }] },
+      { id: 'ex-a1', titulo: 'duplicado', passos: [{ titulo: 'a', texto: 'b' }], resposta: 'r' },
+      { id: 'so-titulo', titulo: 'Só com título no passo', passos: [{ titulo: 'só título' }] },
+      { id: 'sem resposta', titulo: 'Sem resposta', passos: [{ titulo: 'a', texto: 'b' }], nivel: 7, tema: 'inventado' },
+      { id: 'alineas-ruins', titulo: 'Alíneas ruins', alineas: [{ id: 'a', passos: [] }, null], passos: [{ titulo: 'p', texto: 'q' }], resposta: 'r' },
+    ];
+    const lista = ex.normalizar({ exercicios: [AMOSTRAS[0], ...mau] });
+    ok(lista.map((e) => e.id).join('|') === 'ex-a1|so-titulo|sem resposta|alineas-ruins', 'normalizar: ' + lista.map((e) => e.id).join('|'));
+    ok(lista[2].nivel === 0 && lista[2].dom === 'sem-resposta', 'nível inválido a 0, id seguro para HTML: ' + lista[2].dom);
+    ok(lista[3].unidades.length === 1 && lista[3].unidades[0].chave === 'alineas-ruins', 'alíneas inválidas: usa os passos do exercício');
+    const el2 = await mont({ exercicios: { exercicios: mau.concat([AMOSTRAS[0]]) } });
+    ok(qa(el2, '.ex-cartao').length === 4, 'monta só os válidos: ' + qa(el2, '.ex-cartao').length);
+    const sem = cartao(el2, 'sem-resposta');
+    const u = unidades(sem)[0];
+    acao(u, 'tudo').click();
+    ok(!visivel(q(u, '.ex-final')) && visivel(q(u, '.ex-aval')), 'sem resposta: não há bloco final, mas há «Como correu?»');
+    ok(!q(sem, '.ex-nivel') && /inventado/.test(texto(q(sem, '.ex-etiqueta'))), 'tema desconhecido mostra o id; nível inválido não mostra etiqueta');
+  });
+
+  await teste('acessibilidade: botões reais, alvos de 44 px, nomes, sem scroll horizontal', async (ok) => {
+    const el = await montarAmostras();
+    q(el, '.ex-indice').open = true;
+    for (const c of qa(el, '.ex-cartao')) for (const u of unidades(c)) acao(u, 'tudo').click();
+    qa(el, '[data-acao="dica"]').forEach((b) => b.click());
+    const pequenos = [];
+    for (const b of qa(el, 'button, summary, .ex-indice__lista a')) {
+      if (!visivel(b)) continue;
+      const r = b.getBoundingClientRect();
+      if (r.height < 43.5 || r.width < 43.5) pequenos.push(`${texto(b).slice(0, 24)} (${Math.round(r.width)}x${Math.round(r.height)})`);
+    }
+    ok(pequenos.length === 0, 'alvos pequenos: ' + pequenos.join('; '));
+    ok(qa(el, 'button').every((b) => b.getAttribute('type') === 'button' && texto(b) !== ''), 'todos os botões são type=button e têm texto');
+    ok(qa(el, '[role="group"]').every((g) => g.hasAttribute('aria-labelledby') || g.hasAttribute('aria-label')), 'grupos com nome');
+    ok(qa(el, '[aria-controls]').every((b) => document.getElementById(b.getAttribute('aria-controls'))), 'aria-controls aponta para ids que existem');
+    const ids = qa(document, '[id]').map((e) => e.id);
+    ok(new Set(ids).size === ids.length, 'ids duplicados: ' + ids.filter((x, i) => ids.indexOf(x) !== i).join());
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'scroll horizontal: ' + document.documentElement.scrollWidth + ' > ' + document.documentElement.clientWidth);
+    ok(qa(el, '.katex-error').length === 0, 'katex-error');
+  });
+
+  await teste('a 390 px nada passa da largura (iframe de 390 px com tudo revelado)', async (ok) => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:20000px; border:0';
+    f.src = `${location.pathname}?demo=amostras&tudo=1&indice=1&dica=1&marcar=1`;
+    document.body.append(f);
+    const d = await esperarIframe(f, 'demo');
+    ok(d && d.documentElement.dataset.demo === 'pronto', 'demo: ' + (d && d.documentElement.dataset.demo));
+    if (d && d.documentElement.dataset.demo === 'pronto') {
+      const w = d.documentElement.clientWidth;
+      ok(w === 390, 'largura do iframe: ' + w);
+      ok(d.documentElement.scrollWidth <= 390, 'scrollWidth: ' + d.documentElement.scrollWidth);
+      const largos = [...d.querySelectorAll('.ex-raiz *')].filter((e) => {
+        if (e.closest('.katex-display') || e.closest('.sr-only') || e.closest('svg')) return false;
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.right > 391;
+      }).map((e) => e.className || e.tagName);
+      ok(largos.length === 0, 'elementos fora do ecrã: ' + largos.slice(0, 5).join(', '));
+      const fig = d.querySelector('#ex-a3 .ex-figura svg');
+      const caixa = fig && fig.parentElement;
+      ok(fig && caixa && fig.getBoundingClientRect().width >= caixa.clientWidth - 2 && caixa.clientWidth > 250, 'a figura ocupa a largura: ' + (fig && Math.round(fig.getBoundingClientRect().width)) + ' de ' + (caixa && caixa.clientWidth));
+      ok(d.querySelectorAll('.katex-error').length === 0, 'katex-error');
+    }
+    f.remove();
+  });
+
+  await teste('sem storage (localStorage a lançar): tudo funciona e aparece o aviso', async (ok) => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:900px; border:0';
+    f.src = `${location.pathname}?cenario=semstorage`;
+    document.body.append(f);
+    const d = await esperarIframe(f, 'cenario');
+    const r = d && d.documentElement.dataset.cenario;
+    ok(r === 'ok', 'cenário: ' + r);
+    f.remove();
+  });
+
+  await dadosReais();
+
+  await teste('nenhum erro não apanhado durante os testes', (ok) => {
+    ok(errosNaoApanhados.length === 0, errosNaoApanhados.slice(0, 3).join(' | '));
+  });
+
+  // ---------- resumo ----------
+  const ms = Math.round(performance.now() - t0);
+  linhas.push('');
+  linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+  saida.textContent = linhas.join('\n');
+  document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+
+// ---------- dados reais (logaritmos/dados/exercicios.json), se já existirem ----------
+
+async function dadosReais() {
+  let json = null;
+  try {
+    const r = await fetch('../dados/exercicios.json');
+    if (r.ok) json = await r.json();
+  } catch (e) { json = null; }
+  if (!json) { linhas.push('SALTADO: dados reais (ainda não existe dados/exercicios.json ou não é JSON válido)'); return; }
+
+  const avisos = []; // problemas nos dados (não são falhas do widget)
+  await teste('dados reais: montam, revelam-se por inteiro e as figuras desenham-se', async (ok) => {
+    const bruto = Array.isArray(json.exercicios) ? json.exercicios : [];
+    ok(bruto.length > 0, 'ficheiro sem exercícios');
+    const lista = ex.normalizar(json);
+    const aceites = new Set(lista.map((e) => e.id));
+    for (const e of bruto) if (!e || !aceites.has(String(e.id))) avisos.push(`exercício ignorado pelo widget: ${e && e.id}`);
+    ok(lista.length === bruto.length, `o widget ignora ${bruto.length - lista.length} exercício(s) dos dados: ${avisos.join('; ')}`);
+
+    const el = novoEl();
+    await ex.montar(el, { exercicios: json });
+    renderizar(el);
+    const cs = qa(el, '.ex-cartao');
+    ok(cs.length === lista.length, `cartões: ${cs.length} de ${lista.length}`);
+    for (const c of cs) for (const u of unidades(c)) acao(u, 'tudo').click();
+    ok(qa(el, '.katex-error').length === 0, 'katex-error: ' + qa(el, '.katex-error').slice(0, 3).map((e) => e.title || texto(e)).join(' | '));
+    const cruas = qa(el, '.ex-texto, .ex-passo__titulo, .ex-titulo').filter((e) => /\$/.test(e.textContent));
+    ok(cruas.length === 0, 'texto com «$» por renderizar em: ' + cruas.slice(0, 3).map((e) => e.closest('.ex-cartao').id).join(', '));
+    ok(qa(el, '.ex-cartao').every((c) => unidades(c).every((u) => passosDe(u).length > 0)), 'todas as unidades têm passos');
+    ok(qa(el, '.ex-cartao').every((c) => unidades(c).every((u) => visivel(q(u, '.ex-final')))), 'todas as unidades têm resposta final');
+
+    // figuras: cada uma tem de desenhar-se e trazer legenda
+    let nFiguras = 0;
+    for (const e of lista) {
+      for (const u of e.unidades) {
+        u.passos.forEach((p, i) => {
+          if (!p.figura) return;
+          nFiguras++;
+          const r = ex.desenharFigura(p.figura);
+          if (!r) avisos.push(`${u.chave}, passo ${i + 1}: figura não desenha`);
+          else if (!txt(p.figura.legenda)) avisos.push(`${u.chave}, passo ${i + 1}: figura sem legenda`);
+        });
+      }
+    }
+    ok(!avisos.some((a) => /figura/.test(a)), 'figuras: ' + avisos.filter((a) => /figura/.test(a)).slice(0, 4).join('; '));
+    linhas.push(`  (dados reais: ${lista.length} exercícios, ${lista.reduce((s, e) => s + e.unidades.length, 0)} unidades, ${nFiguras} figuras)`);
+
+    // ids e temas
+    const ids = lista.map((e) => e.id);
+    ok(ids.every((id) => /^[A-Za-z][\w-]*$/.test(id)), 'ids estranhos: ' + ids.filter((id) => !/^[A-Za-z][\w-]*$/.test(id)).join());
+    const temas = new Set(GRUPOS.map((g) => g.id));
+    const semTema = lista.filter((e) => !temas.has(e.tema)).map((e) => e.id);
+    ok(semTema.length === 0, 'tema que não é um grupo: ' + semTema.join());
+    const semNivel = lista.filter((e) => !e.nivel).map((e) => e.id);
+    ok(semNivel.length === 0, 'sem nível 1 a 3: ' + semNivel.join());
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'scroll horizontal na página: ' + document.documentElement.scrollWidth);
+    // dica de contrato: 3 a 6 passos por unidade (só informação)
+    for (const e of lista) for (const u of e.unidades) if (u.passos.length < 3 || u.passos.length > 6) avisos.push(`${u.chave}: ${u.passos.length} passos (o contrato diz 3 a 6)`);
+  });
+  await teste('a página real (exercicios.html) monta e a ligação #id salta para o exercício (iframe de 390 x 700)', async (ok) => {
+    const alvo = String((json.exercicios[json.exercicios.length - 1] || {}).id);
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:700px; border:0';
+    f.src = `../exercicios.html#${alvo}`;
+    document.body.append(f);
+    const d = await esperarIframe(f, 'pronto');
+    ok(d && d.documentElement.dataset.pronto === 'sim', 'data-pronto: ' + (d && d.documentElement.dataset.pronto));
+    if (d && d.documentElement.dataset.pronto === 'sim') {
+      await esperar(300);
+      ok(d.querySelectorAll('.ex-cartao').length === json.exercicios.length, 'cartões na página: ' + d.querySelectorAll('.ex-cartao').length);
+      ok(d.querySelectorAll('.aviso-erro').length === 0, 'aviso-erro na página');
+      ok(d.querySelectorAll('.katex-error').length === 0, 'katex-error na página');
+      const c = d.getElementById(alvo);
+      const topo = c ? c.getBoundingClientRect().top : 9999;
+      ok(json.exercicios.length < 2 || (f.contentWindow.scrollY > 0 && topo > -10 && topo < 200), `#${alvo} no topo: scrollY ${f.contentWindow.scrollY}, top ${Math.round(topo)}`);
+      ok(d.documentElement.scrollWidth <= d.documentElement.clientWidth, 'scroll horizontal: ' + d.documentElement.scrollWidth + ' > ' + d.documentElement.clientWidth);
+    }
+    f.remove();
+  });
+  if (avisos.length) linhas.push('  AVISOS sobre os dados:\n   - ' + avisos.slice(0, 40).join('\n   - ') + (avisos.length > 40 ? `\n   - (+${avisos.length - 40})` : ''));
+}
+
+const txt = (v) => (typeof v === 'string' ? v.trim() : '');
+
+if (cenario === 'semstorage') cenarioSemStorage();
+else if (params.get('demo')) demo().catch((e) => { saida.textContent = 'demo falhou: ' + e.message; document.documentElement.dataset.demo = 'erro'; });
+else testes().catch((e) => { saida.textContent = 'ERRO: ' + (e && e.stack || e); document.documentElement.dataset.testes = 'falhou'; });
+</script>
+</body>
+</html>

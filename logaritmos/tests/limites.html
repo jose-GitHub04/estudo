@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget limites</title>
+<!-- Testes do widget «limites» (Limites e assíntotas, widgets/limites.js).
+     Sem parâmetros corre os testes: abrir /logaritmos/tests/limites.html ou
+       msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8817/logaritmos/tests/limites.html
+     O resultado fica no elemento pre#resultado e no atributo data-testes (ok ou falhou) do elemento html.
+     O que se confere:
+       1. formatação científica (arredondamento «metade para cima», vírgula, expoente);
+       2. todas as tabelas (eˣ/xᵖ para p = 1, 1,5, ..., 10 com 9 valores de x; ln x/xᵖ; x ln x; os dois
+          limites em 0; as tabelas das assíntotas) contra valores de referência calculados fora do site
+          (mpmath, 60 algarismos) e contra o cálculo direto em dupla precisão;
+       3. o ponto em que eˣ > xᵖ passa a valer para sempre, para p = 1, 1,5, ..., 10 (com x-1 e x);
+       4. os mínimos e máximos citados: mínimo de eˣ/xᵖ em x = p, máximo de ln x/xᵖ em x = e^(1/p),
+          mínimo de x ln x em 1/e, máximo de ln x/x em e;
+       5. o widget montado: sem erros, cabeçalhos de tabela, aria-valuetext nos sliders, alvos de 44 px,
+          interações (slider de p, meios, cursor com o teclado, chips das assíntotas).
+     Com ?demo=<aba> monta só o widget para screenshots (marca <html data-demo="pronto">):
+       exp | ln | xlnx | notaveis | assintotas, e opcionalmente
+       &p=<n> (aba exp: valor de p; &meios=1 liga os meios), &pl=<p> (aba ln), &log=1 (aba xlnx em escala log),
+       &fn=g&sub=zero|mais|menos (assíntotas), &x=<valor do slider de x>.
+     Com ?estouro=1&w=390 percorre todos os estados numa largura de telemóvel e lista o que não cabe. -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/limites.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes do widget limites</h1></div>
+<pre id="resultado">A correr...</pre>
+<main>
+  <section class="seccao"><div class="envolve">
+    <article class="modulo" id="limites"><h3>Limites e assíntotas</h3><div id="palco" data-widget="limites"></div></article>
+  </div></section>
+</main>
+<script type="module">
+import * as L from '../widgets/limites.js';
+import { montar } from '../widgets/limites.js';
+
+const REF = {
+  "exp": {
+    "1": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "2", "3{,}69"], ["5", "148", "5", "29{,}7"], ["10", "2{,}2\\times10^{4}", "10", "2{,}2\\times10^{3}"], ["20", "4{,}85\\times10^{8}", "20", "2{,}43\\times10^{7}"], ["50", "5{,}18\\times10^{21}", "50", "1{,}04\\times10^{20}"], ["100", "2{,}69\\times10^{43}", "100", "2{,}69\\times10^{41}"], ["300", "1{,}94\\times10^{130}", "300", "6{,}47\\times10^{127}"], ["700", "1{,}01\\times10^{304}", "700", "1{,}45\\times10^{301}"]],
+    "1.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "2{,}83", "2{,}61"], ["5", "148", "11{,}2", "13{,}3"], ["10", "2{,}2\\times10^{4}", "31{,}6", "697"], ["20", "4{,}85\\times10^{8}", "89{,}4", "5{,}42\\times10^{6}"], ["50", "5{,}18\\times10^{21}", "354", "1{,}47\\times10^{19}"], ["100", "2{,}69\\times10^{43}", "10^{3}", "2{,}69\\times10^{40}"], ["300", "1{,}94\\times10^{130}", "5{,}2\\times10^{3}", "3{,}74\\times10^{126}"], ["700", "1{,}01\\times10^{304}", "1{,}85\\times10^{4}", "5{,}48\\times10^{299}"]],
+    "2": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "4", "1{,}85"], ["5", "148", "25", "5{,}94"], ["10", "2{,}2\\times10^{4}", "100", "220"], ["20", "4{,}85\\times10^{8}", "400", "1{,}21\\times10^{6}"], ["50", "5{,}18\\times10^{21}", "2{,}5\\times10^{3}", "2{,}07\\times10^{18}"], ["100", "2{,}69\\times10^{43}", "10^{4}", "2{,}69\\times10^{39}"], ["300", "1{,}94\\times10^{130}", "9\\times10^{4}", "2{,}16\\times10^{125}"], ["700", "1{,}01\\times10^{304}", "4{,}9\\times10^{5}", "2{,}07\\times10^{298}"]],
+    "2.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "5{,}66", "1{,}31"], ["5", "148", "55{,}9", "2{,}65"], ["10", "2{,}2\\times10^{4}", "316", "69{,}7"], ["20", "4{,}85\\times10^{8}", "1{,}79\\times10^{3}", "2{,}71\\times10^{5}"], ["50", "5{,}18\\times10^{21}", "1{,}77\\times10^{4}", "2{,}93\\times10^{17}"], ["100", "2{,}69\\times10^{43}", "10^{5}", "2{,}69\\times10^{38}"], ["300", "1{,}94\\times10^{130}", "1{,}56\\times10^{6}", "1{,}25\\times10^{124}"], ["700", "1{,}01\\times10^{304}", "1{,}3\\times10^{7}", "7{,}82\\times10^{296}"]],
+    "3": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "8", "0{,}924"], ["5", "148", "125", "1{,}19"], ["10", "2{,}2\\times10^{4}", "10^{3}", "22"], ["20", "4{,}85\\times10^{8}", "8\\times10^{3}", "6{,}06\\times10^{4}"], ["50", "5{,}18\\times10^{21}", "1{,}25\\times10^{5}", "4{,}15\\times10^{16}"], ["100", "2{,}69\\times10^{43}", "10^{6}", "2{,}69\\times10^{37}"], ["300", "1{,}94\\times10^{130}", "2{,}7\\times10^{7}", "7{,}19\\times10^{122}"], ["700", "1{,}01\\times10^{304}", "3{,}43\\times10^{8}", "2{,}96\\times10^{295}"]],
+    "3.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "11{,}3", "0{,}653"], ["5", "148", "280", "0{,}531"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{3}", "6{,}97"], ["20", "4{,}85\\times10^{8}", "3{,}58\\times10^{4}", "1{,}36\\times10^{4}"], ["50", "5{,}18\\times10^{21}", "8{,}84\\times10^{5}", "5{,}87\\times10^{15}"], ["100", "2{,}69\\times10^{43}", "10^{7}", "2{,}69\\times10^{36}"], ["300", "1{,}94\\times10^{130}", "4{,}68\\times10^{8}", "4{,}15\\times10^{121}"], ["700", "1{,}01\\times10^{304}", "9{,}07\\times10^{9}", "1{,}12\\times10^{294}"]],
+    "4": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "16", "0{,}462"], ["5", "148", "625", "0{,}237"], ["10", "2{,}2\\times10^{4}", "10^{4}", "2{,}2"], ["20", "4{,}85\\times10^{8}", "1{,}6\\times10^{5}", "3{,}03\\times10^{3}"], ["50", "5{,}18\\times10^{21}", "6{,}25\\times10^{6}", "8{,}3\\times10^{14}"], ["100", "2{,}69\\times10^{43}", "10^{8}", "2{,}69\\times10^{35}"], ["300", "1{,}94\\times10^{130}", "8{,}1\\times10^{9}", "2{,}4\\times10^{120}"], ["700", "1{,}01\\times10^{304}", "2{,}4\\times10^{11}", "4{,}22\\times10^{292}"]],
+    "4.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "22{,}6", "0{,}327"], ["5", "148", "1{,}4\\times10^{3}", "0{,}106"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{4}", "0{,}697"], ["20", "4{,}85\\times10^{8}", "7{,}16\\times10^{5}", "678"], ["50", "5{,}18\\times10^{21}", "4{,}42\\times10^{7}", "1{,}17\\times10^{14}"], ["100", "2{,}69\\times10^{43}", "10^{9}", "2{,}69\\times10^{34}"], ["300", "1{,}94\\times10^{130}", "1{,}4\\times10^{11}", "1{,}38\\times10^{119}"], ["700", "1{,}01\\times10^{304}", "6{,}35\\times10^{12}", "1{,}6\\times10^{291}"]],
+    "5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "32", "0{,}231"], ["5", "148", "3{,}13\\times10^{3}", "0{,}0475"], ["10", "2{,}2\\times10^{4}", "10^{5}", "0{,}22"], ["20", "4{,}85\\times10^{8}", "3{,}2\\times10^{6}", "152"], ["50", "5{,}18\\times10^{21}", "3{,}13\\times10^{8}", "1{,}66\\times10^{13}"], ["100", "2{,}69\\times10^{43}", "10^{10}", "2{,}69\\times10^{33}"], ["300", "1{,}94\\times10^{130}", "2{,}43\\times10^{12}", "7{,}99\\times10^{117}"], ["700", "1{,}01\\times10^{304}", "1{,}68\\times10^{14}", "6{,}03\\times10^{289}"]],
+    "5.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "45{,}3", "0{,}163"], ["5", "148", "6{,}99\\times10^{3}", "0{,}0212"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{5}", "0{,}0697"], ["20", "4{,}85\\times10^{8}", "1{,}43\\times10^{7}", "33{,}9"], ["50", "5{,}18\\times10^{21}", "2{,}21\\times10^{9}", "2{,}35\\times10^{12}"], ["100", "2{,}69\\times10^{43}", "10^{11}", "2{,}69\\times10^{32}"], ["300", "1{,}94\\times10^{130}", "4{,}21\\times10^{13}", "4{,}62\\times10^{116}"], ["700", "1{,}01\\times10^{304}", "4{,}45\\times10^{15}", "2{,}28\\times10^{288}"]],
+    "6": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "64", "0{,}115"], ["5", "148", "1{,}56\\times10^{4}", "9{,}5\\times10^{-3}"], ["10", "2{,}2\\times10^{4}", "10^{6}", "0{,}022"], ["20", "4{,}85\\times10^{8}", "6{,}4\\times10^{7}", "7{,}58"], ["50", "5{,}18\\times10^{21}", "1{,}56\\times10^{10}", "3{,}32\\times10^{11}"], ["100", "2{,}69\\times10^{43}", "10^{12}", "2{,}69\\times10^{31}"], ["300", "1{,}94\\times10^{130}", "7{,}29\\times10^{14}", "2{,}66\\times10^{115}"], ["700", "1{,}01\\times10^{304}", "1{,}18\\times10^{17}", "8{,}62\\times10^{286}"]],
+    "6.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "90{,}5", "0{,}0816"], ["5", "148", "3{,}49\\times10^{4}", "4{,}25\\times10^{-3}"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{6}", "6{,}97\\times10^{-3}"], ["20", "4{,}85\\times10^{8}", "2{,}86\\times10^{8}", "1{,}7"], ["50", "5{,}18\\times10^{21}", "1{,}1\\times10^{11}", "4{,}69\\times10^{10}"], ["100", "2{,}69\\times10^{43}", "10^{13}", "2{,}69\\times10^{30}"], ["300", "1{,}94\\times10^{130}", "1{,}26\\times10^{16}", "1{,}54\\times10^{114}"], ["700", "1{,}01\\times10^{304}", "3{,}11\\times10^{18}", "3{,}26\\times10^{285}"]],
+    "7": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "128", "0{,}0577"], ["5", "148", "7{,}81\\times10^{4}", "1{,}9\\times10^{-3}"], ["10", "2{,}2\\times10^{4}", "10^{7}", "2{,}2\\times10^{-3}"], ["20", "4{,}85\\times10^{8}", "1{,}28\\times10^{9}", "0{,}379"], ["50", "5{,}18\\times10^{21}", "7{,}81\\times10^{11}", "6{,}64\\times10^{9}"], ["100", "2{,}69\\times10^{43}", "10^{14}", "2{,}69\\times10^{29}"], ["300", "1{,}94\\times10^{130}", "2{,}19\\times10^{17}", "8{,}88\\times10^{112}"], ["700", "1{,}01\\times10^{304}", "8{,}24\\times10^{19}", "1{,}23\\times10^{284}"]],
+    "7.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "181", "0{,}0408"], ["5", "148", "1{,}75\\times10^{5}", "8{,}5\\times10^{-4}"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{7}", "6{,}97\\times10^{-4}"], ["20", "4{,}85\\times10^{8}", "5{,}72\\times10^{9}", "0{,}0848"], ["50", "5{,}18\\times10^{21}", "5{,}52\\times10^{12}", "9{,}39\\times10^{8}"], ["100", "2{,}69\\times10^{43}", "10^{15}", "2{,}69\\times10^{28}"], ["300", "1{,}94\\times10^{130}", "3{,}79\\times10^{18}", "5{,}13\\times10^{111}"], ["700", "1{,}01\\times10^{304}", "2{,}18\\times10^{21}", "4{,}65\\times10^{282}"]],
+    "8": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "256", "0{,}0289"], ["5", "148", "3{,}91\\times10^{5}", "3{,}8\\times10^{-4}"], ["10", "2{,}2\\times10^{4}", "10^{8}", "2{,}2\\times10^{-4}"], ["20", "4{,}85\\times10^{8}", "2{,}56\\times10^{10}", "0{,}019"], ["50", "5{,}18\\times10^{21}", "3{,}91\\times10^{13}", "1{,}33\\times10^{8}"], ["100", "2{,}69\\times10^{43}", "10^{16}", "2{,}69\\times10^{27}"], ["300", "1{,}94\\times10^{130}", "6{,}56\\times10^{19}", "2{,}96\\times10^{110}"], ["700", "1{,}01\\times10^{304}", "5{,}76\\times10^{22}", "1{,}76\\times10^{281}"]],
+    "8.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "362", "0{,}0204"], ["5", "148", "8{,}73\\times10^{5}", "1{,}7\\times10^{-4}"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{8}", "6{,}97\\times10^{-5}"], ["20", "4{,}85\\times10^{8}", "1{,}14\\times10^{11}", "4{,}24\\times10^{-3}"], ["50", "5{,}18\\times10^{21}", "2{,}76\\times10^{14}", "1{,}88\\times10^{7}"], ["100", "2{,}69\\times10^{43}", "10^{17}", "2{,}69\\times10^{26}"], ["300", "1{,}94\\times10^{130}", "1{,}14\\times10^{21}", "1{,}71\\times10^{109}"], ["700", "1{,}01\\times10^{304}", "1{,}53\\times10^{24}", "6{,}65\\times10^{279}"]],
+    "9": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "512", "0{,}0144"], ["5", "148", "1{,}95\\times10^{6}", "7{,}6\\times10^{-5}"], ["10", "2{,}2\\times10^{4}", "10^{9}", "2{,}2\\times10^{-5}"], ["20", "4{,}85\\times10^{8}", "5{,}12\\times10^{11}", "9{,}48\\times10^{-4}"], ["50", "5{,}18\\times10^{21}", "1{,}95\\times10^{15}", "2{,}65\\times10^{6}"], ["100", "2{,}69\\times10^{43}", "10^{18}", "2{,}69\\times10^{25}"], ["300", "1{,}94\\times10^{130}", "1{,}97\\times10^{22}", "9{,}87\\times10^{107}"], ["700", "1{,}01\\times10^{304}", "4{,}04\\times10^{25}", "2{,}51\\times10^{278}"]],
+    "9.5": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "724", "0{,}0102"], ["5", "148", "4{,}37\\times10^{6}", "3{,}4\\times10^{-5}"], ["10", "2{,}2\\times10^{4}", "3{,}16\\times10^{9}", "6{,}97\\times10^{-6}"], ["20", "4{,}85\\times10^{8}", "2{,}29\\times10^{12}", "2{,}12\\times10^{-4}"], ["50", "5{,}18\\times10^{21}", "1{,}38\\times10^{16}", "3{,}75\\times10^{5}"], ["100", "2{,}69\\times10^{43}", "10^{19}", "2{,}69\\times10^{24}"], ["300", "1{,}94\\times10^{130}", "3{,}41\\times10^{23}", "5{,}7\\times10^{106}"], ["700", "1{,}01\\times10^{304}", "1{,}07\\times10^{27}", "9{,}5\\times10^{276}"]],
+    "10": [["1", "2{,}72", "1", "2{,}72"], ["2", "7{,}39", "1{,}02\\times10^{3}", "7{,}22\\times10^{-3}"], ["5", "148", "9{,}77\\times10^{6}", "1{,}52\\times10^{-5}"], ["10", "2{,}2\\times10^{4}", "10^{10}", "2{,}2\\times10^{-6}"], ["20", "4{,}85\\times10^{8}", "1{,}02\\times10^{13}", "4{,}74\\times10^{-5}"], ["50", "5{,}18\\times10^{21}", "9{,}77\\times10^{16}", "5{,}31\\times10^{4}"], ["100", "2{,}69\\times10^{43}", "10^{20}", "2{,}69\\times10^{23}"], ["300", "1{,}94\\times10^{130}", "5{,}9\\times10^{24}", "3{,}29\\times10^{105}"], ["700", "1{,}01\\times10^{304}", "2{,}82\\times10^{28}", "3{,}59\\times10^{275}"]]
+  },
+  "cruz": {
+    "1.0": {"sempre": true, "minimo": 2.718281828459045},
+    "1.5": {"sempre": true, "minimo": 2.4395225351414593},
+    "2.0": {"sempre": true, "minimo": 1.8472640247326626},
+    "2.5": {"sempre": true, "minimo": 1.2327817119062014},
+    "3.0": {"sempre": false, "x1": 1.8571838602078354, "x2": 4.536403654973528, "n": 5, "minimo": 0.7439087749328765},
+    "3.5": {"sempre": false, "x1": 1.5628993992942257, "x2": 6.6100909421043985, "n": 7, "minimo": 0.41285023052927505},
+    "4.0": {"sempre": false, "x1": 1.4296118247255556, "x2": 8.6131694564414, "n": 9, "minimo": 0.21327402356696967},
+    "4.5": {"sempre": false, "x1": 1.3497983075145126, "x2": 10.64137269891635, "n": 11, "minimo": 0.10348296331341165},
+    "5.0": {"sempre": false, "x1": 1.2958555090953687, "x2": 12.713206788867632, "n": 13, "minimo": 0.04749221091282451},
+    "5.5": {"sempre": false, "x1": 1.2567027226077256, "x2": 14.83252217972899, "n": 15, "minimo": 0.020731219897367287},
+    "6.0": {"sempre": false, "x1": 1.2268886960394931, "x2": 16.99888735229605, "n": 17, "minimo": 0.008646879147220832},
+    "6.5": {"sempre": false, "x1": 1.2033816547794345, "x2": 19.210455458740963, "n": 20, "minimo": 0.0034592130780804753},
+    "7.0": {"sempre": false, "x1": 1.1843482269935757, "x2": 21.464949415484885, "n": 22, "minimo": 0.0013316040066255904},
+    "7.5": {"sempre": false, "x1": 1.1686095270067451, "x2": 23.7600382975817, "n": 24, "minimo": 0.0004945943362738407},
+    "8.0": {"sempre": false, "x1": 1.1553708251000778, "x2": 26.09348547661191, "n": 27, "minimo": 0.0001776789419079857},
+    "8.5": {"sempre": false, "x1": 1.1440758045441963, "x2": 28.463203152741983, "n": 29, "minimo": 6.186460261640005e-05},
+    "9.0": {"sempre": false, "x1": 1.1343228594224044, "x2": 30.867266602430945, "n": 31, "minimo": 2.0915475968993947e-05},
+    "9.5": {"sempre": false, "x1": 1.1258145201522582, "x2": 33.303910939287185, "n": 34, "minimo": 6.877384853635989e-06},
+    "10.0": {"sempre": false, "x1": 1.1183255915896297, "x2": 35.77152063957297, "n": 36, "minimo": 2.2026465794806717e-06}
+  },
+  "ln": {
+    "0.1": [["10", "2{,}3", "1{,}26", "1{,}83"], ["10^{2}", "4{,}61", "1{,}58", "2{,}91"], ["10^{3}", "6{,}91", "2", "3{,}46"], ["10^{6}", "13{,}8", "3{,}98", "3{,}47"], ["10^{12}", "27{,}6", "15{,}8", "1{,}74"]],
+    "0.25": [["10", "2{,}3", "1{,}78", "1{,}29"], ["10^{2}", "4{,}61", "3{,}16", "1{,}46"], ["10^{3}", "6{,}91", "5{,}62", "1{,}23"], ["10^{6}", "13{,}8", "31{,}6", "0{,}437"], ["10^{12}", "27{,}6", "10^{3}", "0{,}0276"]],
+    "0.5": [["10", "2{,}3", "3{,}16", "0{,}728"], ["10^{2}", "4{,}61", "10", "0{,}461"], ["10^{3}", "6{,}91", "31{,}6", "0{,}218"], ["10^{6}", "13{,}8", "10^{3}", "0{,}0138"], ["10^{12}", "27{,}6", "10^{6}", "2{,}76\\times10^{-5}"]],
+    "1": [["10", "2{,}3", "10", "0{,}23"], ["10^{2}", "4{,}61", "100", "0{,}0461"], ["10^{3}", "6{,}91", "10^{3}", "6{,}91\\times10^{-3}"], ["10^{6}", "13{,}8", "10^{6}", "1{,}38\\times10^{-5}"], ["10^{12}", "27{,}6", "10^{12}", "2{,}76\\times10^{-11}"]],
+    "2": [["10", "2{,}3", "100", "0{,}023"], ["10^{2}", "4{,}61", "10^{4}", "4{,}61\\times10^{-4}"], ["10^{3}", "6{,}91", "10^{6}", "6{,}91\\times10^{-6}"], ["10^{6}", "13{,}8", "10^{12}", "1{,}38\\times10^{-11}"], ["10^{12}", "27{,}6", "10^{24}", "2{,}76\\times10^{-23}"]]
+  },
+  "lnmax": {
+    "0.1": {"x": 22026.465794806718, "y": 3.6787944117144233},
+    "0.25": {"x": 54.598150033144236, "y": 1.4715177646857693},
+    "0.5": {"x": 7.38905609893065, "y": 0.7357588823428847},
+    "1": {"x": 2.718281828459045, "y": 0.36787944117144233},
+    "2": {"x": 1.6487212707001282, "y": 0.18393972058572117}
+  },
+  "xlnx": [["0{,}1", "-2{,}3", "-0{,}23"], ["0{,}01", "-4{,}61", "-0{,}0461"], ["10^{-3}", "-6{,}91", "-6{,}91\\times10^{-3}"], ["10^{-6}", "-13{,}8", "-1{,}38\\times10^{-5}"]],
+  "notaveis": [["-1", "0{,}632121", "\\text{não existe}"], ["-0{,}1", "0{,}951626", "1{,}053605"], ["-0{,}01", "0{,}995017", "1{,}005034"], ["-10^{-3}", "0{,}999500", "1{,}000500"], ["0", "\\tfrac00", "\\tfrac00"], ["10^{-3}", "1{,}000500", "0{,}999500"], ["0{,}01", "1{,}005017", "0{,}995033"], ["0{,}1", "1{,}051709", "0{,}953102"], ["1", "1{,}718282", "0{,}693147"]],
+  "f_mais": [["1", "1{,}367879", "0{,}368"], ["2", "1{,}067668", "0{,}135"], ["5", "1{,}001348", "6{,}74\\times10^{-3}"], ["10", "1{,}000005", "4{,}54\\times10^{-5}"], ["20", "1{,}000000", "2{,}06\\times10^{-9}"]],
+  "f_menos": [["-1", "1{,}72", "-1{,}72"], ["-5", "143", "-28{,}7"], ["-10", "2{,}2\\times10^{4}", "-2{,}2\\times10^{3}"], ["-20", "4{,}85\\times10^{8}", "-2{,}43\\times10^{7}"]],
+  "g_zero": [["0{,}1", "-2{,}3", "-23"], ["0{,}01", "-4{,}61", "-461"], ["10^{-3}", "-6{,}91", "-6{,}91\\times10^{3}"], ["10^{-6}", "-13{,}8", "-1{,}38\\times10^{7}"]],
+  "g_mais": [["10", "0{,}023", "0{,}23"], ["100", "4{,}61\\times10^{-4}", "0{,}0461"], ["10^{3}", "6{,}91\\times10^{-6}", "6{,}91\\times10^{-3}"], ["10^{6}", "1{,}38\\times10^{-11}", "1{,}38\\times10^{-5}"], ["10^{12}", "2{,}76\\times10^{-23}", "2{,}76\\times10^{-11}"]]
+};
+
+const params = new URLSearchParams(location.search);
+const erros = [];
+window.addEventListener('error', (e) => erros.push(`erro: ${e.message}`));
+window.addEventListener('unhandledrejection', (e) => erros.push(`promessa: ${e.reason && e.reason.stack || e.reason}`));
+
+// ---------------------------------------------------------------- utilitários
+const falhas = [];
+let n = 0;
+const ok = (cond, msg) => { n++; if (!cond) falhas.push(msg); };
+const igual = (a, b, msg) => ok(a === b, `${msg}: obtido «${a}», esperado «${b}»`);
+const perto = (a, b, tol, msg) => ok(
+  Number.isFinite(a) && Math.abs(a - b) <= tol * (b === 0 ? 1 : Math.abs(b)),
+  `${msg}: obtido ${a}, esperado ${b} (tolerância relativa ${tol})`);
+const ps = []; for (let i = 2; i <= 20; i++) ps.push(i / 2); // 1, 1,5, ..., 10
+const chave = (p) => String(p);                                // «5», «2.5»
+const chaveCruz = (p) => p.toFixed(1);                         // «5.0», «2.5»
+
+function tabelaContra(nome, obtido, esperado) {
+  igual(obtido.length, esperado.length, `${nome}: número de linhas`);
+  obtido.forEach((l, i) => {
+    const e = esperado[i];
+    if (!e) return;
+    igual(l.cels.length, e.length, `${nome}[${i}]: número de colunas`);
+    l.cels.forEach((c, j) => igual(c, e[j], `${nome}[${i}][${j}]`));
+  });
+}
+
+// ---------------------------------------------------------------- 1. formatação
+function testarFormatacao() {
+  const casos = [
+    // valor, TeX, texto, falado
+    [1.2e19, '1{,}2\\times10^{19}', '1,2×10¹⁹', '1,2 vezes 10 elevado a 19'],
+    [1e19, '10^{19}', '10¹⁹', '10 elevado a 19'],
+    [2.718281828, '2{,}72', '2,72', '2,72'],
+    [Math.exp(5) / 3125, '0{,}0475', '0,0475', '0,0475'],
+    [148.4131591, '148', '148', '148'],
+    [1234.5, '1{,}23\\times10^{3}', '1,23×10³', '1,23 vezes 10 elevado a 3'],
+    [999.6, '10^{3}', '10³', '10 elevado a 3'],
+    [999.4, '999', '999', '999'],
+    [3125, '3{,}13\\times10^{3}', '3,13×10³', '3,13 vezes 10 elevado a 3'],
+    [9996, '10^{4}', '10⁴', '10 elevado a 4'],
+    [0.0099996, '0{,}01', '0,01', '0,01'],
+    [0.00999, '9{,}99\\times10^{-3}', '9,99×10⁻³', '9,99 vezes 10 elevado a menos 3'],
+    [-1.3815510557964274e-5, '-1{,}38\\times10^{-5}', '−1,38×10⁻⁵', 'menos 1,38 vezes 10 elevado a menos 5'],
+    [0, '0', '0', '0'],
+    [1.125, '1{,}13', '1,13', '1,13'],          // empate exato: arredonda a metade para cima
+    [2.675, '2{,}67', '2,67', '2,67'],          // em binário 2,675 é 2,67499...
+    [Math.exp(700), '1{,}01\\times10^{304}', '1,01×10³⁰⁴', '1,01 vezes 10 elevado a 304'],
+    [-2.5, '-2{,}5', '−2,5', 'menos 2,5'],
+    [10, '10', '10', '10'],
+    [999999.6, '10^{6}', '10⁶', '10 elevado a 6'],
+    [123456, '1{,}23\\times10^{5}', '1,23×10⁵', '1,23 vezes 10 elevado a 5'],
+    [0.1, '0{,}1', '0,1', '0,1'],
+    [0.015, '0{,}015', '0,015', '0,015'],
+    [1e-6, '10^{-6}', '10⁻⁶', '10 elevado a menos 6'],
+    [3.6e275, '3{,}6\\times10^{275}', '3,6×10²⁷⁵', '3,6 vezes 10 elevado a 275'],
+    [5, '5', '5', '5'],
+    [0.25, '0{,}25', '0,25', '0,25'],
+  ];
+  for (const [v, t, s, f] of casos) {
+    igual(L.numTex(v), t, `numTex(${v})`);
+    igual(L.numTxt(v), s, `numTxt(${v})`);
+    igual(L.numFalado(v), f, `numFalado(${v})`);
+  }
+  // mantissa e expoente
+  let c = L.cientifico(1.2e19);
+  ok(c.mant === '1,2' && c.exp === 19, `cientifico(1,2e19) = ${JSON.stringify(c)}`);
+  c = L.cientifico(9.996e5);
+  ok(c.mant === '1' && c.exp === 6, `cientifico(9,996e5) tem de passar para 1×10^6: ${JSON.stringify(c)}`);
+  c = L.cientifico(-4.5e-7);
+  ok(c.mant === '4,5' && c.exp === -7, `cientifico(-4,5e-7) = ${JSON.stringify(c)}`);
+  // x das tabelas
+  const xs = [[1000, '10^{3}'], [1e-3, '10^{-3}'], [-1e-3, '-10^{-3}'], [100, '100'], [0.01, '0{,}01'], [1e12, '10^{12}'],
+    [0, '0'], [1e6, '10^{6}'], [-1, '-1'], [0.1, '0{,}1'], [700, '700'], [300, '300'], [-0.1, '-0{,}1']];
+  for (const [x, t] of xs) igual(L.xTex(x), t, `xTex(${x})`);
+  igual(L.decTex(1.0005001667, 6), '1{,}000500', 'decTex(1,0005001667; 6)');
+  igual(L.decTex(-0.105171, 6), '-0{,}105171', 'decTex(-0,105171; 6)');
+}
+
+// ---------------------------------------------------------------- 2. tabelas
+function testarTabelas() {
+  // 2.1 eˣ/xᵖ: 9 valores de x para cada p de 1 a 10 (de meio em meio)
+  for (const p of ps) {
+    tabelaContra(`tabela exp p=${p}`, L.linhasTabelaExp(p), REF.exp[chave(p)]);
+    // cálculo direto, em dupla precisão e por outro caminho (exp(x - p ln x))
+    for (const l of L.linhasExp(p)) {
+      perto(l.ex, Math.exp(l.x), 1e-15, `e^${l.x}`);
+      perto(l.xp, Math.pow(l.x, p), 1e-15, `${l.x}^${p}`);
+      perto(l.q, Math.exp(l.x - p * Math.log(l.x)), 1e-12, `e^x/x^p em x=${l.x}, p=${p}`);
+      ok(Number.isFinite(l.ex) && Number.isFinite(l.xp) && Number.isFinite(l.q), `valores finitos em x=${l.x}, p=${p}`);
+      if (Number.isInteger(p)) {
+        const exato = Number(BigInt(l.x) ** BigInt(p)); // potência inteira exata
+        perto(l.xp, exato, 1e-15, `${l.x}^${p} exato (BigInt)`);
+      }
+    }
+    // a classe marca as linhas em que e^x > x^p
+    L.linhasTabelaExp(p).forEach((lin, i) => {
+      const q = L.linhasExp(p)[i].q;
+      ok((lin.classe === 'li-ganha') === (q > 1), `classe da linha ${i} em p=${p}`);
+    });
+  }
+  // 2.2 muitos pontos: 60 valores de x entre 0,5 e 700 (geométricos) para p = 3, 7, 10
+  for (const p of [3, 7, 10]) {
+    const xs = []; for (let i = 0; i < 60; i++) xs.push(0.5 * Math.pow(1400, i / 59));
+    for (const l of L.linhasExp(p, xs)) perto(l.q, Math.exp(l.x - p * Math.log(l.x)), 1e-12, `quociente em x=${l.x}, p=${p}`);
+  }
+  // 2.3 ln x / x^p
+  for (const p of L.P_LN) {
+    tabelaContra(`tabela ln p=${p}`, L.linhasTabelaLn(p), REF.ln[chave(p)]);
+    for (const t of L.T_LN) {
+      const x = Math.pow(10, t);
+      perto(L.quocienteLn(p, x), Math.log(x) * Math.pow(x, -p), 1e-12, `ln x/x^p com x=10^${t}, p=${p}`);
+      perto(L.quocienteLnT(p, t), L.quocienteLn(p, x), 1e-12, `forma em t, p=${p}, t=${t}`);
+    }
+  }
+  // 2.4 x ln x
+  tabelaContra('tabela x ln x', L.linhasTabelaXlnx(), REF.xlnx);
+  for (const x of L.X_XLNX) ok(L.xlnx(x) < 0 && Math.abs(L.xlnx(x) - x * Math.log(x)) === 0, `x ln x em ${x} é negativo`);
+  // 2.5 os dois limites em 0
+  tabelaContra('tabela limites em 0', L.linhasTabelaNotaveis(), REF.notaveis);
+  const serieExp = (x) => { let s = 0; let t = 1; for (let k = 0; k < 40; k++) { s += t; t *= x / (k + 2); } return s; }; // Σ x^k/(k+1)!
+  const serieLn = (x) => { let s = 0; let t = 1; for (let k = 0; k < 400; k++) { s += t / (k + 1); t *= -x; } return s; }; // Σ (−1)^k x^k/(k+1)
+  for (const x of [-0.1, -0.01, -1e-3, 1e-3, 0.01, 0.1, -1, 1]) {
+    perto(L.expm1X(x), serieExp(x), 1e-13, `(e^x-1)/x em x=${x} contra a série`);
+    if (Math.abs(x) <= 0.1) perto(L.log1pX(x), serieLn(x), 1e-12, `ln(1+x)/x em x=${x} contra a série`);
+  }
+  perto(L.log1pX(1), Math.LN2, 1e-15, 'ln(1+1)/1 = ln 2');
+  perto(L.expm1X(1), Math.E - 1, 1e-15, '(e^1-1)/1 = e-1');
+  ok(Number.isNaN(L.log1pX(-1)) && Number.isNaN(L.log1pX(0)) && Number.isNaN(L.expm1X(0)), 'ln(1+x)/x não existe em x=-1 nem em 0; (e^x-1)/x não existe em 0');
+  // cancelamento: com x = 1e-10 a fórmula ingénua perde quase tudo; expm1 e log1p não
+  const ingenuo = (Math.exp(1e-10) - 1) / 1e-10;
+  ok(Math.abs(ingenuo - 1) > 1e-9 + 5e-11 || Math.abs(ingenuo - (1 + 5e-11)) > 1e-12, 'a fórmula ingénua perde precisão com x=1e-10 (é por isso que se usa expm1)');
+  perto(L.expm1X(1e-10) - 1, 5e-11, 1e-6, 'expm1X(1e-10) - 1 ≈ x/2');
+  perto(L.log1pX(1e-10) - 1, -5e-11, 1e-6, 'log1pX(1e-10) - 1 ≈ -x/2');
+  // 2.6 assíntotas
+  const sf = L.FUNCOES5.f.sentidos; const sg = L.FUNCOES5.g.sentidos;
+  tabelaContra('f, x→+∞', sf[0].xs.map((x) => ({ cels: sf[0].cels(x) })), REF.f_mais);
+  tabelaContra('f, x→-∞', sf[1].xs.map((x) => ({ cels: sf[1].cels(x) })), REF.f_menos);
+  tabelaContra('g, x→0+', sg[0].xs.map((x) => ({ cels: sg[0].cels(x) })), REF.g_zero);
+  tabelaContra('g, x→+∞', sg[1].xs.map((x) => ({ cels: sg[1].cels(x) })), REF.g_mais);
+  for (const x of [1, 2, 5, 10]) {
+    perto(L.difF(x), L.F5(x) - x, 1e-9, `f(x)-x = e^-x em x=${x}`);
+    perto(L.razaoF(x), L.F5(x) / x, 1e-12, `f(x)/x em x=${x}`);
+  }
+  for (const x of [-1, -5, -10, -20]) perto(L.razaoF(x), L.F5(x) / x, 1e-12, `f(x)/x em x=${x}`);
+}
+
+// ---------------------------------------------------------------- 3. onde e^x passa x^p
+function testarCruzamentos() {
+  for (const p of ps) {
+    const c = L.cruzamentoExp(p);
+    const r = REF.cruz[chaveCruz(p)];
+    igual(c.sempre, r.sempre, `p=${p}: «sempre»`);
+    perto(c.minimo, r.minimo, 1e-12, `p=${p}: mínimo de e^x/x^p em x=p, (e/p)^p`);
+    perto(c.minimo, Math.exp(p) / Math.pow(p, p), 1e-12, `p=${p}: (e/p)^p = e^p/p^p`);
+    if (c.sempre) {
+      ok(p < Math.E, `p=${p}: só p < e tem «sempre»`);
+      ok(c.minimo > 1, `p=${p}: com «sempre» o mínimo do quociente tem de ser maior que 1`);
+      let todos = true;
+      for (let x = 0.01; x <= 700; x += 0.07) if (!(Math.exp(x) > Math.pow(x, p))) { todos = false; break; }
+      ok(todos, `p=${p}: e^x > x^p para todo o x em ]0, 700]`);
+      continue;
+    }
+    ok(p > Math.E && c.minimo < 1, `p=${p}: com cruzamentos o mínimo do quociente tem de ser menor que 1`);
+    perto(c.x2, r.x2, 1e-12, `p=${p}: x2 (cruzamento final)`);
+    perto(c.x1, r.x1, 1e-12, `p=${p}: x1 (primeiro cruzamento)`);
+    igual(c.n, r.n, `p=${p}: inteiro n`);
+    // o teste «com x-1 e x»
+    const n1 = c.n - 1;
+    ok(n1 >= p, `p=${p}: x-1 (=${n1}) está depois do mínimo, onde o quociente só sobe`);
+    ok(Math.exp(n1) < Math.pow(n1, p), `p=${p}: e^${n1} < ${n1}^p ainda`);
+    ok(Math.exp(c.n) > Math.pow(c.n, p), `p=${p}: e^${c.n} > ${c.n}^p já`);
+    // e daí para a frente nunca mais perde (até onde o double deixa: 700)
+    let sempreDepois = true;
+    for (let x = c.n; x <= 700; x += 0.31) if (!(Math.exp(x) > Math.pow(x, p))) { sempreDepois = false; break; }
+    ok(sempreDepois, `p=${p}: e^x > x^p para todo o x em [${c.n}, 700]`);
+    // entre x1 e x2 a potência está à frente; antes de x1 a exponencial também
+    let meio = true;
+    for (let i = 1; i < 40; i++) { const x = c.x1 + ((c.x2 - c.x1) * i) / 40; if (!(Math.exp(x) < Math.pow(x, p))) { meio = false; break; } }
+    ok(meio, `p=${p}: e^x < x^p entre x1 e x2`);
+    let antes = true;
+    for (let x = 0.01; x < c.x1 - 0.005; x += 0.01) if (!(Math.exp(x) > Math.pow(x, p))) { antes = false; break; }
+    ok(antes, `p=${p}: e^x > x^p antes de x1`);
+  }
+  // valores citados nos textos: p = 3 (x≈4,54; 4 e 5), p = 5 (x≈12,7; 12 e 13), p = 10 (x≈35,8; 35 e 36)
+  const c3 = L.cruzamentoExp(3); const c5 = L.cruzamentoExp(5); const c10 = L.cruzamentoExp(10);
+  ok(Math.abs(c3.x2 - 4.5364) < 5e-5 && c3.n === 5, `p=3: x2=${c3.x2}, n=${c3.n}`);
+  ok(Math.abs(c5.x2 - 12.7131) < 5e-4 && c5.n === 13, `p=5: x2=${c5.x2}, n=${c5.n}`);
+  ok(Math.abs(c10.x2 - 35.7715) < 5e-5 && c10.n === 36, `p=10: x2=${c10.x2}, n=${c10.n}`);
+  ok(Math.exp(12) < Math.pow(12, 5) && Math.exp(13) > Math.pow(13, 5), 'p=5: e^12 < 12^5 e e^13 > 13^5');
+  ok(Math.exp(35) < Math.pow(35, 10) && Math.exp(36) > Math.pow(36, 10), 'p=10: e^35 < 35^10 e e^36 > 36^10');
+}
+
+// ---------------------------------------------------------------- 4. mínimos e máximos citados
+function testarExtremos() {
+  // eˣ/xᵖ tem o mínimo em x = p (em x > 0), de valor (e/p)^p
+  for (const p of ps) {
+    let melhor = Infinity; let em = 0;
+    for (let x = 0.5; x <= 700; x += 0.005) { const v = L.log10QuocExp(p, x); if (v < melhor) { melhor = v; em = x; } }
+    ok(Math.abs(em - p) <= 0.006, `p=${p}: mínimo de e^x/x^p em x=${em}, esperado ${p}`);
+    perto(melhor, p * Math.log10(Math.E / p), 1e-9, `p=${p}: valor mínimo de log10(e^x/x^p)`);
+    ok(L.log10QuocExp(p, p - 0.2) > L.log10QuocExp(p, p) && L.log10QuocExp(p, p + 0.2) > L.log10QuocExp(p, p), `p=${p}: desce até x=p e sobe depois`);
+    // log10 do quociente = log10 do quociente calculado diretamente (onde não estoura)
+    for (const x of [1, 5, 10, 50]) perto(L.log10QuocExp(p, x), Math.log10(Math.exp(x) / Math.pow(x, p)), 1e-12, `log10(e^x/x^p) em x=${x}, p=${p}`);
+  }
+  // ln x / x^p: máximo em x = e^(1/p), de valor 1/(p e); depois desce para 0
+  for (const p of L.P_LN) {
+    const m = L.maximoLn(p);
+    perto(m.x, REF.lnmax[chave(p)].x, 1e-12, `p=${p}: x do máximo`);
+    perto(m.y, REF.lnmax[chave(p)].y, 1e-12, `p=${p}: valor do máximo`);
+    let melhor = -Infinity; let em = 0;
+    for (let t = 0; t <= 12; t += 0.0005) { const v = L.quocienteLnT(p, t); if (v > melhor) { melhor = v; em = t; } }
+    ok(Math.abs(em - Math.log10(m.x)) <= 0.001, `p=${p}: máximo de ln x/x^p em log10 x=${em}, esperado ${Math.log10(m.x)}`);
+    perto(melhor, m.y, 1e-6, `p=${p}: valor do máximo, varrendo t`);
+    // depois do máximo desce sempre (amostrado) e acaba abaixo do máximo
+    let desce = true; let ant = Infinity;
+    for (let t = Math.log10(m.x) + 0.01; t <= 12; t += 0.05) { const v = L.quocienteLnT(p, t); if (!(v < ant)) { desce = false; break; } ant = v; }
+    ok(desce, `p=${p}: ln x/x^p desce depois do máximo`);
+    ok(L.quocienteLnT(p, 12) < m.y, `p=${p}: em x=10^12 está abaixo do máximo`);
+  }
+  // x ln x: mínimo em 1/e, de valor -1/e; tende para 0 por valores negativos
+  {
+    let melhor = Infinity; let em = 0;
+    for (let x = 1e-6; x <= 1; x += 0.00001) { const v = L.xlnx(x); if (v < melhor) { melhor = v; em = x; } }
+    ok(Math.abs(em - 1 / Math.E) <= 1e-4, `mínimo de x ln x em x=${em}, esperado ${1 / Math.E}`);
+    perto(melhor, -1 / Math.E, 1e-8, 'valor do mínimo de x ln x');
+    perto(L.minimoXlnx.x, 1 / Math.E, 1e-15, 'minimoXlnx.x'); perto(L.minimoXlnx.y, -1 / Math.E, 1e-15, 'minimoXlnx.y');
+    let neg = true; let ant = 0;
+    for (let k = 1; k <= 12; k++) { const v = L.xlnx(Math.pow(10, -k)); if (!(v < 0 && Math.abs(v) < Math.abs(ant || -Infinity) + 1)) neg = false; ant = v; }
+    ok(neg, 'x ln x < 0 em 10^-k');
+    let encolhe = true;
+    for (let k = 2; k <= 12; k++) if (!(Math.abs(L.xlnx(Math.pow(10, -k))) < Math.abs(L.xlnx(Math.pow(10, -(k - 1)))))) encolhe = false;
+    ok(encolhe, '|x ln x| encolhe quando x = 10^-k desce');
+    ok(Math.abs(L.xlnx(1e-6)) < 1.4e-5 && Math.abs(L.xlnx(1e-6)) > 1.38e-5, `x ln x em 1e-6 vale ${L.xlnx(1e-6)}`);
+  }
+  // g(x) = ln x / x: máximo em x = e, de valor 1/e
+  {
+    let melhor = -Infinity; let em = 0;
+    for (let x = 0.01; x <= 50; x += 0.0005) { const v = L.G5(x); if (v > melhor) { melhor = v; em = x; } }
+    ok(Math.abs(em - Math.E) <= 0.001, `máximo de ln x/x em x=${em}, esperado e`);
+    perto(melhor, 1 / Math.E, 1e-7, 'valor do máximo de ln x/x');
+    perto(L.G5(Math.E), 1 / Math.E, 1e-15, 'g(e) = 1/e');
+    ok(L.G5(0.01) < -400 && L.G5(1e-6) < -1e7, 'g(x) → -∞ quando x → 0+');
+    ok(L.G5(1e12) > 0 && L.G5(1e12) < 3e-11, 'g(x) → 0 quando x → +∞');
+    perto(L.G5(1e12) / 1e12, Math.log(1e12) / 1e24, 1e-12, 'g(x)/x = ln x / x^2');
+  }
+  // f(x) = x + e^-x: mínimo em x = 0 (valor 1), f(x) - x = e^-x → 0; m = 1, b = 0 em +∞; m → -∞ em -∞
+  {
+    let melhor = Infinity; let em = 0;
+    for (let x = -2.5; x <= 6.5; x += 0.001) { const v = L.F5(x); if (v < melhor) { melhor = v; em = x; } }
+    ok(Math.abs(em) <= 0.002 && Math.abs(melhor - 1) < 1e-6, `mínimo de f em x=${em}, valor ${melhor}`);
+    ok(Math.abs(L.razaoF(1e6) - 1) < 1e-6 && L.difF(40) < 1e-17, 'm = 1 e b = 0 em +∞');
+    ok(L.razaoF(-20) < -1e6 && L.razaoF(-40) < L.razaoF(-20), 'f(x)/x → -∞ em -∞');
+  }
+}
+
+// ---------------------------------------------------------------- 5. o widget montado
+const esperar = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const evento = (el, valor) => { el.value = String(valor); el.dispatchEvent(new Event('input', { bubbles: true })); };
+const chip = (raiz, id) => raiz.querySelector(`.chip[data-id="${id}"]`);
+// o que se vê (sem a versão MathML escondida do KaTeX)
+const visivel = (el) => { const c = el.cloneNode(true); c.querySelectorAll('.katex-mathml').forEach((m) => m.remove()); return c.textContent.replace(/\s+/g, ' ').trim(); };
+
+function verificarAba(w, palco, id) {
+  const painel = palco.querySelector(`.li-aba[data-aba="${id}"]`);
+  ok(painel && !painel.hidden, `${id}: painel visível`);
+  if (!painel) return null;
+  ok(!!painel.querySelector('svg.figura'), `${id}: tem gráfico`);
+  ok((painel.querySelector('svg.figura').getAttribute('aria-label') || '').length > 20, `${id}: gráfico com aria-label`);
+  ok(painel.querySelectorAll('.tabela-rolante > table > thead th[scope="col"]').length >= 3, `${id}: tabela com cabeçalhos de coluna`);
+  ok(painel.querySelectorAll('.tabela-rolante > table > tbody th[scope="row"]').length >= 4, `${id}: tabela com cabeçalhos de linha`);
+  ok(!/NaN|undefined|Infinity|null/.test(painel.textContent), `${id}: texto sem NaN/undefined/Infinity: ${(painel.textContent.match(/.{0,20}(NaN|undefined|Infinity|null).{0,20}/) || [''])[0]}`);
+  ok(!/NaN/.test(painel.querySelector('svg.figura').outerHTML), `${id}: SVG sem NaN`);
+  ok(painel.querySelectorAll('.katex-error').length === 0, `${id}: sem erros do KaTeX`);
+  ok(painel.querySelectorAll('.katex').length >= 5, `${id}: fórmulas desenhadas (${painel.querySelectorAll('.katex').length})`);
+  for (const s of painel.querySelectorAll('input[type="range"]')) {
+    ok((s.getAttribute('aria-valuetext') || '').length > 2, `${id}: slider com aria-valuetext`);
+    ok(s.getBoundingClientRect().height >= 43.9, `${id}: slider com alvo de toque >= 44 px (${s.getBoundingClientRect().height})`);
+    ok(!!s.labels && s.labels.length === 1, `${id}: slider com label`);
+  }
+  for (const b of painel.querySelectorAll('button.chip')) ok(b.getBoundingClientRect().height >= 43.9, `${id}: chip com alvo >= 44 px (${b.getBoundingClientRect().height})`);
+  ok(!!painel.querySelector('[aria-live="polite"]'), `${id}: leitura em aria-live`);
+  ok(!!painel.querySelector('.li-conclusao .li-texto') && !!painel.querySelector('.li-regra .li-texto'), `${id}: conclusão e regra`);
+  // o cursor
+  const cursor = painel.querySelector('svg.figura [role="slider"]');
+  ok(!!cursor && cursor.getAttribute('tabindex') === '0' && !!cursor.getAttribute('aria-valuetext'), `${id}: cursor focável com aria-valuetext`);
+  return painel;
+}
+
+function carregar(el, tecla) {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key: tecla, bubbles: true, cancelable: true }));
+}
+
+async function testarWidget() {
+  const palco = document.getElementById('palco');
+  const w = await montar(palco, {});
+  igual(w.abaAtual(), 'exp', 'aba inicial');
+  const cp = palco.querySelector('.li-aba[data-aba="exp"] input[id$="-p"]');
+  ok(!!cp, 'slider de p');
+
+  // --- aba 1
+  let P = verificarAba(w, palco, 'exp');
+  ok(P.querySelectorAll('tbody tr').length === 9, 'exp: 9 linhas na tabela');
+  const mais = () => visivel(P.querySelector('.li-mais'));
+  evento(cp, 10);
+  igual(P.querySelectorAll('tbody tr').length, 9, 'exp p=10: 9 linhas');
+  ok(/35,8/.test(mais()) && /35/.test(mais()) && /36/.test(mais()), `exp p=10: texto do cruzamento: ${mais()}`);
+  ok(cp.getAttribute('aria-valuetext') === 'p igual a 10', `exp: aria-valuetext do p = ${cp.getAttribute('aria-valuetext')}`);
+  evento(cp, 1);
+  ok(/para todo o x ?> ?0/.test(mais()), `exp p=1: «sempre»: ${mais()}`);
+  evento(cp, 3);
+  ok(/4,54/.test(mais()), `exp p=3: x ≈ 4,54: ${mais()}`);
+  // meios
+  const meios = P.querySelector('.li-extra .chips .chip');
+  meios.click();
+  igual(meios.getAttribute('aria-pressed'), 'true', 'meios ligado');
+  igual(cp.step, '0.5', 'passo do p com meios');
+  evento(cp, 2.5);
+  ok(/2,5/.test(P.querySelector('output[for$="-p"]').textContent), 'p = 2,5 no slider');
+  ok(/todo o/.test(mais()), `exp p=2,5: «sempre» (2,5 < e): ${mais()}`);
+  evento(cp, 3.5);
+  ok(mais().includes('x ≈ ' + L.numTxt(REF.cruz['3.5'].x2)) || mais().includes('x≈' + L.numTxt(REF.cruz['3.5'].x2)), `exp p=3,5: esperado x ≈ ${L.numTxt(REF.cruz['3.5'].x2)}: ${mais()}`);
+  meios.click();
+  igual(cp.step, '1', 'passo do p sem meios');
+  ok(Number.isInteger(Number(cp.value)), `sem meios o p volta a inteiro (${cp.value})`);
+  evento(cp, 5);
+  // slider de x e cursor
+  const cx = P.querySelector('input[id$="-x"]');
+  const estado = () => P.querySelector('.li-estado').textContent;
+  evento(cx, 5);
+  ok(/potência ainda está à frente/.test(estado()), `exp x=5: ${estado()}`);
+  evento(cx, cx.max);
+  ok(/exponencial já está à frente/.test(estado()), `exp x=máx: ${estado()}`);
+  const cur = P.querySelector('svg.figura [role="slider"]');
+  const antes = cur.getAttribute('aria-valuenow');
+  carregar(cur, 'ArrowLeft'); carregar(cur, 'ArrowLeft'); carregar(cur, 'ArrowLeft');
+  ok(Number(cur.getAttribute('aria-valuenow')) < Number(antes), `exp: setas movem o cursor (${antes} -> ${cur.getAttribute('aria-valuenow')})`);
+  ok(Math.abs(Number(cx.value) - Number(cur.getAttribute('aria-valuenow'))) <= 0.26, `exp: o slider acompanha o cursor (${cx.value} vs ${cur.getAttribute('aria-valuenow')})`);
+  carregar(cur, 'Home');
+  ok(Number(cur.getAttribute('aria-valuenow')) <= 0.5001, 'exp: Home leva o cursor ao início');
+  const leit = [...P.querySelectorAll('.li-leituras .leitura__valor')].map((e) => e.textContent);
+  ok(leit.length === 4 && leit.every((t) => t.trim().length > 0), `exp: 4 leituras preenchidas: ${leit.join(' | ')}`);
+
+  // --- aba 2
+  w.aba('ln');
+  P = verificarAba(w, palco, 'ln');
+  igual(P.querySelectorAll('tbody tr').length, 5, 'ln: 5 linhas');
+  igual(P.querySelectorAll('.li-extra .chip').length, 5, 'ln: 5 chips de p');
+  chip(P, 0.1).click();
+  igual(chip(P, 0.1).getAttribute('aria-pressed'), 'true', 'ln: p=0,1 marcado');
+  ok(/2,2 ?× ?10 ?4/.test(visivel(P.querySelector('.li-mais'))) && /3,68/.test(visivel(P.querySelector('.li-mais'))), `ln p=0,1: máximo em x≈2,2×10^4 e valor 3,68: ${visivel(P.querySelector('.li-mais'))}`);
+  chip(P, 2).click();
+  ok(/1,65/.test(visivel(P.querySelector('.li-mais'))) && /0,184/.test(visivel(P.querySelector('.li-mais'))), `ln p=2: máximo em 1,65 de valor 0,184: ${visivel(P.querySelector('.li-mais'))}`);
+  const cxl = P.querySelector('input[id$="-x"]');
+  evento(cxl, 12);
+  igual(P.querySelector('output[for$="-x"]').textContent, 'x = 10¹²', 'ln: x = 10^12 no slider');
+  igual(cxl.getAttribute('aria-valuetext'), 'x igual a 10 elevado a 12', 'ln: aria-valuetext em x = 10^12');
+  ok(/descer/.test(P.querySelector('.li-estado').textContent), `ln x=10^12: ${P.querySelector('.li-estado').textContent}`);
+
+  // --- aba 3
+  w.aba('xlnx');
+  P = verificarAba(w, palco, 'xlnx');
+  igual(P.querySelectorAll('tbody tr').length, 4, 'xlnx: 4 linhas');
+  const svg1 = P.querySelector('svg.figura').outerHTML;
+  chip(P, 'log').click();
+  ok(P.querySelector('svg.figura').outerHTML !== svg1, 'xlnx: a escala logarítmica muda o gráfico');
+  igual(chip(P, 'log').getAttribute('aria-pressed'), 'true', 'xlnx: escala log marcada');
+  evento(P.querySelector('input[id$="-x"]'), -6);
+  ok(/negativo/.test(P.querySelector('.li-estado').textContent), `xlnx x=1e-6: ${P.querySelector('.li-estado').textContent}`);
+  evento(P.querySelector('input[id$="-x"]'), 0);
+  ok(/ln ?1 ?= ?0/.test(visivel(P.querySelector('.li-estado'))), `xlnx x=1: ${visivel(P.querySelector('.li-estado'))}`);
+
+  // --- aba 4
+  w.aba('notaveis');
+  P = verificarAba(w, palco, 'notaveis');
+  igual(P.querySelectorAll('tbody tr').length, 9, 'notaveis: 9 linhas');
+  ok(/não existe/.test(P.querySelector('tbody').textContent), 'notaveis: «não existe» em x=-1');
+  const ck = P.querySelector('input[id$="-x"]');
+  evento(ck, 0);
+  ok(/0/.test(P.querySelector('.li-estado').textContent) && /limite existe/.test(P.querySelector('.li-estado').textContent), `notaveis x=0: ${P.querySelector('.li-estado').textContent}`);
+  evento(ck, -31);
+  ok(/não existe/.test(P.querySelector('.li-leituras').textContent), 'notaveis x=-1: segundo quociente não existe');
+  evento(ck, 31);
+  ok(/1,718282/.test(visivel(P.querySelector('.li-leituras'))) && /0,693147/.test(visivel(P.querySelector('.li-leituras'))), `notaveis x=1: ${visivel(P.querySelector('.li-leituras'))}`);
+  evento(ck, 1);
+  const lt = visivel(P.querySelector('.li-leituras'));
+  ok(/1,000500/.test(lt) && /0,999500/.test(lt), `notaveis x=10^-3: ${lt}`);
+
+  // --- aba 5
+  w.aba('assintotas');
+  P = verificarAba(w, palco, 'assintotas');
+  igual(P.querySelectorAll('tbody tr').length, 5, 'assintotas f+: 5 linhas');
+  igual(P.querySelectorAll('.li-calculo .katex-display').length, 2, 'assintotas f+: dois cálculos (m e b)');
+  chip(P, 'menos').click();
+  igual(P.querySelectorAll('tbody tr').length, 4, 'assintotas f-: 4 linhas');
+  igual(P.querySelectorAll('.li-calculo .katex-display').length, 1, 'assintotas f-: um cálculo (m)');
+  ok(/não há assíntota oblíqua/.test(P.querySelector('.li-conclusao').textContent), 'assintotas f-: conclusão sem assíntota');
+  chip(P, 'g').click();
+  igual(chip(P, 'g').getAttribute('aria-pressed'), 'true', 'assintotas: g marcada');
+  igual(P.querySelectorAll('tbody tr').length, 4, 'assintotas g 0+: 4 linhas');
+  ok(/assíntota vertical/.test(P.querySelector('.li-conclusao').textContent), 'assintotas g 0+: vertical');
+  chip(P, 'mais').click();
+  igual(P.querySelectorAll('tbody tr').length, 5, 'assintotas g +∞: 5 linhas');
+  ok(/horizontal/.test(P.querySelector('.li-conclusao').textContent), 'assintotas g +∞: horizontal');
+  chip(P, 'f').click();
+  igual(P.querySelectorAll('tbody tr').length, 5, 'assintotas voltou a f+');
+  ok(/oblíqua/.test(P.querySelector('.li-conclusao').textContent), 'assintotas f+: oblíqua');
+  const cxa = P.querySelector('input[id$="-x"]');
+  evento(cxa, 3);
+  ok(/0,0498/.test(visivel(P.querySelector('.li-estado'))), `assintotas f x=3: f(x)-x = e^-3 ≈ 0,0498: ${visivel(P.querySelector('.li-estado'))}`);
+
+  // ao mudar de aba, o painel anterior fica escondido e só há um visível
+  w.aba('exp');
+  igual(palco.querySelectorAll('.li-aba:not([hidden])').length, 1, 'só um painel visível');
+  igual(palco.querySelectorAll('.li-abas .chip[aria-pressed="true"]').length, 1, 'só um chip de aba marcado');
+  // um widget completo sem scroll horizontal da página
+  ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, `sem scroll horizontal (${document.documentElement.scrollWidth} > ${document.documentElement.clientWidth})`);
+}
+
+// ---------------------------------------------------------------- demo
+async function demo() {
+  document.body.dataset.modo = 'demo';
+  const palco = document.getElementById('palco');
+  const w = await montar(palco, {});
+  const aba = params.get('demo');
+  w.aba(aba);
+  const P = palco.querySelector(`.li-aba[data-aba="${aba}"]`);
+  const x = (id) => P.querySelector(`input[id$="${id}"]`);
+  if (aba === 'exp') {
+    if (params.get('meios')) P.querySelector('.li-extra .chips .chip').click();
+    if (params.get('p')) evento(x('-p'), params.get('p'));
+  }
+  if (aba === 'ln' && params.get('pl')) chip(P, params.get('pl')).click();
+  if (aba === 'xlnx' && params.get('log')) chip(P, 'log').click();
+  if (aba === 'assintotas') {
+    if (params.get('fn')) chip(P, params.get('fn')).click();
+    if (params.get('sub')) chip(P, params.get('sub')).click();
+  }
+  if (params.get('x')) evento(x('-x'), params.get('x'));
+  await esperar(50);
+  document.documentElement.dataset.demo = erros.length ? 'erro' : 'pronto';
+  if (erros.length) document.getElementById('resultado').textContent = erros.join('\n');
+}
+
+// ---------------------------------------------------------------- largura de telemóvel
+// ?estouro=1&w=390: força a largura do <body> e percorre todas as abas e estados à procura de
+// elementos que saiam do ecrã, tabelas que precisem de rolar e fórmulas que não caibam.
+async function estouro() {
+  const W = Number(params.get('w')) || 390;
+  document.body.dataset.modo = 'demo';
+  document.body.style.width = `${W}px`;
+  document.body.style.margin = '0';
+  const palco = document.getElementById('palco');
+  const w = await montar(palco, {});
+  const relatorio = [];
+  const medir = (estado) => {
+    const li = palco.querySelector('.li');
+    const pt = (e) => `${e.tagName.toLowerCase()}.${(e.className && e.className.baseVal === undefined ? e.className : '').toString().split(' ')[0]}`;
+    for (const e of li.querySelectorAll('*')) {
+      if (e.closest('svg') || e.closest('.tabela-rolante') || e.closest('.li-formula') || e.closest('.katex-mathml')) continue;
+      const r = e.getBoundingClientRect();
+      if (r.width && r.right > W + 1) relatorio.push(`${estado}: ${pt(e)} sai do ecrã (direita=${Math.round(r.right)})`);
+    }
+    for (const t of li.querySelectorAll('.tabela-rolante')) if (t.offsetParent && t.scrollWidth > t.clientWidth + 1) relatorio.push(`${estado}: tabela precisa de rolar (${t.scrollWidth} > ${t.clientWidth})`);
+    for (const t of li.querySelectorAll('.li-formula')) if (t.offsetParent && t.scrollWidth > t.clientWidth + 1) relatorio.push(`${estado}: fórmula não cabe (${t.scrollWidth} > ${t.clientWidth})`);
+  };
+  const painel = (id) => palco.querySelector(`.li-aba[data-aba="${id}"]`);
+  w.aba('exp');
+  for (const p of [1, 3, 5, 10]) { evento(painel('exp').querySelector('input[id$="-p"]'), p); medir(`exp p=${p}`); }
+  evento(painel('exp').querySelector('input[id$="-x"]'), 55); medir('exp p=10 x=max');
+  w.aba('ln');
+  for (const p of [0.1, 0.25, 0.5, 1, 2]) { chip(painel('ln'), p).click(); medir(`ln p=${p}`); }
+  w.aba('xlnx');
+  medir('xlnx normal'); chip(painel('xlnx'), 'log').click(); medir('xlnx log');
+  w.aba('notaveis');
+  for (const k of [-31, -1, 0, 1, 31]) { evento(painel('notaveis').querySelector('input[id$="-x"]'), k); medir(`notaveis k=${k}`); }
+  w.aba('assintotas');
+  const A = painel('assintotas');
+  for (const [fn, sub] of [['f', 'mais'], ['f', 'menos'], ['g', 'zero'], ['g', 'mais']]) {
+    chip(A, fn).click(); chip(A, sub).click(); medir(`assintotas ${fn} ${sub}`);
+  }
+  document.documentElement.dataset.estouro = relatorio.length ? 'sim' : 'nao';
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('resultado').textContent = relatorio.length ? relatorio.join('\n') : `sem estouros a ${W}px`;
+  document.documentElement.dataset.demo = 'pronto';
+}
+
+// ---------------------------------------------------------------- arranque
+async function correr() {
+  const saida = document.getElementById('resultado');
+  try {
+    testarFormatacao();
+    testarTabelas();
+    testarCruzamentos();
+    testarExtremos();
+    await testarWidget();
+  } catch (e) {
+    falhas.push(`exceção: ${e && e.stack || e}`);
+  }
+  for (const e of erros) falhas.push(e);
+  const texto = falhas.length
+    ? `FALHOU: ${falhas.length} de ${n} verificações\n\n${falhas.join('\n')}`
+    : `OK: ${n} verificações passaram`;
+  saida.textContent = texto;
+  document.documentElement.dataset.testes = falhas.length ? 'falhou' : 'ok';
+}
+
+if (params.get('estouro')) estouro(); else if (params.get('demo')) demo(); else correr();
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+{
+ "tema": "funcao",
+ "afirmacoes": [
+  {
+   "id": "fun-vf-simetria",
+   "tema": "funcao",
+   "texto": "Os gráficos de $y=2^x$ e de $y=\\log_2 x$ são simétricos em relação à reta $y=x$.",
+   "verdadeira": true,
+   "explicacao": "Um ponto $(p,q)$ está no gráfico de $2^x$ quando $q=2^p$, e isso equivale a $p=\\log_2 q$, ou seja, a $(q,p)$ estar no gráfico de $\\log_2 x$. Trocar as coordenadas é refletir na reta $y=x$. Por exemplo, $(2,4)$ e $(4,2)$.",
+   "verifica": ["ig(logb(a, a**t), t)"],
+   "figura": {
+    "tipo": "grafico",
+    "x": [-2, 6],
+    "y": [-2, 6],
+    "curvas": [
+     {"expr": "2^x", "rotulo": "y = 2^x"},
+     {"expr": "logb(2, x)", "rotulo": "y = log₂ x"},
+     {"expr": "x", "rotulo": "y = x"}
+    ],
+    "pontos": [{"x": 2, "y": 4, "rotulo": "(2, 4)"}, {"x": 4, "y": 2, "rotulo": "(4, 2)"}],
+    "retasH": [0],
+    "retasV": [0]
+   }
+  },
+  {
+   "id": "fun-vf-soma-logs",
+   "tema": "funcao",
+   "texto": "As funções $f(x)=\\ln x+\\ln(x-2)$ e $g(x)=\\ln\\big(x(x-2)\\big)$ têm o mesmo domínio.",
+   "verdadeira": false,
+   "explicacao": "Para $f$ existir, cada parcela tem de existir: $x>0$ e $x>2$, isto é, $x>2$. Para $g$ basta $x(x-2)>0$, o que também acontece com $x<0$. Contraexemplo: $x=-1$. Em $g$ calculas $\\ln3$, mas em $f$ terias $\\ln(-1)$, que não existe.",
+   "erroComum": "Aplicar a regra do produto de logaritmos sem reparar que ela só vale quando os dois fatores são positivos.",
+   "verifica": ["((t*(t-2)>0) and not (t>0 and t-2>0)) == (t<0)"]
+  },
+  {
+   "id": "fun-vf-exp-contradominio",
+   "tema": "funcao",
+   "texto": "O contradomínio de $g(x)=5-2e^{x}$ é $]5,+\\infty[$.",
+   "verdadeira": false,
+   "explicacao": "Como $e^x$ toma todos os valores de $]0,+\\infty[$, o mesmo acontece a $2e^x$, e $g(x)=5-2e^x$ toma todos os valores menores que $5$: o contradomínio é $]-\\infty,5[$. Contraexemplo: $g(0)=3$, que não pertence a $]5,+\\infty[$.",
+   "erroComum": "Esquecer que o sinal menos inverte o sentido: tratar $5-2e^x$ como se fosse $5+2e^x$.",
+   "verifica": ["5-2*exp(t)<5", "ig(5-2*exp(ln(x/2)), 5-x)"]
+  },
+  {
+   "id": "fun-vf-assintota",
+   "tema": "funcao",
+   "texto": "A reta $x=2$ é assíntota vertical do gráfico de $f(x)=1-\\ln(x-2)$.",
+   "verdadeira": true,
+   "explicacao": "O domínio é $]2,+\\infty[$, porque $x-2>0$. Quando $x\\to2^+$, $x-2\\to0^+$ e $\\ln(x-2)\\to-\\infty$, logo $f(x)=1-\\ln(x-2)\\to+\\infty$. O gráfico cola-se à reta $x=2$ sem lhe tocar. O sinal menos fora do logaritmo só troca $-\\infty$ por $+\\infty$.",
+   "verifica": ["((t-2>0) == (t>2)) and 1-ln((2+1e-9)-2)>20"]
+  },
+  {
+   "id": "fun-vf-inversa-dominio",
+   "tema": "funcao",
+   "texto": "A inversa de $f(x)=\\ln(x+1)$ é $g(x)=e^{x}-1$, e o domínio de $g$ é $\\mathbb{R}^+$.",
+   "verdadeira": false,
+   "explicacao": "A expressão está certa, mas o domínio não. O domínio da inversa é o contradomínio de $f$, e $\\ln(x+1)$ toma todos os valores reais; logo $D_g=\\mathbb{R}$. Por exemplo, $g(-3)=e^{-3}-1$ existe e $f\\big(e^{-3}-1\\big)=\\ln\\big(e^{-3}\\big)=-3$.",
+   "erroComum": "Copiar o domínio do logaritmo para a inversa, em vez de usar o contradomínio de $f$.",
+   "verifica": ["ig(ln((exp(t)-1)+1), t)"]
+  },
+  {
+   "id": "fun-vf-ln-oposto",
+   "tema": "funcao",
+   "texto": "O gráfico de $f(x)=\\ln(-x)$ obtém-se do gráfico de $\\ln x$ por uma reflexão no eixo $Oy$.",
+   "verdadeira": true,
+   "explicacao": "Se $(p,q)$ pertence ao gráfico de $\\ln x$, então $\\ln\\big(-(-p)\\big)=\\ln p=q$, por isso $(-p,q)$ pertence ao de $\\ln(-x)$. Trocar o sinal de $x$ é refletir no eixo $Oy$. O domínio passa a $]-\\infty,0[$ e a assíntota continua a ser $x=0$.",
+   "verifica": ["ig(ln(-(-x)), ln(x))"],
+   "figura": {
+    "tipo": "grafico",
+    "x": [-5, 5],
+    "y": [-4, 4],
+    "curvas": [{"expr": "ln(x)", "rotulo": "y = ln x"}, {"expr": "ln(-x)", "rotulo": "y = ln(−x)"}],
+    "pontos": [{"x": 1, "y": 0, "rotulo": "(1, 0)"}, {"x": -1, "y": 0, "rotulo": "(−1, 0)"}],
+    "retasH": [],
+    "retasV": [0]
+   }
+  }
+ ]
+}

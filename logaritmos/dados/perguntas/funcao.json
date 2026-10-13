@@ -1,0 +1,186 @@
+{
+ "tema": "funcao",
+ "perguntas": [
+  {
+   "id": "fun-01",
+   "nivel": 1,
+   "enunciado": "Qual é o contradomínio da função $f(x)=\\log_5 x$?",
+   "opcoes": [
+    {"tex": "$\\mathbb{R}^+$"},
+    {"tex": "$[0,+\\infty[$"},
+    {"tex": "$\\mathbb{R}$"},
+    {"tex": "$]1,+\\infty[$"}
+   ],
+   "certa": 2,
+   "verifica": ["ig(logb(5, 5**t), t)"],
+   "explicacao": "Para qualquer número real $t$, $\\log_5(5^t)=t$, por isso todo o número real é valor da função: o contradomínio é $\\mathbb{R}$. O conjunto $\\mathbb{R}^+$ é o <em>domínio</em>, os números aos quais podes aplicar o logaritmo. Trocar um pelo outro é o erro mais comum."
+  },
+  {
+   "id": "fun-02",
+   "nivel": 1,
+   "enunciado": "Para $g(x)=\\log_{\\frac12}x$, em que conjunto se tem $g(x)>0$?",
+   "opcoes": [
+    {"tex": "$]0,1[$"},
+    {"tex": "$]1,+\\infty[$"},
+    {"tex": "$\\left]\\tfrac12,+\\infty\\right[$"},
+    {"tex": "$\\left]0,\\tfrac12\\right[$"}
+   ],
+   "certa": 0,
+   "verifica": ["(logb(0.5, x)>0) == (x<1)"],
+   "explicacao": "$\\log_{\\frac12}x>0$ quer dizer que o expoente a que elevas $\\frac12$ para obter $x$ é positivo. Com base menor que $1$, a potência diminui quando o expoente aumenta, e $\\left(\\frac12\\right)^0=1$; logo, expoente positivo dá $x<1$. Por exemplo, $\\log_{\\frac12}\\frac14=2>0$. A fronteira é sempre $x=1$, onde o logaritmo vale $0$, e não a base; o erro habitual é usar a regra das bases maiores que $1$ (positivo para $x>1$)."
+  },
+  {
+   "id": "fun-03",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to0^+}\\log_{0{,}5}x$?",
+   "opcoes": [{"tex": "$-\\infty$"}, {"tex": "$0$"}, {"tex": "Não existe"}, {"tex": "$+\\infty$"}],
+   "certa": 3,
+   "verifica": ["logb(0.5, 1e-9)>10", "logb(0.5, 1e-12)>logb(0.5, 1e-9)"],
+   "explicacao": "Com base menor que $1$ a função é decrescente: quanto mais perto de $0$ está $x$, maior é o expoente que dá $x$ a partir de $0{,}5$. Por exemplo, $\\log_{0{,}5}0{,}001\\approx9{,}97$ e $\\log_{0{,}5}0{,}000001\\approx19{,}9$. Com base maior que $1$ o limite seria $-\\infty$, mas aqui os sinais trocam."
+  },
+  {
+   "id": "fun-04",
+   "nivel": 1,
+   "enunciado": "Qual é o domínio da função $f(x)=\\ln(x-3)$?",
+   "opcoes": [
+    {"tex": "$[3,+\\infty[$"},
+    {"tex": "$]3,+\\infty[$"},
+    {"tex": "$]-3,+\\infty[$"},
+    {"tex": "$]0,+\\infty[$"}
+   ],
+   "certa": 1,
+   "verifica": ["(x-3>0) == (x>3)"],
+   "explicacao": "O argumento do logaritmo tem de ser estritamente positivo: $x-3>0\\Leftrightarrow x>3$. Com $x=3$ terias $\\ln0$, que não existe, por isso o $3$ fica de fora (intervalo aberto). O domínio $]0,+\\infty[$ é o de $\\ln x$, e aqui o argumento é $x-3$."
+  },
+  {
+   "id": "fun-05",
+   "nivel": 1,
+   "enunciado": "O ponto $(3,8)$ pertence ao gráfico de $f(x)=2^x$. Qual dos pontos seguintes pertence ao gráfico de $g(x)=\\log_2 x$?",
+   "opcoes": [{"tex": "$(8,3)$"}, {"tex": "$(3,8)$"}, {"tex": "$(-3,8)$"}, {"tex": "$(3,-8)$"}],
+   "certa": 0,
+   "verifica": ["ig(logb(2, 8), 3)", "ig(2**3, 8)"],
+   "explicacao": "Os gráficos de $2^x$ e de $\\log_2 x$ são simétricos em relação à reta $y=x$, e refletir um ponto nessa reta troca as coordenadas: $(3,8)$ passa a $(8,3)$. Confirma: $\\log_2 8=3$, porque $2^3=8$."
+  },
+  {
+   "id": "fun-06",
+   "nivel": 2,
+   "enunciado": "Qual é o domínio da função $f(x)=\\log_2(5-x)$?",
+   "opcoes": [
+    {"tex": "$]5,+\\infty[$"},
+    {"tex": "$]-\\infty,5[$"},
+    {"tex": "$]-\\infty,5]$"},
+    {"tex": "$]0,5[$"}
+   ],
+   "certa": 1,
+   "verifica": ["(5-x>0) == (x<5)"],
+   "explicacao": "Condição: $5-x>0\\Leftrightarrow 5>x\\Leftrightarrow x<5$. Se escreveres $-x>-5$ e passares a $x>5$, esqueceste que multiplicar por $-1$ inverte o sentido da desigualdade. O domínio não está limitado a $x>0$: $x=0$ dá $\\log_25$, que existe, e $0\\in\\,]-\\infty,5[$."
+  },
+  {
+   "id": "fun-07",
+   "nivel": 2,
+   "enunciado": "Qual é o domínio da função $f(x)=\\ln(x^2-4)$?",
+   "opcoes": [
+    {"tex": "$]2,+\\infty[$"},
+    {"tex": "$]-2,2[$"},
+    {"tex": "$\\mathbb{R}\\setminus\\{-2,2\\}$"},
+    {"tex": "$]-\\infty,-2[\\,\\cup\\,]2,+\\infty[$"}
+   ],
+   "certa": 3,
+   "verifica": ["(t**2-4>0) == (abs(t)>2)"],
+   "explicacao": "Condição: $x^2-4>0$. A parábola $y=x^2-4$ tem zeros em $-2$ e $2$ e abre para cima, por isso é positiva fora das raízes: $x<-2$ ou $x>2$. Resolver $x^2>4$ como $x>2$ perde os valores negativos: com $x=-3$, $x^2-4=5>0$ e $\\ln5$ existe."
+  },
+  {
+   "id": "fun-08",
+   "nivel": 2,
+   "enunciado": "Qual é o domínio da função $f(x)=\\ln x+\\ln(x-2)$?",
+   "opcoes": [
+    {"tex": "$]-\\infty,0[\\,\\cup\\,]2,+\\infty[$"},
+    {"tex": "$]0,+\\infty[$"},
+    {"tex": "$]2,+\\infty[$"},
+    {"tex": "$\\mathbb{R}\\setminus\\{0,2\\}$"}
+   ],
+   "certa": 2,
+   "verifica": ["((t>0) and (t-2>0)) == (t>2)"],
+   "explicacao": "São duas parcelas e cada uma tem de existir: $x>0$ <em>e</em> $x-2>0$, ou seja, $x>2$. O domínio de $\\ln\\big(x(x-2)\\big)$ seria outro: $x(x-2)>0$ também é verdade para $x<0$. Por exemplo, em $x=-1$ calculas $\\ln3$ nessa expressão, mas na de $f$ terias $\\ln(-1)$, que não existe."
+  },
+  {
+   "id": "fun-09",
+   "nivel": 2,
+   "enunciado": "Qual é a equação da assíntota vertical do gráfico de $g(x)=4+3\\ln(x+2)$?",
+   "opcoes": [{"tex": "$x=-2$"}, {"tex": "$x=2$"}, {"tex": "$x=0$"}, {"tex": "$y=4$"}],
+   "certa": 0,
+   "verifica": ["(t+2>0) == (t>-2)"],
+   "explicacao": "A assíntota vertical fica na fronteira do domínio, onde o argumento do logaritmo tende para $0^+$: $x+2=0\\Leftrightarrow x=-2$. O gráfico de $\\ln x$ é deslocado $2$ unidades para a esquerda. O $4$ e o $3$ estão fora do logaritmo: sobem e esticam o gráfico, mas não mexem na assíntota vertical."
+  },
+  {
+   "id": "fun-10",
+   "nivel": 2,
+   "enunciado": "Qual é o contradomínio da função $h(x)=\\ln(x^2+1)$?",
+   "opcoes": [
+    {"tex": "$]0,+\\infty[$"},
+    {"tex": "$[0,+\\infty[$"},
+    {"tex": "$\\mathbb{R}$"},
+    {"tex": "$[1,+\\infty[$"}
+   ],
+   "certa": 1,
+   "verifica": ["ln(t**2+1)>=0 and ig(ln(sqrt(exp(x)-1)**2+1), x)"],
+   "explicacao": "Como $x^2\\ge0$, tem-se $x^2+1\\ge1$, e o argumento toma todos os valores de $[1,+\\infty[$. Sendo $\\ln$ crescente e $\\ln1=0$, os valores de $h$ são os de $\\ln$ em $[1,+\\infty[$, isto é, $[0,+\\infty[$. O $0$ é atingido: $h(0)=\\ln1=0$. Não é $\\mathbb{R}$: o argumento nunca fica abaixo de $1$."
+  },
+  {
+   "id": "fun-11",
+   "nivel": 2,
+   "enunciado": "Seja $f(x)=1+2\\ln x$. Quanto vale $f^{-1}(5)$?",
+   "opcoes": [
+    {"tex": "$e^{4}$", "valor": "exp(4)"},
+    {"tex": "$e^{3}$", "valor": "exp(3)"},
+    {"tex": "$e^{2}$", "valor": "exp(2)"},
+    {"tex": "$e^{2{,}5}$", "valor": "exp(2.5)"}
+   ],
+   "certa": 2,
+   "ref": "exp(2)",
+   "explicacao": "$f^{-1}(5)$ é o valor de $x$ tal que $f(x)=5$. Então $1+2\\ln x=5\\Leftrightarrow2\\ln x=4\\Leftrightarrow\\ln x=2\\Leftrightarrow x=e^2$. Confirma: $f(e^2)=1+2\\times2=5$. O $e^4$ vem de esquecer de dividir por $2$, e o $e^{2{,}5}$ de esquecer de tirar o $1$."
+  },
+  {
+   "id": "fun-12",
+   "nivel": 3,
+   "enunciado": "Seja $f(x)=2+3\\ln(x-1)$. Qual é a expressão da função inversa $f^{-1}$?",
+   "opcoes": [
+    {"tex": "$f^{-1}(x)=-1+e^{\\frac{x-2}{3}}$"},
+    {"tex": "$f^{-1}(x)=1+e^{\\frac{x}{3}-2}$"},
+    {"tex": "$f^{-1}(x)=\\dfrac{1}{2+3\\ln(x-1)}$"},
+    {"tex": "$f^{-1}(x)=1+e^{\\frac{x-2}{3}}$"}
+   ],
+   "certa": 3,
+   "verifica": ["ig(2+3*ln((1+exp((x-2)/3))-1), x)"],
+   "explicacao": "Escreves $y=2+3\\ln(x-1)$, trocas $x$ com $y$ e isolas $y$: $x=2+3\\ln(y-1)\\Leftrightarrow\\ln(y-1)=\\dfrac{x-2}{3}\\Leftrightarrow y-1=e^{\\frac{x-2}{3}}\\Leftrightarrow y=1+e^{\\frac{x-2}{3}}$. O $3$ divide o $x-2$ inteiro, e o $1$ passa a somar. A inversa não é $\\dfrac{1}{f}$."
+  },
+  {
+   "id": "fun-13",
+   "nivel": 3,
+   "enunciado": "Seja $f(x)=2e^{x}-1$, de domínio $\\mathbb{R}$. A sua inversa é $f^{-1}(x)=\\ln\\dfrac{x+1}{2}$. Qual é o domínio de $f^{-1}$?",
+   "opcoes": [
+    {"tex": "$]-1,+\\infty[$"},
+    {"tex": "$\\mathbb{R}$"},
+    {"tex": "$]0,+\\infty[$"},
+    {"tex": "$]-\\infty,-1[$"}
+   ],
+   "certa": 0,
+   "verifica": ["((t+1)/2>0) == (t>-1)", "(2*exp(t)-1>-1) and ig(2*exp(ln((x+1)/2))-1, x)"],
+   "explicacao": "O domínio da inversa é o contradomínio de $f$. Como $e^x>0$, tem-se $f(x)=2e^x-1>-1$, e todos os valores acima de $-1$ são atingidos; logo $D_{f^{-1}}=]-1,+\\infty[$. Na expressão vê-se o mesmo: $\\ln\\dfrac{x+1}{2}$ pede $\\dfrac{x+1}{2}>0\\Leftrightarrow x>-1$. Dizer $\\mathbb{R}$ é esquecer o domínio da inversa: $f^{-1}(-5)=\\ln(-2)$ não existe."
+  },
+  {
+   "id": "fun-14",
+   "nivel": 3,
+   "enunciado": "Qual é o domínio da função $f(x)=\\ln\\dfrac{x+1}{x-2}$?",
+   "opcoes": [
+    {"tex": "$]2,+\\infty[$"},
+    {"tex": "$]-\\infty,-1[\\,\\cup\\,]2,+\\infty[$"},
+    {"tex": "$]-1,2[$"},
+    {"tex": "$\\mathbb{R}\\setminus\\{-1,2\\}$"}
+   ],
+   "certa": 1,
+   "verifica": ["((t+1)/(t-2)>0) == (t<-1 or t>2)"],
+   "explicacao": "Condição: $\\dfrac{x+1}{x-2}>0$. Quadro de sinais: se $x<-1$, o numerador e o denominador são ambos negativos e o quociente é positivo; entre $-1$ e $2$, $x+1>0$ e $x-2<0$, e o quociente é negativo; se $x>2$, são ambos positivos, e o domínio é $]-\\infty,-1[\\,\\cup\\,]2,+\\infty[$. Exigir que o numerador e o denominador sejam positivos perde o ramo $x<-1$. O $-1$ e o $2$ ficam de fora: um dá $\\ln0$ e o outro anula o denominador."
+  }
+ ]
+}

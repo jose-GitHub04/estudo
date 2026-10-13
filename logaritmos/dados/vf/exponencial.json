@@ -1,0 +1,51 @@
+{
+ "tema": "exponencial",
+ "afirmacoes": [
+  { "id": "exp-vf-negativa", "tema": "exponencial",
+    "texto": "A expressão $(-2)^x$ define uma função exponencial em todo o $\\mathbb{R}$.",
+    "verdadeira": false,
+    "explicacao": "Com $x=\\frac12$ aparece $(-2)^{\\frac12}=\\sqrt{-2}$, que não é um número real. Uma exponencial tem de estar definida para todos os expoentes reais, e é por isso que a base tem de ser positiva.",
+    "erroComum": "Pensar que, como $(-2)^2=4$ e $(-2)^3=-8$ existem, $(-2)^x$ existe para qualquer $x$. Só existe para alguns expoentes.",
+    "verifica": ["abs(((-2)**0.5).imag)>1"] },
+
+  { "id": "exp-vf-decrescente", "tema": "exponencial",
+    "texto": "Se $0<a<1$ e $x<y$, então $a^x>a^y$.",
+    "verdadeira": true,
+    "explicacao": "Com a base entre 0 e 1, a exponencial é decrescente: cada unidade a mais no expoente multiplica o valor por um número menor que 1, e o resultado encolhe. Por exemplo, $1<2$, mas $\\left(\\frac12\\right)^1=\\frac12>\\frac14=\\left(\\frac12\\right)^2$.",
+    "verifica": ["(a>=1) or (x>=y) or (a**x>a**y)"],
+    "figura": { "tipo": "grafico", "x": [-3, 3], "y": [-1, 9],
+                "curvas": [ { "expr": "(1/2)^x", "rotulo": "y = (1/2)^x" } ],
+                "pontos": [ { "x": 1, "y": 0.5, "rotulo": "(1; 0,5)" }, { "x": 2, "y": 0.25, "rotulo": "(2; 0,25)" } ],
+                "retasH": [0], "retasV": [] } },
+
+  { "id": "exp-vf-impossivel", "tema": "exponencial",
+    "texto": "A equação $5^x=-25$ é impossível em $\\mathbb{R}$.",
+    "verdadeira": true,
+    "explicacao": "Uma potência de base positiva é sempre positiva, por isso $5^x>0$ para todo o $x$ e nunca pode valer $-25$. Repara que $5^2=25$ é positivo e que um expoente negativo só dá frações positivas, como $5^{-2}=\\frac{1}{25}$.",
+    "verifica": ["a**t>0"] },
+
+  { "id": "exp-vf-soma", "tema": "exponencial",
+    "texto": "Para $a,b>0$ e $x\\in\\mathbb{R}$, tem-se $(a+b)^x=a^x+b^x$.",
+    "verdadeira": false,
+    "explicacao": "O expoente distribui-se por produtos e quocientes, não por somas. Com $a=2$, $b=3$ e $x=2$: $(2+3)^2=25$, mas $2^2+3^2=13$.",
+    "erroComum": "Aplicar o expoente a cada parcela, como se $(ab)^x=a^xb^x$ valesse também para a soma.",
+    "verifica": ["not ig((a+b)**x, a**x+b**x)"] },
+
+  { "id": "exp-vf-e", "tema": "exponencial",
+    "texto": "A função $f(x)=e^x$ é crescente e a reta $y=0$ é assíntota do seu gráfico quando $x\\to-\\infty$.",
+    "verdadeira": true,
+    "explicacao": "Como $e\\approx2{,}718>1$, a função é crescente. E, andando para a esquerda, $e^x$ aproxima-se de 0 sem lá chegar (por exemplo, $e^{-10}\\approx0{,}00005$), por isso o eixo $Ox$ é assíntota horizontal.",
+    "verifica": ["exp(-50)<1e-20", "der(lambda s: exp(s), t)>0"],
+    "figura": { "tipo": "grafico", "x": [-4, 3], "y": [-1, 10],
+                "curvas": [ { "expr": "e^x", "rotulo": "y = e^x" } ],
+                "pontos": [ { "x": 0, "y": 1, "rotulo": "(0; 1)" } ],
+                "retasH": [0], "retasV": [] } },
+
+  { "id": "exp-vf-quatro", "tema": "exponencial",
+    "texto": "Para qualquer $x$ real, $4^x=2^{x+2}$.",
+    "verdadeira": false,
+    "explicacao": "Como $4=2^2$, tem-se $4^x=(2^2)^x=2^{2x}$: numa potência de potência multiplicam-se os expoentes. Com $x=1$: $4^1=4$, mas $2^{1+2}=2^3=8$. As duas só coincidem em $x=2$ ($16=16$), por isso experimentar um só valor não chega para provar uma igualdade.",
+    "erroComum": "Somar os expoentes em vez de os multiplicar, escrevendo $(2^2)^x=2^{2+x}$.",
+    "verifica": ["not ig(4**t, 2**(t+2))"] }
+ ]
+}

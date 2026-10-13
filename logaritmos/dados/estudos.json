@@ -1,0 +1,1071 @@
+{
+ "roteiro": [
+  {
+   "titulo": "Domínio e continuidade",
+   "porque": "Primeiro vê onde a função existe: só aí há gráfico. E é junto à fronteira do domínio que podem aparecer assíntotas verticais."
+  },
+  {
+   "titulo": "Zeros e sinal",
+   "porque": "Os zeros são os pontos onde o gráfico corta o eixo dos $xx$. O sinal diz onde a curva está acima ou abaixo desse eixo."
+  },
+  {
+   "titulo": "Derivada e variação",
+   "porque": "A derivada mede o declive da curva: onde é positiva a função sobe, onde é negativa desce. Os pontos onde se anula são os candidatos a extremo."
+  },
+  {
+   "titulo": "Extremos",
+   "porque": "Há extremo onde a derivada muda de sinal. Para o descrever, calcula-se o valor da função nesse ponto."
+  },
+  {
+   "titulo": "Segunda derivada e concavidades",
+   "porque": "A segunda derivada diz como a curva dobra: com $f''>0$ a concavidade fica voltada para cima, com $f''<0$ para baixo. Há inflexão onde $f''$ muda de sinal."
+  },
+  {
+   "titulo": "Assíntotas",
+   "porque": "Os limites nas pontas do domínio mostram para onde a curva foge. A assíntota é a reta de que ela se aproxima."
+  },
+  {
+   "titulo": "Gráfico e contradomínio",
+   "porque": "Junta tudo: extremos, inflexão e limites. A curva sobe e desce entre esses valores, e o contradomínio lê-se do valor mais baixo ao mais alto que a função atinge."
+  }
+ ],
+ "funcoes": [
+  {
+   "id": "xexp",
+   "nome": "f",
+   "expr": "x*e^-x",
+   "chip": "f(x)=x\\,e^{-x}",
+   "ler": "f de x igual a x vezes e elevado a menos x",
+   "d1": "(1-x)*e^-x",
+   "d2": "(x-2)*e^-x",
+   "d1Tex": "(1-x)e^{-x}",
+   "d2Tex": "(x-2)e^{-x}",
+   "janela": {
+    "x": [
+     -1,
+     6
+    ],
+    "y": [
+     -1.5,
+     0.8
+    ]
+   },
+   "cursor": {
+    "x0": 3.4,
+    "min": -0.7,
+    "max": 6
+   },
+   "elementos": {
+    "z": {
+     "tipo": "ponto",
+     "papel": "zero",
+     "x": "0",
+     "y": "0",
+     "rotulo": "(0, 0)",
+     "pos": "baixo",
+     "ancora": "start",
+     "dx": 6
+    },
+    "max": {
+     "tipo": "ponto",
+     "papel": "maximo",
+     "x": "1",
+     "y": "exp(-1)",
+     "rotulo": "máx. (1, 1/e)",
+     "pos": "cima",
+     "ancora": "start",
+     "dx": 6
+    },
+    "pi": {
+     "tipo": "ponto",
+     "papel": "inflexao",
+     "x": "2",
+     "y": "2*exp(-2)",
+     "rotulo": "P.I. (2, 2/e²)",
+     "pos": "baixo"
+    },
+    "ah": {
+     "tipo": "assintota",
+     "orientacao": "horizontal",
+     "y": "0",
+     "sentido": "+inf",
+     "rotulo": "y = 0"
+    }
+   },
+   "passos": [
+    {
+     "texto": "<p>A função $f(x)=x\\,e^{-x}$ é o produto de $x$ por $e^{-x}$. Uma exponencial existe para qualquer expoente, por isso nenhum valor de $x$ fica proibido.</p>\n$$D_f=\\mathbb{R}$$\n<p>Como $x$ e $e^{-x}$ são funções contínuas e o produto de funções contínuas é contínuo, $f$ é contínua em todo o $\\mathbb{R}$. Uma assíntota vertical precisa de um ponto onde a função não está definida ou não é contínua, e aqui não há nenhum: <strong>não há assíntotas verticais</strong>.</p>",
+     "resumo": "$D_f=\\mathbb{R}$, $f$ contínua, sem assíntotas verticais",
+     "legenda": "Domínio ℝ: a curva existe para todos os valores de x.",
+     "descobre": []
+    },
+    {
+     "texto": "<p>Os zeros são as soluções de $f(x)=0$:</p>\n$$x\\,e^{-x}=0\\Leftrightarrow x=0\\ \\lor\\ e^{-x}=0$$\n<p>Uma exponencial nunca é zero ($e^{-x}>0$ para todo o $x$), por isso $e^{-x}=0$ é impossível e o único zero é $x=0$.</p>\n<p>Para o sinal, repara que $e^{-x}$ é sempre positivo: o sinal de $f$ é então o sinal de $x$. Logo $f<0$ para $x<0$ e $f>0$ para $x>0$.</p>",
+     "resumo": "zero em $x=0$; $f<0$ se $x<0$ e $f>0$ se $x>0$",
+     "legenda": "O ponto (0, 0) é o único zero: antes dele a curva está abaixo do eixo dos xx, depois está acima.",
+     "descobre": [
+      "z"
+     ],
+     "tabela": {
+      "tipo": "sinal",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       null,
+       null
+      ],
+      "legenda": "Sinal de f"
+     }
+    },
+    {
+     "texto": "<p>Usa a regra do produto, $(uv)'=u'v+uv'$, com $u=x$ e $v=e^{-x}$. Para derivar $e^{-x}$ usa $(e^w)'=w'e^w$ com $w=-x$, que dá $(e^{-x})'=-e^{-x}$.</p>\n$$\\begin{aligned}f'(x)&=1\\times e^{-x}+x\\times\\left(-e^{-x}\\right)\\\\&=e^{-x}-x\\,e^{-x}\\\\&=(1-x)e^{-x}\\end{aligned}$$\n<p>A derivada anula-se quando um dos fatores é zero, e $e^{-x}$ nunca é zero:</p>\n$$f'(x)=0\\Leftrightarrow 1-x=0\\Leftrightarrow x=1$$\n<p>Como $e^{-x}>0$, o sinal de $f'$ é o de $1-x$: positivo para $x<1$ e negativo para $x>1$. Para completar a tabela falta o valor da função em $x=1$:</p>\n$$f(1)=1\\times e^{-1}=\\frac1e$$",
+     "resumo": "$f'(x)=(1-x)e^{-x}$: $f$ sobe até $x=1$ e desce depois",
+     "legenda": "↗ onde f sobe e ↘ onde f desce. A subida acaba em x = 1.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "1",
+        "tex": "1"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+",
+       "-"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "\\dfrac{1}{e}",
+        "v": "1/e",
+        "tag": "max"
+       },
+       null
+      ],
+      "legenda": "Tabela de variação de f"
+     }
+    },
+    {
+     "texto": "<p>Em $x=1$ a derivada passa de positiva a negativa: a função deixa de subir e passa a descer. Logo $f$ tem um <strong>máximo relativo</strong> em $x=1$, de valor</p>\n$$f(1)=\\frac1e\\approx0{,}37$$\n<p>É também o <strong>máximo absoluto</strong>: $f$ sobe até $x=1$ e desce a partir daí, por isso nenhum valor de $f$ passa de $\\frac1e$.</p>\n<p>Não há mínimo relativo, porque $f'$ só muda de sinal em $x=1$. Quanto ao mínimo absoluto, só se decide com os limites nas pontas do domínio, no passo 6.</p>",
+     "resumo": "máximo absoluto $f(1)=\\frac1e\\approx0{,}37$, sem mínimo relativo",
+     "legenda": "Máximo absoluto no ponto (1, 1/e ≈ 0,37).",
+     "descobre": [
+      "max"
+     ],
+     "cuidado": "$f'(x_0)=0$ só dá um candidato a extremo. O que o confirma é a mudança de sinal de $f'$: em $x^3$, $f'(0)=0$ e não há extremo, porque $3x^2$ é positivo dos dois lados de $0$."
+    },
+    {
+     "texto": "<p>Deriva $f'(x)=(1-x)e^{-x}$ outra vez, com a regra do produto, $u=1-x$ e $v=e^{-x}$:</p>\n$$\\begin{aligned}f''(x)&=(-1)\\,e^{-x}+(1-x)\\left(-e^{-x}\\right)\\\\&=e^{-x}\\bigl(-1-(1-x)\\bigr)\\\\&=(x-2)e^{-x}\\end{aligned}$$\n<p>$f''(x)=0\\Leftrightarrow x-2=0\\Leftrightarrow x=2$. Como $e^{-x}>0$, o sinal de $f''$ é o de $x-2$: negativo para $x<2$ e positivo para $x>2$.</p>\n<p>Onde $f''<0$ a concavidade está voltada para baixo, onde $f''>0$ está voltada para cima. Aqui é para baixo em $]-\\infty,2[$ e para cima em $]2,+\\infty[$. Como $f''$ muda de sinal em $x=2$, o gráfico tem aí um <strong>ponto de inflexão</strong>, de ordenada</p>\n$$f(2)=2e^{-2}=\\frac{2}{e^2}\\approx0{,}27$$",
+     "resumo": "$f''(x)=(x-2)e^{-x}$: inflexão em $x=2$, com $f(2)=\\frac{2}{e^2}$",
+     "legenda": "Concavidade ∩ (para baixo) até x = 2 e ∪ (para cima) depois. Ponto de inflexão em (2, 2/e² ≈ 0,27).",
+     "descobre": [
+      "pi"
+     ],
+     "tabela": {
+      "tipo": "concavidade",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "2",
+        "tex": "2"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "\\dfrac{2}{e^{2}}",
+        "v": "2/e^2",
+        "tag": "pi"
+       },
+       null
+      ],
+      "legenda": "Concavidades de f"
+     },
+     "cuidado": "Um ponto de inflexão pede mudança de sinal de $f''$, tal como um extremo pede mudança de sinal de $f'$. $f''(x_0)=0$ sozinha não chega."
+    },
+    {
+     "texto": "<p><strong>Verticais.</strong> $f$ é contínua em $\\mathbb{R}$, por isso não há (já o tinhas visto no passo 1).</p>\n<p><strong>Quando $x\\to+\\infty$.</strong> Escreve $x\\,e^{-x}=\\dfrac{x}{e^{x}}$. A exponencial vence qualquer potência: $\\lim_{x\\to+\\infty}\\dfrac{e^{x}}{x}=+\\infty$, por isso o seu inverso tende para zero:</p>\n$$\\lim_{x\\to+\\infty}x\\,e^{-x}=\\lim_{x\\to+\\infty}\\frac{x}{e^{x}}=0$$\n<p>A reta $y=0$ é <strong>assíntota horizontal</strong> quando $x\\to+\\infty$. Havendo horizontal deste lado, não há oblíqua.</p>\n<p><strong>Quando $x\\to-\\infty$.</strong> Aqui $x\\to-\\infty$ e $e^{-x}\\to+\\infty$, logo</p>\n$$\\lim_{x\\to-\\infty}x\\,e^{-x}=(-\\infty)\\times(+\\infty)=-\\infty$$\n<p>Não há horizontal. Procura então uma oblíqua $y=mx+b$, começando por $m$:</p>\n$$m=\\lim_{x\\to-\\infty}\\frac{f(x)}{x}=\\lim_{x\\to-\\infty}e^{-x}=+\\infty$$\n<p>Como $m\\notin\\mathbb{R}$, <strong>não há assíntota</strong> quando $x\\to-\\infty$.</p>",
+     "resumo": "assíntota horizontal $y=0$ em $+\\infty$; sem verticais e sem oblíquas",
+     "legenda": "A reta y = 0 é assíntota horizontal quando x → +∞.",
+     "descobre": [
+      "ah"
+     ]
+    },
+    {
+     "texto": "<p>Junta tudo na tabela de variação, agora com os limites nas pontas, $\\lim_{x\\to-\\infty}f(x)=-\\infty$ e $\\lim_{x\\to+\\infty}f(x)=0$, e o máximo no meio.</p>",
+     "resumo": "$D'_f=\\left]-\\infty,\\frac1e\\right]$",
+     "legenda": "Gráfico completo: sobe de −∞ até ao máximo (1, 1/e), desce até y = 0 sem lá chegar, com inflexão em x = 2. Contradomínio ]−∞, 1/e].",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "1",
+        "tex": "1"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+",
+       "-"
+      ],
+      "valores": [
+       {
+        "tex": "-\\infty",
+        "limite": "-inf"
+       },
+       {
+        "tex": "\\dfrac{1}{e}",
+        "v": "1/e",
+        "tag": "max"
+       },
+       {
+        "tex": "0",
+        "limite": "0"
+       }
+      ],
+      "legenda": "Tabela de variação completa de f, com os limites"
+     },
+     "depois": "<p>Em $]-\\infty,1]$, $f$ é contínua e crescente, de $-\\infty$ até $\\frac1e$: toma todos os valores de $\\left]-\\infty,\\frac1e\\right]$. Em $[1,+\\infty[$ é contínua e decrescente, de $\\frac1e$ até $0$: toma valores de $\\left]0,\\frac1e\\right]$, que o ramo anterior já cobre. O valor $0$ nunca é atingido neste ramo, porque $f>0$ para $x>0$.</p>\n<p>O contradomínio é</p>\n$$D'_f=\\left]-\\infty,\\frac1e\\right]$$\n<p>Confirma no gráfico: a curva vem de baixo, sobe até ao máximo, desce com a concavidade para baixo até à inflexão em $x=2$, e depois encosta-se por cima ao eixo dos $xx$ com a concavidade para cima. Nunca passa de $\\frac1e$.</p>",
+     "cuidado": "O contradomínio lê-se com os extremos e com os limites nas pontas. Aqui o valor mais baixo não existe: $f$ desce sem parar quando $x\\to-\\infty$, e por isso não há mínimo."
+    }
+   ],
+   "resultados": {
+    "dominio": {
+     "min": "-inf",
+     "max": "+inf"
+    },
+    "zeros": [
+     "0"
+    ],
+    "limites": [
+     {
+      "em": "+inf",
+      "valor": "0"
+     },
+     {
+      "em": "-inf",
+      "valor": "-inf"
+     }
+    ],
+    "sem": [
+     {
+      "tipo": "obliqua",
+      "sentido": "-inf",
+      "motivo": "m"
+     }
+    ],
+    "contradominio": {
+     "inf": "-inf",
+     "sup": "exp(-1)",
+     "supIncl": true,
+     "tex": "\\left]-\\infty,\\frac1e\\right]"
+    }
+   },
+   "aprox": [
+    {
+     "expr": "exp(-1)",
+     "texto": "0,37"
+    },
+    {
+     "expr": "2*exp(-2)",
+     "texto": "0,27"
+    }
+   ]
+  },
+  {
+   "id": "lnx-x",
+   "nome": "g",
+   "expr": "ln(x)/x",
+   "chip": "g(x)=\\dfrac{\\ln x}{x}",
+   "ler": "g de x igual a logaritmo neperiano de x a dividir por x",
+   "d1": "(1-ln(x))/x^2",
+   "d2": "(2*ln(x)-3)/x^3",
+   "d1Tex": "\\dfrac{1-\\ln x}{x^2}",
+   "d2Tex": "\\dfrac{2\\ln x-3}{x^3}",
+   "janela": {
+    "x": [
+     -0.6,
+     8
+    ],
+    "y": [
+     -2.5,
+     0.8
+    ]
+   },
+   "cursor": {
+    "x0": 1.6,
+    "min": 0.4,
+    "max": 8
+   },
+   "faixas": [
+    {
+     "de": -0.6,
+     "ate": 0
+    }
+   ],
+   "elementos": {
+    "z": {
+     "tipo": "ponto",
+     "papel": "zero",
+     "x": "1",
+     "y": "0",
+     "rotulo": "(1, 0)",
+     "pos": "cima",
+     "ancora": "end",
+     "dx": -6
+    },
+    "max": {
+     "tipo": "ponto",
+     "papel": "maximo",
+     "x": "e",
+     "y": "1/e",
+     "rotulo": "máx. (e, 1/e)",
+     "pos": "cima"
+    },
+    "pi": {
+     "tipo": "ponto",
+     "papel": "inflexao",
+     "x": "exp(3/2)",
+     "y": "3/(2*exp(3/2))",
+     "rotulo": "P.I.",
+     "pos": "cima"
+    },
+    "av": {
+     "tipo": "assintota",
+     "orientacao": "vertical",
+     "x": "0",
+     "sentido": "dir",
+     "rotulo": "x = 0"
+    },
+    "ah": {
+     "tipo": "assintota",
+     "orientacao": "horizontal",
+     "y": "0",
+     "sentido": "+inf",
+     "rotulo": "y = 0"
+    }
+   },
+   "passos": [
+    {
+     "texto": "<p>Para existir $\\ln x$ é preciso $x>0$. O denominador $x$ também não pode ser zero, mas isso já fica garantido por $x>0$. Então</p>\n$$D_g=\\mathbb{R}^+=]0,+\\infty[$$\n<p>$g$ é o quociente de duas funções contínuas, $\\ln x$ e $x$, e o denominador não se anula em $D_g$. Logo $g$ é contínua em todo o domínio.</p>\n<p>Uma assíntota vertical só pode estar onde a função deixa de estar definida, ou seja, junto à fronteira do domínio, $x=0$. Isso vê-se no passo 6.</p>",
+     "resumo": "$D_g=\\mathbb{R}^+$, $g$ contínua; assíntota vertical só possível em $x=0$",
+     "legenda": "A zona sombreada (x ≤ 0) fica fora do domínio: aí não há gráfico.",
+     "descobre": [],
+     "cuidado": "Quem se esquece do domínio acaba a escrever coisas sem sentido, como $g(-2)$: $\\ln(-2)$ não existe. O domínio é sempre o primeiro passo."
+    },
+    {
+     "texto": "<p>Um quociente é zero quando o numerador é zero (e o denominador não). Aqui o denominador é $x>0$, por isso</p>\n$$g(x)=0\\Leftrightarrow\\ln x=0\\Leftrightarrow x=1$$\n<p>O único zero é $x=1$. Para o sinal, como $x>0$ o denominador é positivo, e $g$ tem o sinal de $\\ln x$: negativo para $0<x<1$ e positivo para $x>1$.</p>",
+     "resumo": "zero em $x=1$; $g<0$ se $0<x<1$ e $g>0$ se $x>1$",
+     "legenda": "O ponto (1, 0) é o único zero: antes dele a curva está abaixo do eixo dos xx, depois está acima.",
+     "descobre": [
+      "z"
+     ],
+     "tabela": {
+      "tipo": "sinal",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "1",
+        "tex": "1"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       null,
+       null
+      ],
+      "legenda": "Sinal de g"
+     }
+    },
+    {
+     "texto": "<p>Usa a regra do quociente, $\\left(\\dfrac uv\\right)'=\\dfrac{u'v-uv'}{v^2}$, com $u=\\ln x$ e $v=x$:</p>\n$$g'(x)=\\frac{\\frac1x\\times x-\\ln x\\times1}{x^2}=\\dfrac{1-\\ln x}{x^2}$$\n<p>Como $x^2>0$, o sinal de $g'$ é o de $1-\\ln x$. Anula-se quando</p>\n$$1-\\ln x=0\\Leftrightarrow\\ln x=1\\Leftrightarrow x=e$$\n<p>Como $\\ln$ é crescente, $\\ln x<1\\Leftrightarrow x<e$. Então $g'>0$ para $0<x<e$ e $g'<0$ para $x>e$. Para completar a tabela falta o valor da função em $x=e$:</p>\n$$g(e)=\\frac{\\ln e}{e}=\\frac1e$$",
+     "resumo": "$g'(x)=\\dfrac{1-\\ln x}{x^2}$: $g$ sobe até $x=e$ e desce depois",
+     "legenda": "↗ onde g sobe e ↘ onde g desce. A subida acaba em x = e.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "e",
+        "tex": "e"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+",
+       "-"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "\\dfrac{1}{e}",
+        "v": "1/e",
+        "tag": "max"
+       },
+       null
+      ],
+      "legenda": "Tabela de variação de g"
+     }
+    },
+    {
+     "texto": "<p>Em $x=e\\ (\\approx2{,}72)$ a derivada passa de positiva a negativa. Logo $g$ tem um <strong>máximo relativo</strong>, de valor</p>\n$$g(e)=\\frac1e\\approx0{,}37$$\n<p>É também o <strong>máximo absoluto</strong>: $g$ sobe em $]0,e]$ e desce em $[e,+\\infty[$, por isso nenhum valor de $g$ passa de $\\frac1e$.</p>\n<p>Não há mínimo relativo. O mínimo absoluto, esse, só se decide com os limites nas pontas (passo 6).</p>",
+     "resumo": "máximo absoluto $g(e)=\\frac1e\\approx0{,}37$, sem mínimo relativo",
+     "legenda": "Máximo absoluto no ponto (e, 1/e ≈ 0,37).",
+     "descobre": [
+      "max"
+     ]
+    },
+    {
+     "texto": "<p>Deriva $g'(x)=\\dfrac{1-\\ln x}{x^2}$ com a regra do quociente, $u=1-\\ln x$ e $v=x^2$, logo $u'=-\\frac1x$ e $v'=2x$:</p>\n$$\\begin{aligned}g''(x)&=\\frac{-\\frac1x\\times x^2-(1-\\ln x)\\times2x}{x^4}=\\frac{-3x+2x\\ln x}{x^4}\\\\&=\\frac{x(2\\ln x-3)}{x^4}=\\dfrac{2\\ln x-3}{x^3}\\end{aligned}$$\n<p>Como $x^3>0$, o sinal de $g''$ é o de $2\\ln x-3$. Anula-se quando</p>\n$$2\\ln x-3=0\\Leftrightarrow\\ln x=\\frac32\\Leftrightarrow x=e^{3/2}\\approx4{,}48$$\n<p>E $2\\ln x-3<0\\Leftrightarrow\\ln x<\\frac32\\Leftrightarrow x<e^{3/2}$. Então $g''<0$ em $\\left]0,e^{3/2}\\right[$, com a concavidade para baixo, e $g''>0$ em $\\left]e^{3/2},+\\infty\\right[$, com a concavidade para cima. Como $g''$ muda de sinal, há <strong>ponto de inflexão</strong> em $x=e^{3/2}$, de ordenada</p>\n$$g\\left(e^{3/2}\\right)=\\frac{3/2}{e^{3/2}}=\\frac{3}{2e^{3/2}}\\approx0{,}33$$",
+     "resumo": "inflexão em $x=e^{3/2}$, com $g=\\frac{3}{2e^{3/2}}$",
+     "legenda": "Concavidade ∩ (para baixo) até x = e^(3/2) ≈ 4,48 e ∪ (para cima) depois: ponto de inflexão aí.",
+     "descobre": [
+      "pi"
+     ],
+     "tabela": {
+      "tipo": "concavidade",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "exp(3/2)",
+        "tex": "e^{3/2}"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "\\dfrac{3}{2e^{3/2}}",
+        "v": "3/(2*exp(3/2))",
+        "tag": "pi"
+       },
+       null
+      ],
+      "legenda": "Concavidades de g"
+     }
+    },
+    {
+     "texto": "<p><strong>Verticais.</strong> Só pode haver na fronteira do domínio, $x=0$. Como o domínio só tem pontos à direita de $0$, calcula-se o limite lateral à direita:</p>\n$$\\lim_{x\\to0^+}\\frac{\\ln x}{x}=\\frac{-\\infty}{0^+}=-\\infty$$\n<p>A reta $x=0$ é <strong>assíntota vertical</strong>.</p>\n<p><strong>Quando $x\\to+\\infty$.</strong> É um limite notável: a potência vence o logaritmo, porque $\\ln x$ cresce muito mais devagar do que $x$.</p>\n$$\\lim_{x\\to+\\infty}\\frac{\\ln x}{x}=0$$\n<p>A reta $y=0$ é <strong>assíntota horizontal</strong> quando $x\\to+\\infty$. Havendo horizontal deste lado, não há oblíqua. Quando $x\\to-\\infty$ não há nada a estudar, porque o domínio não tem valores negativos.</p>",
+     "resumo": "assíntota vertical $x=0$ e horizontal $y=0$ (em $+\\infty$)",
+     "legenda": "A reta x = 0 é assíntota vertical e a reta y = 0 é assíntota horizontal quando x → +∞.",
+     "descobre": [
+      "av",
+      "ah"
+     ]
+    },
+    {
+     "texto": "<p>Junta tudo na tabela de variação, agora com os limites nas pontas, $\\lim_{x\\to0^+}g(x)=-\\infty$ e $\\lim_{x\\to+\\infty}g(x)=0$, e o máximo no meio.</p>",
+     "resumo": "$D'_g=\\left]-\\infty,\\frac1e\\right]$",
+     "legenda": "Gráfico completo: sobe de −∞ até ao máximo (e, 1/e), desce até y = 0 sem lá chegar, com inflexão em x = e^(3/2). Contradomínio ]−∞, 1/e].",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "e",
+        "tex": "e"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+",
+       "-"
+      ],
+      "valores": [
+       {
+        "tex": "-\\infty",
+        "limite": "-inf"
+       },
+       {
+        "tex": "\\dfrac{1}{e}",
+        "v": "1/e",
+        "tag": "max"
+       },
+       {
+        "tex": "0",
+        "limite": "0"
+       }
+      ],
+      "legenda": "Tabela de variação completa de g, com os limites"
+     },
+     "depois": "<p>Em $]0,e]$, $g$ é contínua e crescente, de $-\\infty$ até $\\frac1e$: toma todos os valores de $\\left]-\\infty,\\frac1e\\right]$. Em $[e,+\\infty[$ é contínua e decrescente, de $\\frac1e$ até $0$: toma valores de $\\left]0,\\frac1e\\right]$, que o ramo anterior já cobre. O contradomínio é</p>\n$$D'_g=\\left]-\\infty,\\frac1e\\right]$$\n<p>Confirma no gráfico: a curva nasce colada à reta $x=0$, por baixo, corta o eixo em $x=1$, sobe até ao máximo, e depois desce, encostando-se por cima ao eixo dos $xx$.</p>",
+     "cuidado": "Sem os limites nas pontas ficavas só com o máximo. O que dá o contradomínio é a combinação dos extremos com os limites."
+    }
+   ],
+   "resultados": {
+    "dominio": {
+     "min": "0",
+     "max": "+inf"
+    },
+    "zeros": [
+     "1"
+    ],
+    "limites": [
+     {
+      "em": "0+",
+      "valor": "-inf"
+     },
+     {
+      "em": "+inf",
+      "valor": "0"
+     }
+    ],
+    "sem": [],
+    "contradominio": {
+     "inf": "-inf",
+     "sup": "1/e",
+     "supIncl": true,
+     "tex": "\\left]-\\infty,\\frac1e\\right]"
+    }
+   },
+   "aprox": [
+    {
+     "expr": "e",
+     "texto": "2,72"
+    },
+    {
+     "expr": "1/e",
+     "texto": "0,37"
+    },
+    {
+     "expr": "exp(3/2)",
+     "texto": "4,48"
+    },
+    {
+     "expr": "3/(2*exp(3/2))",
+     "texto": "0,33"
+    }
+   ]
+  },
+  {
+   "id": "exp-2x",
+   "nome": "h",
+   "expr": "e^x-2*x",
+   "chip": "h(x)=e^{x}-2x",
+   "ler": "h de x igual a e elevado a x menos 2 x",
+   "d1": "e^x-2",
+   "d2": "e^x",
+   "d1Tex": "e^x-2",
+   "d2Tex": "e^x",
+   "janela": {
+    "x": [
+     -4,
+     3
+    ],
+    "y": [
+     -1,
+     10
+    ]
+   },
+   "cursor": {
+    "x0": -1.2,
+    "min": -4,
+    "max": 2.7
+   },
+   "elementos": {
+    "min": {
+     "tipo": "ponto",
+     "papel": "minimo",
+     "x": "ln(2)",
+     "y": "2-2*ln(2)",
+     "rotulo": "mín.",
+     "pos": "dir"
+    },
+    "ob": {
+     "tipo": "assintota",
+     "orientacao": "obliqua",
+     "m": "-2",
+     "b": "0",
+     "sentido": "-inf",
+     "ate": 0.5,
+     "rotulo": "y = −2x"
+    }
+   },
+   "passos": [
+    {
+     "texto": "<p>$h(x)=e^x-2x$ é a diferença entre uma exponencial e um polinómio, e os dois estão definidos para qualquer $x$:</p>\n$$D_h=\\mathbb{R}$$\n<p>Uma diferença de funções contínuas é contínua, logo $h$ é contínua em $\\mathbb{R}$ e <strong>não tem assíntotas verticais</strong>.</p>",
+     "resumo": "$D_h=\\mathbb{R}$, $h$ contínua, sem assíntotas verticais",
+     "legenda": "Domínio ℝ: a curva existe para todos os valores de x.",
+     "descobre": []
+    },
+    {
+     "texto": "<p>Para os zeros, resolve $h(x)=0$:</p>\n$$e^x-2x=0\\Leftrightarrow e^x=2x$$\n<p>Esta equação mistura uma exponencial com um polinómio e não há método para isolar $x$. Quando isto acontece, não insistas: deixa a pergunta em aberto e volta a ela no passo 4. Se o menor valor de $h$ for positivo, $h$ nunca chega a ser zero.</p>",
+     "resumo": "zeros: ainda por decidir (volta ao passo 4)",
+     "legenda": "Ainda sem zeros marcados: falta decidir se os há.",
+     "descobre": [],
+     "cuidado": "Aplicar $\\ln$ aos dois lados dá $x=\\ln(2x)$, que continua a ter $x$ nos dois lados: não resolveste nada."
+    },
+    {
+     "texto": "<p>Deriva termo a termo: $(e^x)'=e^x$ e $(2x)'=2$.</p>\n$$h'(x)=e^x-2$$\n<p>A derivada anula-se quando</p>\n$$e^x-2=0\\Leftrightarrow e^x=2\\Leftrightarrow x=\\ln2\\ (\\approx0{,}69)$$\n<p>Como a exponencial é crescente, $e^x>2\\Leftrightarrow x>\\ln2$. Então $h'<0$ para $x<\\ln2$ e $h'>0$ para $x>\\ln2$. Para completar a tabela falta o valor da função em $x=\\ln2$, usando $e^{\\ln2}=2$:</p>\n$$h(\\ln2)=e^{\\ln2}-2\\ln2=2-2\\ln2$$",
+     "resumo": "$h'(x)=e^x-2$: $h$ desce até $x=\\ln2$ e sobe depois",
+     "legenda": "↘ onde h desce e ↗ onde h sobe. A descida acaba em x = ln 2 ≈ 0,69.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "ln(2)",
+        "tex": "\\ln 2"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "2-2\\ln 2",
+        "v": "2-2*ln(2)",
+        "tag": "min"
+       },
+       null
+      ],
+      "legenda": "Tabela de variação de h"
+     }
+    },
+    {
+     "texto": "<p>Em $x=\\ln2$ a derivada passa de negativa a positiva: a função deixa de descer e passa a subir. Logo $h$ tem um <strong>mínimo relativo</strong>, que é também <strong>mínimo absoluto</strong> (desce até aí e sobe depois):</p>\n$$h(\\ln2)=2-2\\ln2\\approx0{,}61$$\n<p>Não há máximo relativo. O máximo absoluto, esse, depende dos limites (passo 6).</p>\n<p><strong>Voltando ao passo 2.</strong> O menor valor de $h$ é $2-2\\ln2\\approx0{,}61$, que é positivo. Logo $h(x)>0$ para todo o $x$: <strong>$h$ não tem zeros</strong> e o gráfico fica sempre acima do eixo dos $xx$.</p>",
+     "resumo": "mínimo absoluto $h(\\ln2)=2-2\\ln2\\approx0{,}61$; sem zeros, $h>0$",
+     "legenda": "Mínimo absoluto em (ln 2, 2 − 2 ln 2 ≈ 0,61), acima do eixo dos xx: não há zeros.",
+     "descobre": [
+      "min"
+     ]
+    },
+    {
+     "texto": "<p>Deriva $h'(x)=e^x-2$:</p>\n$$h''(x)=e^x$$\n<p>A exponencial é sempre positiva, por isso $h''>0$ em todo o $\\mathbb{R}$: a concavidade está voltada para cima em todo o domínio. Como $h''$ nunca se anula nem muda de sinal, <strong>não há pontos de inflexão</strong>.</p>",
+     "resumo": "$h''(x)=e^x>0$: concavidade para cima, sem inflexões",
+     "legenda": "Concavidade ∪ (para cima) em todo o domínio: sem pontos de inflexão.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "concavidade",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+"
+      ],
+      "valores": [
+       null,
+       null
+      ],
+      "legenda": "Concavidades de h"
+     },
+     "cuidado": "Uma segunda derivada que não muda de sinal não dá inflexão. Escreve-o na tabela e conclui que não há."
+    },
+    {
+     "texto": "<p><strong>Verticais.</strong> $h$ é contínua em $\\mathbb{R}$, por isso não há.</p>\n<p><strong>Quando $x\\to+\\infty$.</strong> Dá $+\\infty-\\infty$, uma indeterminação. Põe $x$ em evidência:</p>\n$$\\lim_{x\\to+\\infty}\\left(e^x-2x\\right)=\\lim_{x\\to+\\infty}x\\left(\\frac{e^x}{x}-2\\right)=(+\\infty)\\times(+\\infty-2)=+\\infty$$\n<p>Não há horizontal. Para a oblíqua, começa por $m$:</p>\n$$m=\\lim_{x\\to+\\infty}\\frac{h(x)}{x}=\\lim_{x\\to+\\infty}\\left(\\frac{e^x}{x}-2\\right)=+\\infty$$\n<p>Como $m\\notin\\mathbb{R}$, não há assíntota quando $x\\to+\\infty$.</p>\n<p><strong>Quando $x\\to-\\infty$.</strong> $e^x\\to0$ e $-2x\\to+\\infty$, logo $\\lim_{x\\to-\\infty}h(x)=+\\infty$ e não há horizontal. Oblíqua:</p>\n$$m=\\lim_{x\\to-\\infty}\\frac{e^x-2x}{x}=\\lim_{x\\to-\\infty}\\left(\\frac{e^x}{x}-2\\right)=0-2=-2$$\n$$b=\\lim_{x\\to-\\infty}\\bigl(h(x)-mx\\bigr)=\\lim_{x\\to-\\infty}\\left(e^x-2x+2x\\right)=\\lim_{x\\to-\\infty}e^x=0$$\n<p>Como $m$ e $b$ são reais, a reta $y=-2x$ é <strong>assíntota oblíqua</strong> quando $x\\to-\\infty$. É só deste lado: à direita a curva sobe muito mais depressa do que qualquer reta.</p>",
+     "resumo": "assíntota oblíqua $y=-2x$ em $-\\infty$; sem verticais e sem horizontais",
+     "legenda": "A reta y = −2x é assíntota oblíqua quando x → −∞: à esquerda a curva encosta-se a ela.",
+     "descobre": [
+      "ob"
+     ]
+    },
+    {
+     "texto": "<p>Junta tudo na tabela de variação, agora com os limites nas pontas, $\\lim_{x\\to-\\infty}h(x)=+\\infty$ e $\\lim_{x\\to+\\infty}h(x)=+\\infty$, e o mínimo no meio.</p>",
+     "resumo": "$D'_h=\\left[2-2\\ln2,+\\infty\\right[$",
+     "legenda": "Gráfico completo: desce de +∞ até ao mínimo (ln 2, 2 − 2 ln 2), e sobe outra vez para +∞. Contradomínio [2 − 2 ln 2, +∞[.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "-inf",
+        "tex": "-\\infty"
+       },
+       {
+        "v": "ln(2)",
+        "tex": "\\ln 2"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       {
+        "tex": "+\\infty",
+        "limite": "+inf"
+       },
+       {
+        "tex": "2-2\\ln 2",
+        "v": "2-2*ln(2)",
+        "tag": "min"
+       },
+       {
+        "tex": "+\\infty",
+        "limite": "+inf"
+       }
+      ],
+      "legenda": "Tabela de variação completa de h, com os limites"
+     },
+     "depois": "<p>Em $]-\\infty,\\ln2]$, $h$ é contínua e decrescente, de $+\\infty$ até $2-2\\ln2$. Em $[\\ln2,+\\infty[$ é contínua e crescente, de $2-2\\ln2$ até $+\\infty$. Cada ramo toma todos os valores desde o mínimo para cima, por isso</p>\n$$D'_h=\\left[2-2\\ln2,+\\infty\\right[$$\n<p>Confirma no gráfico: a curva vem de cima, junto da reta $y=-2x$, desce até ao mínimo (que fica acima do eixo dos $xx$), e sobe de novo, sempre com a concavidade para cima.</p>",
+     "cuidado": "Sem os limites não sabias se a função sobe sem limite ou se tem um máximo escondido nas pontas. Aqui os dois limites são $+\\infty$, por isso não há máximo."
+    }
+   ],
+   "resultados": {
+    "dominio": {
+     "min": "-inf",
+     "max": "+inf"
+    },
+    "zeros": [],
+    "limites": [
+     {
+      "em": "+inf",
+      "valor": "+inf"
+     },
+     {
+      "em": "-inf",
+      "valor": "+inf"
+     }
+    ],
+    "sem": [
+     {
+      "tipo": "obliqua",
+      "sentido": "+inf",
+      "motivo": "m"
+     }
+    ],
+    "contradominio": {
+     "inf": "2-2*ln(2)",
+     "infIncl": true,
+     "sup": "+inf",
+     "tex": "\\left[2-2\\ln2,+\\infty\\right["
+    }
+   },
+   "aprox": [
+    {
+     "expr": "ln(2)",
+     "texto": "0,69"
+    },
+    {
+     "expr": "2-2*ln(2)",
+     "texto": "0,61"
+    }
+   ]
+  },
+  {
+   "id": "x-lnx",
+   "nome": "k",
+   "expr": "x-ln(x)",
+   "chip": "k(x)=x-\\ln x",
+   "ler": "k de x igual a x menos logaritmo neperiano de x",
+   "d1": "(x-1)/x",
+   "d2": "1/x^2",
+   "d1Tex": "\\dfrac{x-1}{x}",
+   "d2Tex": "\\dfrac{1}{x^2}",
+   "janela": {
+    "x": [
+     -0.5,
+     5
+    ],
+    "y": [
+     -0.5,
+     4.5
+    ]
+   },
+   "cursor": {
+    "x0": 2.5,
+    "min": 0.02,
+    "max": 5
+   },
+   "faixas": [
+    {
+     "de": -0.5,
+     "ate": 0
+    }
+   ],
+   "elementos": {
+    "min": {
+     "tipo": "ponto",
+     "papel": "minimo",
+     "x": "1",
+     "y": "1",
+     "rotulo": "mín. (1, 1)",
+     "pos": "baixo",
+     "ancora": "start",
+     "dx": 8
+    },
+    "av": {
+     "tipo": "assintota",
+     "orientacao": "vertical",
+     "x": "0",
+     "sentido": "dir",
+     "rotulo": "x = 0"
+    }
+   },
+   "passos": [
+    {
+     "texto": "<p>Só existe $\\ln x$ para $x>0$. O termo $x$ existe sempre, por isso</p>\n$$D_k=\\mathbb{R}^+=]0,+\\infty[$$\n<p>$k$ é a diferença de duas funções contínuas, $x$ e $\\ln x$, logo é contínua em todo o domínio. Uma assíntota vertical só pode estar junto à fronteira do domínio, $x=0$. Isso vê-se no passo 6.</p>",
+     "resumo": "$D_k=\\mathbb{R}^+$, $k$ contínua; assíntota vertical só possível em $x=0$",
+     "legenda": "A zona sombreada (x ≤ 0) fica fora do domínio: aí não há gráfico.",
+     "descobre": []
+    },
+    {
+     "texto": "<p>Para os zeros, resolve $k(x)=0$:</p>\n$$x-\\ln x=0\\Leftrightarrow x=\\ln x$$\n<p>Esta equação mistura um polinómio com um logaritmo e não há método para isolar $x$. Deixa a pergunta em aberto e volta a ela no passo 4: se o menor valor de $k$ for positivo, $k$ nunca chega a ser zero.</p>",
+     "resumo": "zeros: ainda por decidir (volta ao passo 4)",
+     "legenda": "Ainda sem zeros marcados: falta decidir se os há.",
+     "descobre": [],
+     "cuidado": "Passar de $x=\\ln x$ para $e^x=x$ também não resolve nada: a equação nova continua a ter $x$ nos dois lados."
+    },
+    {
+     "texto": "<p>Deriva termo a termo: $(x)'=1$ e $(\\ln x)'=\\dfrac1x$.</p>\n$$k'(x)=1-\\frac1x=\\dfrac{x-1}{x}$$\n<p>Anula-se quando $x-1=0$, ou seja, em $x=1$, que pertence ao domínio. Como $x>0$, o denominador é positivo e o sinal de $k'$ é o de $x-1$: negativo para $0<x<1$ e positivo para $x>1$. Para completar a tabela falta o valor da função em $x=1$:</p>\n$$k(1)=1-\\ln1=1-0=1$$",
+     "resumo": "$k'(x)=\\dfrac{x-1}{x}$: $k$ desce até $x=1$ e sobe depois",
+     "legenda": "↘ onde k desce e ↗ onde k sobe. A descida acaba em x = 1.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "1",
+        "tex": "1"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       null,
+       {
+        "tex": "1",
+        "v": "1",
+        "tag": "min"
+       },
+       null
+      ],
+      "legenda": "Tabela de variação de k"
+     }
+    },
+    {
+     "texto": "<p>Em $x=1$ a derivada passa de negativa a positiva: a função deixa de descer e passa a subir. Logo $k$ tem um <strong>mínimo relativo</strong>, que é também <strong>mínimo absoluto</strong>:</p>\n$$k(1)=1$$\n<p>Não há máximo relativo. O máximo absoluto, esse, depende dos limites (passo 6).</p>\n<p><strong>Voltando ao passo 2.</strong> O menor valor de $k$ é $1$, que é positivo. Logo $k(x)\\ge1>0$ para todo o $x$: <strong>$k$ não tem zeros</strong> e o gráfico fica sempre acima do eixo dos $xx$.</p>",
+     "resumo": "mínimo absoluto $k(1)=1$; sem zeros, $k\\ge1$",
+     "legenda": "Mínimo absoluto no ponto (1, 1), acima do eixo dos xx: não há zeros.",
+     "descobre": [
+      "min"
+     ]
+    },
+    {
+     "texto": "<p>Escreve $k'(x)=1-x^{-1}$ e deriva outra vez:</p>\n$$k''(x)=x^{-2}=\\dfrac{1}{x^2}$$\n<p>Como $x^2>0$, tem-se $k''>0$ em todo o domínio: a concavidade está voltada para cima em $]0,+\\infty[$. Como $k''$ nunca se anula nem muda de sinal, <strong>não há pontos de inflexão</strong>.</p>",
+     "resumo": "$k''(x)=\\dfrac1{x^2}>0$: concavidade para cima, sem inflexões",
+     "legenda": "Concavidade ∪ (para cima) em todo o domínio: sem pontos de inflexão.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "concavidade",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "+"
+      ],
+      "valores": [
+       null,
+       null
+      ],
+      "legenda": "Concavidades de k"
+     }
+    },
+    {
+     "texto": "<p><strong>Verticais.</strong> Só pode haver na fronteira do domínio, $x=0$. Calcula-se o limite à direita:</p>\n$$\\lim_{x\\to0^+}(x-\\ln x)=0-(-\\infty)=+\\infty$$\n<p>A reta $x=0$ é <strong>assíntota vertical</strong>.</p>\n<p><strong>Quando $x\\to+\\infty$.</strong> Dá $+\\infty-\\infty$, uma indeterminação. Põe $x$ em evidência:</p>\n$$\\lim_{x\\to+\\infty}(x-\\ln x)=\\lim_{x\\to+\\infty}x\\left(1-\\frac{\\ln x}{x}\\right)=(+\\infty)\\times(1-0)=+\\infty$$\n<p>Não há horizontal. Para a oblíqua, começa por $m$:</p>\n$$m=\\lim_{x\\to+\\infty}\\frac{x-\\ln x}{x}=\\lim_{x\\to+\\infty}\\left(1-\\frac{\\ln x}{x}\\right)=1$$\n<p>$m$ é real, por isso calcula $b$:</p>\n$$b=\\lim_{x\\to+\\infty}\\bigl(k(x)-1\\times x\\bigr)=\\lim_{x\\to+\\infty}(-\\ln x)=-\\infty$$\n<p>Como $b\\notin\\mathbb{R}$, <strong>não há assíntota oblíqua</strong>, apesar de $m$ ser real. Quando $x\\to-\\infty$ não há nada a estudar, porque o domínio não tem valores negativos.</p>",
+     "resumo": "assíntota vertical $x=0$; sem horizontal nem oblíqua",
+     "legenda": "A reta x = 0 é assíntota vertical. À direita a curva sobe sem se encostar a nenhuma reta.",
+     "descobre": [
+      "av"
+     ],
+     "cuidado": "Para haver assíntota oblíqua, $m$ e $b$ têm de ser números reais. Basta um deles falhar para não haver assíntota."
+    },
+    {
+     "texto": "<p>Junta tudo na tabela de variação, agora com os limites nas pontas, $\\lim_{x\\to0^+}k(x)=+\\infty$ e $\\lim_{x\\to+\\infty}k(x)=+\\infty$, e o mínimo no meio.</p>",
+     "resumo": "$D'_k=[1,+\\infty[$",
+     "legenda": "Gráfico completo: desce de +∞ (junto de x = 0) até ao mínimo (1, 1) e sobe outra vez para +∞. Contradomínio [1, +∞[.",
+     "descobre": [],
+     "tabela": {
+      "tipo": "variacao",
+      "x": [
+       {
+        "v": "0",
+        "tex": "0"
+       },
+       {
+        "v": "1",
+        "tex": "1"
+       },
+       {
+        "v": "+inf",
+        "tex": "+\\infty"
+       }
+      ],
+      "sinais": [
+       "-",
+       "+"
+      ],
+      "valores": [
+       {
+        "tex": "+\\infty",
+        "limite": "+inf"
+       },
+       {
+        "tex": "1",
+        "v": "1",
+        "tag": "min"
+       },
+       {
+        "tex": "+\\infty",
+        "limite": "+inf"
+       }
+      ],
+      "legenda": "Tabela de variação completa de k, com os limites"
+     },
+     "depois": "<p>Em $]0,1]$, $k$ é contínua e decrescente, de $+\\infty$ até $1$. Em $[1,+\\infty[$ é contínua e crescente, de $1$ até $+\\infty$. Cada ramo toma todos os valores desde o mínimo para cima, por isso</p>\n$$D'_k=[1,+\\infty[$$\n<p>Confirma no gráfico: a curva vem de cima, colada à reta $x=0$, desce até $(1,1)$ e sobe de novo, sempre com a concavidade para cima.</p>",
+     "cuidado": "Sem os limites não sabias se a função sobe sem limite ou se tem um máximo escondido nas pontas. Aqui os dois limites são $+\\infty$, por isso não há máximo."
+    }
+   ],
+   "resultados": {
+    "dominio": {
+     "min": "0",
+     "max": "+inf"
+    },
+    "zeros": [],
+    "limites": [
+     {
+      "em": "0+",
+      "valor": "+inf"
+     },
+     {
+      "em": "+inf",
+      "valor": "+inf"
+     }
+    ],
+    "sem": [
+     {
+      "tipo": "obliqua",
+      "sentido": "+inf",
+      "motivo": "b",
+      "m": "1"
+     }
+    ],
+    "contradominio": {
+     "inf": "1",
+     "infIncl": true,
+     "sup": "+inf",
+     "tex": "[1,+\\infty["
+    }
+   },
+   "aprox": []
+  }
+ ]
+}

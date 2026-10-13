@@ -1,0 +1,96 @@
+/* Verdadeiro ou falso (widgets/vf.js). Desenhado a 390px; classes .vf- */
+
+.vf { padding: 1rem; }
+.vf button { font-family: inherit; }
+.vf [hidden] { display: none !important; }
+
+.vf-vivo {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+/* fórmula + pontuação que vem logo a seguir. Com nowrap uma fórmula comprida (equações com ⇔) não quebrava
+   e passava do ecrã; como inline-block vai inteira para a linha seguinte e, se for maior que a linha, quebra por dentro. */
+.vf-cola { display: inline-block; max-width: 100%; }
+
+/* ---------- filtro ---------- */
+
+.vf .chip { min-height: 2.75rem; padding: 0.45rem 0.95rem; }
+.vf .chip[aria-pressed="true"]::before { content: "\2713\00a0"; }
+.vf-topo .chips { margin-top: 0; }
+.vf-estat { margin: 0.6rem 0 0; font-size: 0.88rem; }
+
+/* ---------- afirmação ---------- */
+
+.vf-palco { margin-top: 1rem; }
+.vf-cartao { padding-top: 0.2rem; }
+.vf-progresso { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.35rem; }
+.vf-contador { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vf-etiqueta { margin: 0; min-width: 0; color: var(--tinta-suave); font-size: 0.78rem; letter-spacing: 0.08em; text-align: right; text-transform: uppercase; }
+.vf-barra { height: 0.4rem; overflow: hidden; border-radius: 999px; background: var(--linha); }
+.vf-barra__cheia { height: 100%; border-radius: 999px; background: var(--dourado); }
+
+.vf-enunciado { margin: 1rem 0 1.1rem; font-size: 1.15rem; line-height: 1.75; overflow-wrap: anywhere; }
+.vf-enunciado:focus { outline: none; }
+
+.vf-respostas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.vf-resp {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
+  min-height: 3.75rem; padding: 0.55rem 0.6rem;
+  border: 2px solid #cdbfae; border-radius: 0.5rem; background: var(--creme); color: var(--tinta);
+  font-size: 1.15rem; font-weight: 600; cursor: pointer;
+}
+.vf-resp:hover:not(:disabled) { border-color: var(--castanho); background: var(--dourado-fundo); }
+.vf-resp__marca { font-size: 0.85rem; font-weight: 700; }
+.vf-resp__marca:empty { display: none; }
+
+.vf-resp:disabled { color: var(--tinta); cursor: default; }
+.vf-resp--outra:disabled { color: var(--tinta-suave); background: var(--papel); border-color: var(--linha); }
+.vf-resp--certa { border-color: var(--certo); background: var(--certo-fundo); }
+.vf-resp--certa .vf-resp__marca { color: var(--certo); }
+.vf-resp--errada { border-color: var(--erro); background: var(--erro-fundo); }
+.vf-resp--errada .vf-resp__marca { color: var(--erro); }
+.vf-resp--escolhida.vf-resp--certa { box-shadow: 0 0 0 3px var(--certo); }
+.vf-resp--escolhida.vf-resp--errada { box-shadow: 0 0 0 3px var(--erro); }
+.vf-resp--certa:not(.vf-resp--escolhida) { border-style: dashed; }
+
+/* ---------- resultado ---------- */
+
+.vf-resultado:empty { display: none; }
+.vf-resultado { margin-top: 1rem; padding: 0.8rem 0.95rem; border-left: 4px solid var(--dourado); border-radius: 0 0.5rem 0.5rem 0; background: var(--dourado-fundo); }
+.vf-resultado--certo { border-left-color: var(--certo); background: var(--certo-fundo); }
+.vf-resultado--errado { border-left-color: var(--erro); background: var(--erro-fundo); }
+.vf-veredito { margin: 0 0 0.5rem; font-size: 1.05rem; }
+.vf-veredito__simbolo { display: inline-block; margin-right: 0.35rem; font-weight: 700; }
+.vf-veredito strong { margin-right: 0.25rem; }
+.vf-resultado--certo .vf-veredito strong, .vf-resultado--certo .vf-veredito__simbolo { color: var(--certo); }
+.vf-resultado--errado .vf-veredito strong, .vf-resultado--errado .vf-veredito__simbolo { color: var(--erro); }
+.vf-expl { margin: 0; overflow-wrap: anywhere; }
+.vf-erro { margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px solid var(--linha); }
+.vf-erro__titulo { margin: 0 0 0.2rem; color: var(--dourado-texto); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.vf-erro__texto { margin: 0; overflow-wrap: anywhere; }
+.vf-rodape { display: flex; margin-top: 0.9rem; }
+.vf-seguinte { flex: 1 1 100%; min-height: 2.9rem; }
+
+/* ---------- figura (gráfico de assets/motor/grafico.js, que traz a classe .figura) ---------- */
+
+.vf-fig { max-width: 26rem; margin: 0.8rem 0 0; padding: 0.4rem; border: 1px solid var(--linha); border-radius: 0.4rem; background: var(--papel); }
+.vf-fig .figura { max-width: none; margin: 0; }
+
+/* ---------- fim ---------- */
+
+.vf-titulo { margin: 0 0 0.3rem; font-family: var(--serif); font-size: 1.7rem; }
+.vf-titulo:focus { outline: none; }
+.vf-subtitulo { margin: 1.1rem 0 0.5rem; font-size: 1.1rem; }
+.vf-erradas__lista { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.vf-errada { padding: 0.5rem 0.8rem; border-left: 3px solid var(--erro); border-radius: 0 0.4rem 0.4rem 0; background: var(--erro-fundo); font-size: 0.95rem; }
+.vf-errada__tema { display: block; color: var(--tinta-suave); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.vf-errada__texto { display: block; overflow-wrap: anywhere; }
+.vf-errada__nota { display: block; margin-top: 0.2rem; color: var(--erro); font-size: 0.85rem; font-weight: 700; }
+.vf-acoes { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem; }
+.vf-acoes .botao { flex: 1 1 100%; min-height: 2.9rem; }
+
+@media (min-width: 40em) {
+  .vf { padding: 1.25rem; }
+  .vf-seguinte { flex: 0 0 auto; min-width: 10rem; }
+  .vf-acoes .botao { flex: 0 1 auto; }
+}

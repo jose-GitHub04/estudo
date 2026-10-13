@@ -1,0 +1,107 @@
+/* equacoes: widget «Resolve passo a passo» (equações e inequações exponenciais e logarítmicas).
+   Prefixo eq-. Cores só por tokens: os do tema (tema.css) e os da folha base. */
+
+.eq [hidden] { display: none !important; }
+.eq * { animation: none !important; transition: none !important; }
+
+.eq-intro { margin: 0 0 0.9rem; color: var(--tinta-suave); font-size: 0.95rem; }
+
+/* ---------- escolha ---------- */
+.eq-escolha { display: grid; gap: 0.7rem; }
+.eq-grupo__nome {
+  margin: 0; color: var(--tinta-suave); font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.eq .chips { margin-top: 0.3rem; }
+.eq .chip { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0.4rem 0.95rem; }
+
+/* ---------- enunciado ---------- */
+.eq-enunciado {
+  margin: 1.1rem 0 0; padding: 0.7rem 0.95rem;
+  border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo);
+}
+.eq-enunciado__texto { margin: 0; font-size: 0.95rem; }
+.eq-formula { overflow-x: auto; overflow-y: hidden; }
+.eq-formula .katex-display { margin: 0.45rem 0 0.1rem; }
+
+/* ---------- gráfico e resolução ---------- */
+.eq-quadro { display: grid; gap: 1.4rem; margin-top: 1.1rem; }
+.eq-col { min-width: 0; }
+@media (min-width: 52em) {
+  .eq-quadro { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6rem; align-items: start; }
+  .eq-col--grafico { position: sticky; top: 5rem; }
+}
+
+.eq-vistas { margin: 0 0 0.5rem; }
+.eq-figura .figura { max-width: 100%; }
+
+.eq-legenda { display: grid; gap: 0.3rem; margin: 0.7rem 0 0; padding: 0; list-style: none; font-size: 0.88rem; }
+.eq-legenda:empty { display: none; }
+.eq-legenda__item { display: flex; align-items: center; gap: 0.55rem; }
+.eq-amostra { flex: 0 0 auto; }
+.eq-legenda__texto { min-width: 0; }
+
+/* ---------- parâmetro ---------- */
+.eq-param {
+  margin-top: 0.9rem; padding: 0.7rem 0.85rem;
+  border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--creme);
+}
+.eq-param__topo { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.eq-param__rotulo { font-weight: 600; }
+.eq-param__valor { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c-exp); }
+.eq-range { width: 100%; min-height: 2.75rem; margin: 0; accent-color: var(--c-exp); }
+.eq-range:focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; }
+.eq-leitura { margin: 0.2rem 0 0; font-size: 0.95rem; overflow-x: auto; overflow-y: hidden; }
+
+/* ---------- o método ---------- */
+.eq-metodo { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.8rem; padding: 0; list-style: none; }
+.eq-metodo__fase {
+  display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.25rem 0.8rem 0.25rem 0.3rem;
+  border: 1px solid var(--linha); border-radius: 999px; background: var(--papel);
+  color: var(--tinta-suave); font-size: 0.85rem;
+}
+.eq-metodo__num {
+  display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  border: 1px solid var(--linha); background: var(--creme); font-size: 0.75rem; font-weight: 700;
+}
+.eq-metodo__fase--atual { border-color: var(--castanho); color: var(--castanho-escuro); font-weight: 600; }
+.eq-metodo__fase--atual .eq-metodo__num { border-color: var(--castanho); background: var(--castanho); color: var(--claro); }
+.eq-metodo__fase--feita { border-color: var(--certo); color: var(--certo); }
+.eq-metodo__fase--feita .eq-metodo__num { border-color: var(--certo); background: var(--certo); color: var(--claro); }
+
+/* ---------- passos ---------- */
+.eq-vazio { margin: 0 0 0.6rem; }
+.eq-passos { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.eq-passos:empty { display: none; }
+.eq-passo {
+  min-width: 0; padding: 0.6rem 0.8rem; border: 1px solid var(--linha); border-left-width: 4px;
+  border-radius: 0.4rem; background: var(--creme);
+}
+.eq-passo[data-fase="dominio"] { border-left-color: var(--dourado); }
+.eq-passo[data-fase="resolver"] { border-left-color: var(--c-exp); }
+.eq-passo[data-fase="verificar"] { border-left-color: var(--certo); }
+.eq-passo__cabeca { margin: 0 0 0.3rem; }
+.eq-passo__num { display: block; color: var(--tinta-suave); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em; }
+.eq-passo__titulo { font-size: 1rem; }
+.eq-passo__texto { margin: 0 0 0.35rem; font-size: 0.95rem; }
+.eq-linha { overflow-x: auto; overflow-y: hidden; padding: 0.05rem 0; }
+.eq-linha .katex-display { margin: 0.4em 0; text-align: left; }
+.eq-linha .katex { font-size: 1.05em; }
+
+.eq-resposta {
+  margin-top: 0.8rem; padding: 0.7rem 0.95rem;
+  border: 2px solid var(--certo); border-radius: 0.4rem; background: var(--certo-fundo);
+}
+.eq-resposta__titulo { margin: 0; color: var(--certo); font-weight: 700; }
+.eq-resposta__formula { overflow-x: auto; overflow-y: hidden; }
+.eq-resposta__formula .katex-display { margin: 0.4rem 0 0.1rem; }
+
+/* ---------- botões ---------- */
+.eq-progresso { min-height: 1.3em; margin: 0.8rem 0 0.4rem; color: var(--tinta-suave); font-size: 0.88rem; }
+.eq-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.eq-btn { min-height: 2.75rem; }
+.eq-btn--seguinte { grid-column: 1 / -1; }
+@media (min-width: 52em) {
+  .eq-acoes { grid-template-columns: 2fr 1fr 1fr; }
+  .eq-btn--seguinte { grid-column: auto; }
+}

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes dos geradores do treino (logaritmos)</title>
+<!-- Abrir /logaritmos/tests/geradores.html ou: msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8819/logaritmos/tests/geradores.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body>
+<h1>Testes dos geradores (logaritmos)</h1>
+<pre id="resultado">A correr...</pre>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+import { TIPOS, gerarPergunta } from '../geradores.js';
+
+const SEMENTES = Number(new URLSearchParams(location.search).get('n')) || 2000;
+const TRACO = new RegExp('[' + String.fromCharCode(0x2014, 0x2013) + ']');
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (erros.length < 3) erros.push(msg); } };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else { nFalhas++; linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : '')); }
+}
+
+const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const dolaresPares = (txt) => (txt.match(/\$/g) || []).length % 2 === 0;
+const semFormulas = (txt) => txt.replace(/\$[^$]*\$/g, '');
+const logb = (b, x) => Math.log(x) / Math.log(b);
+const jaRenderizadas = new Set();
+const errosKatex = [];
+function renderiza(src) {
+  if (jaRenderizadas.has(src)) return;
+  jaRenderizadas.add(src);
+  try { window.katex.renderToString(src, { throwOnError: true, strict: () => 'ignore' }); } catch (e) { errosKatex.push(`${src} -> ${e.message}`); }
+}
+
+/** Pertença a uma união de intervalos [lo, hi, loIncl, hiIncl]. */
+const em = (x, ints) => ints.some(([lo, hi, a, b]) => (x > lo || (a && x === lo)) && (x < hi || (b && x === hi)));
+
+// predicado independente do domínio, por forma
+function dominio(v) {
+  switch (v.forma) {
+    case 'linear': return (x) => v.a * x + v.b > 1e-9;
+    case 'quad-menos': return (x) => x * x - v.d > 1e-9;
+    case 'menos-quad': return (x) => v.d - x * x > 1e-9;
+    case 'quad-mais': return (x) => x * x + v.d > 0;
+    case 'quociente': return (x) => Math.abs(x - v.q) > 1e-9 && Math.abs(x - v.p) > 1e-9 && (x - v.p) / (x - v.q) > 0;
+    default: return null;
+  }
+}
+function amostras(v) {
+  const xs = [];
+  for (let x = -12; x <= 12; x += 0.25) xs.push(x);
+  const extra = [0, v.d && Math.sqrt(v.d), v.d && -Math.sqrt(v.d), v.p, v.q, v.a && -v.b / v.a].filter((e) => typeof e === 'number' && Number.isFinite(e));
+  for (const e of extra) xs.push(e, e - 1e-6, e + 1e-6);
+  return xs;
+}
+
+const vistos = {};
+for (const tipo of TIPOS) {
+  vistos[tipo.id] = new Set();
+  await teste(`${tipo.id}: estrutura, opções, texto, KaTeX, determinismo (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      let p;
+      try { p = gerarPergunta(tipo.id, M.criarRng(s), {}); } catch (e) { ok(false, `semente ${s}: exceção ${e.message}`); continue; }
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 80)}]`);
+      vistos[tipo.id].add(p.enunciado);
+      aqui(p.tipo === tipo.id && (p.modo === 'escolha' || p.modo === 'escrita'), 'tipo ou modo');
+      aqui(typeof p.explicacao === 'string' && p.explicacao.length > 10 && p.verificacao && typeof p.verificacao === 'object', 'explicação ou verificacao');
+      for (const campo of ['enunciado', 'explicacao']) {
+        aqui(dolaresPares(p[campo]), `$ desemparelhados em ${campo}`);
+        aqui(!TRACO.test(p[campo]), `travessão em ${campo}`);
+        aqui(!/[\\^_{}]/.test(semFormulas(p[campo])), `LaTeX solto fora de $ em ${campo}`);
+        for (const m of p[campo].matchAll(/\$([^$]+)\$/g)) renderiza(m[1]);
+      }
+      if (p.modo === 'escolha') {
+        aqui(p.opcoes.length === 4, `${p.opcoes.length} opções`);
+        aqui(p.opcoes.filter((o) => o.correta === true).length === 1, 'não há exatamente 1 correta');
+        aqui(new Set(p.opcoes.map((o) => o.tex)).size === 4, 'opções com o mesmo texto');
+        const nums = p.opcoes.filter((o) => typeof o.expr === 'string').map((o) => M.avaliar(o.expr));
+        aqui(nums.every((r) => r.ok), 'expr ilegível');
+        for (let i = 0; i < nums.length; i++) for (let j = i + 1; j < nums.length; j++) aqui(!(perto(nums[i].valor, nums[j].valor)), 'duas opções com o mesmo valor');
+        for (const o of p.opcoes) { aqui(!TRACO.test(o.tex), 'travessão numa opção'); renderiza(o.tex); }
+      } else {
+        aqui(p.esperado && typeof p.esperado.expr === 'string' && typeof p.esperado.tex === 'string', 'escrita sem esperado.expr/tex');
+        const c = M.corrigir(p.esperado.expr, p.esperado);
+        aqui(c.estado === 'certo', `a própria resposta certa deu ${c.estado}`);
+        const v = M.avaliar(p.esperado.expr).valor;
+        aqui(M.corrigir(String(v + 1), p.esperado).estado === 'errado', 'valor+1 devia ser errado');
+        aqui(M.corrigir('abc', p.esperado).estado === 'invalido', 'abc devia ser inválido');
+        renderiza(p.esperado.tex);
+      }
+      if (s <= 100) aqui(JSON.stringify(gerarPergunta(tipo.id, M.criarRng(s), {})) === JSON.stringify(p), 'mesma semente, perguntas diferentes');
+    }
+  });
+  await teste(`${tipo.id}: variedade de enunciados (>= 30 em ${SEMENTES} sementes)`, (ok) => {
+    ok(vistos[tipo.id].size >= 30, `só ${vistos[tipo.id].size} enunciados distintos`);
+  });
+}
+
+await teste('KaTeX sem erros em ' + jaRenderizadas.size + ' fórmulas distintas', (ok) => {
+  ok(jaRenderizadas.size > 100, 'poucas fórmulas: ' + jaRenderizadas.size);
+  ok(errosKatex.length === 0, errosKatex.slice(0, 3).join(' ; '));
+});
+
+// ---------- recálculo independente por tipo ----------
+const porTipo = (id, fn) => teste(id + ': recálculo independente', (ok) => {
+  for (let s = 1; s <= SEMENTES; s++) {
+    const p = gerarPergunta(id, M.criarRng(s), {});
+    fn(p, (c, m) => ok(c, `semente ${s}: ${m} [${p.enunciado.slice(0, 80)}]`));
+  }
+});
+
+const valorCerto = (p) => (p.modo === 'escrita' ? M.avaliar(p.esperado.expr).valor : M.avaliar(p.opcoes.find((o) => o.correta).expr).valor);
+
+await porTipo('valor-log', (p, ok) => {
+  const v = p.verificacao;
+  ok(perto(logb(v.base, v.arg), v.r[0] / v.r[1], 1e-9), `log_${v.base}(${v.arg}) != ${v.r}`);
+  ok(perto(valorCerto(p), logb(v.base, v.arg), 1e-9), 'a resposta certa não bate com Math.log');
+  ok(p.enunciado.includes(v.argTex), 'o enunciado não traz o argumento');
+});
+
+await porTipo('forma-exp', (p, ok) => {
+  const v = p.verificacao;
+  const q = (x) => (Array.isArray(x) ? x[0] / x[1] : x);
+  if (v.forma === 'log-para-exp' || v.forma === 'exp-para-log') ok(perto(Math.pow(q(v.a), q(v.c)), q(v.b)), 'a^c != b');
+  if (v.forma === 'x-potencia') ok(perto(valorCerto(p), Math.pow(v.a, v.c)), 'x != a^c');
+  if (v.forma === 'x-log') ok(perto(valorCerto(p), logb(v.a, v.b)), 'x != log_a b');
+});
+
+await porTipo('existe', (p, ok) => {
+  const v = p.verificacao;
+  if (v.forma === 'definida') {
+    for (const o of p.opcoes) {
+      const real = o.base > 0 && o.base !== 1 && o.arg > 0;
+      ok(o.correta === real, `opção ${o.tex}: definida=${real} mas correta=${o.correta}`);
+    }
+    return;
+  }
+  const dom = dominio(v);
+  const xs = amostras(v);
+  for (const o of p.opcoes) {
+    const igualDom = xs.every((x) => em(x, o.intervalos) === dom(x));
+    ok(igualDom === o.correta, `opção ${o.tex}: coincide com o domínio=${igualDom}, correta=${o.correta}`);
+  }
+});
+
+await porTipo('propriedades', (p, ok) => {
+  const v = p.verificacao;
+  const soma = v.terms.reduce((acc, t) => acc + t.s * (t.c[0] / t.c[1]) * logb(v.base, t.arg), 0);
+  ok(perto(valorCerto(p), soma, 1e-9), `valor ${valorCerto(p)} != soma recalculada ${soma}`);
+  ok(perto(v.valor[0] / v.valor[1], soma, 1e-9), 'verificacao.valor != soma');
+  ok(p.enunciado.includes(v.expressao), 'o enunciado não traz a expressão');
+});
+
+await porTipo('mudanca-base', (p, ok) => {
+  const v = p.verificacao;
+  const L = (l) => logb(l.base, l.arg);
+  let real;
+  if (v.forma === 'direta') real = L(v.logs[0]);
+  else if (v.forma === 'quociente') real = L(v.logs[0].base === v.logs[1].base ? { base: Math.E, arg: v.logs[0].arg } : v.logs[0]) / L({ base: Math.E, arg: v.logs[1].arg });
+  else real = L(v.logs[0]) * L(v.logs[1]);
+  ok(perto(valorCerto(p), real, 1e-9), `valor ${valorCerto(p)} != recalculado ${real}`);
+  ok(p.enunciado.includes(v.expressao), 'o enunciado não traz a expressão');
+});
+
+await teste('gerarPergunta rejeita tipo desconhecido; tipos completos', (ok) => {
+  let deu = false;
+  try { gerarPergunta('nao-existe', M.criarRng(1), {}); } catch (e) { deu = true; }
+  ok(deu, 'devia lançar erro');
+  ok(TIPOS.every((t) => t.id && t.nome && t.tema && typeof t.gerar === 'function'), 'tipo incompleto');
+  ok(new Set(TIPOS.map((t) => t.id)).size === TIPOS.length, 'ids repetidos');
+});
+
+// montagem do treino com os tipos reais
+await teste('treino.js monta com estes tipos', async (ok) => {
+  const treino = await import('../widgets/treino.js');
+  const el = document.createElement('div');
+  document.body.append(el);
+  await treino.montar(el, {}, { tipos: TIPOS, semente: 1 });
+  ok(el.querySelector('.tre') !== null, 'o treino não montou');
+  ok(el.querySelectorAll('.chip').length === TIPOS.length + 1, 'chips: ' + el.querySelectorAll('.chip').length);
+  el.querySelector('.tre-comecar').click();
+  ok(el.querySelector('.tre-enunciado') !== null, 'não apareceu a primeira pergunta');
+});
+
+const ms = Math.round(performance.now() - t0);
+linhas.push('');
+linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

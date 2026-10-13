@@ -1,0 +1,104 @@
+{
+ "tema": "propriedades",
+ "afirmacoes": [
+  {
+   "id": "pro-vf-soma",
+   "tema": "propriedades",
+   "texto": "Para $x,y>0$, tem-se $\\log(x+y)=\\log x+\\log y$.",
+   "verdadeira": false,
+   "explicacao": "O logaritmo transforma <strong>produtos</strong> em somas, não somas em somas. Contraexemplo: $x=y=5$ dá $\\log(5+5)=\\log10=1$, mas $\\log5+\\log5=\\log25\\approx1{,}40$. Não há regra para o logaritmo de uma soma, porque $a^m+a^n$ não se simplifica.",
+   "erroComum": "Pensar que o logaritmo se distribui por qualquer operação, como se fosse um número a multiplicar.",
+   "verifica": [
+    "not ig(log(x+y), log(x)+log(y))",
+    "ig(log(5+5), 1)"
+   ]
+  },
+  {
+   "id": "pro-vf-inversa",
+   "tema": "propriedades",
+   "texto": "Para $a,b\\in\\mathbb{R}^+\\setminus\\{1\\}$, tem-se $\\log_b a=\\dfrac{1}{\\log_a b}$.",
+   "verdadeira": true,
+   "explicacao": "Pela mudança de base, $\\log_b a=\\dfrac{\\log_a a}{\\log_a b}$, e $\\log_a a=1$. Por exemplo, $\\log_4 2=\\dfrac12$ e $\\log_2 4=2$ são inversos um do outro. A condição $a,b\\neq1$ garante que nenhum denominador é zero.",
+   "verifica": [
+    "ig(logb(b, a), 1/logb(a, b))"
+   ]
+  },
+  {
+   "id": "pro-vf-razao",
+   "tema": "propriedades",
+   "texto": "Para $x,y>0$ com $y\\neq1$, tem-se $\\dfrac{\\log x}{\\log y}=\\log\\dfrac{x}{y}$.",
+   "verdadeira": false,
+   "explicacao": "Com $x=100$ e $y=10$: $\\dfrac{\\log100}{\\log10}=\\dfrac21=2$, mas $\\log\\dfrac{100}{10}=\\log10=1$. O logaritmo de um quociente é a <strong>diferença</strong> $\\log x-\\log y$. Já o quociente $\\dfrac{\\log x}{\\log y}$ é outra coisa: é $\\log_y x$, uma mudança de base.",
+   "erroComum": "Confundir o quociente de dois logaritmos com o logaritmo de um quociente.",
+   "verifica": [
+    "not ig(log(x)/log(b), log(x/b))",
+    "ig(log(100)/log(10), 2) and ig(log(100/10), 1)"
+   ]
+  },
+  {
+   "id": "pro-vf-modulo",
+   "tema": "propriedades",
+   "texto": "Para todo o $x\\neq0$, tem-se $\\ln x^2=2\\ln|x|$.",
+   "verdadeira": true,
+   "explicacao": "Para $x\\neq0$, tem-se $x^2=|x|^2$ com $|x|>0$, por isso a regra da potência aplica-se a $|x|$: $\\ln x^2=\\ln|x|^2=2\\ln|x|$. Com $x=-3$: $\\ln\\big((-3)^2\\big)=\\ln9=2\\ln3=2\\ln|-3|$, enquanto $2\\ln(-3)$ não existe. No gráfico, $y=\\ln x^2$ tem um ramo à esquerda que $y=2\\ln x$ não tem.",
+   "verifica": [
+    "ig(ln(t**2), 2*ln(abs(t)))",
+    "ig(ln((-3)**2), 2*ln(3))"
+   ],
+   "figura": {
+    "tipo": "grafico",
+    "x": [
+     -4,
+     4
+    ],
+    "y": [
+     -3,
+     4
+    ],
+    "curvas": [
+     {
+      "expr": "ln(x^2)",
+      "rotulo": "y = ln x²"
+     },
+     {
+      "expr": "2*ln(x)",
+      "rotulo": "y = 2 ln x"
+     }
+    ],
+    "pontos": [
+     {
+      "x": -3,
+      "y": 2.1972,
+      "rotulo": "x = −3"
+     }
+    ],
+    "retasH": [],
+    "retasV": [
+     0
+    ]
+   }
+  },
+  {
+   "id": "pro-vf-quadrado",
+   "tema": "propriedades",
+   "texto": "Para $x>0$, tem-se $\\ln x^2=(\\ln x)^2$.",
+   "verdadeira": false,
+   "explicacao": "Em $\\ln x^2$ o expoente está dentro do logaritmo e vem para a frente a multiplicar: $\\ln x^2=2\\ln x$. Em $(\\ln x)^2$ o quadrado é do resultado. Com $x=e$: $\\ln e^2=2$, mas $(\\ln e)^2=1^2=1$.",
+   "erroComum": "Ler $\\ln x^2$ e $(\\ln x)^2$ como se fossem a mesma coisa: a posição do expoente muda tudo.",
+   "verifica": [
+    "not ig(ln(x**2), ln(x)**2)",
+    "ig(ln(e**2), 2) and ig(ln(e)**2, 1)"
+   ]
+  },
+  {
+   "id": "pro-vf-base-e",
+   "tema": "propriedades",
+   "texto": "Para $a>0$ e $x\\in\\mathbb{R}$, tem-se $a^x=e^{x\\ln a}$.",
+   "verdadeira": true,
+   "explicacao": "Como $e^{\\ln a}=a$, vem $a^x=\\left(e^{\\ln a}\\right)^x=e^{x\\ln a}$. Por exemplo, $2^x=e^{x\\ln 2}\\approx e^{0{,}69x}$: qualquer exponencial é uma exponencial de base $e$, com outro expoente.",
+   "verifica": [
+    "ig(a**t, exp(t*ln(a)))"
+   ]
+  }
+ ]
+}

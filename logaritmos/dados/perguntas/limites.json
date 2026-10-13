@@ -1,0 +1,391 @@
+{
+ "tema": "limites",
+ "perguntas": [
+  {
+   "id": "lim-01",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to+\\infty}\\left(\\dfrac13\\right)^{x}$?",
+   "opcoes": [
+    {
+     "tex": "$+\\infty$",
+     "valor": "inf"
+    },
+    {
+     "tex": "$1$",
+     "valor": "1"
+    },
+    {
+     "tex": "$0$",
+     "valor": "0"
+    },
+    {
+     "tex": "$\\dfrac13$",
+     "valor": "1/3"
+    }
+   ],
+   "certa": 2,
+   "ref": "lim(lambda s: (1/3)**s, inf)",
+   "verifica": [
+    "(1/3)**200<1e-90",
+    "ig((1/3)**t, 3**(-t))"
+   ],
+   "explicacao": "Com a base entre 0 e 1, a função $a^x$ é decrescente. Aqui $\\left(\\dfrac13\\right)^{x}=\\dfrac{1}{3^{x}}$ e $3^x\\to+\\infty$, por isso o quociente tende para 0 (já com $x=10$ vale cerca de $0{,}00002$). O erro típico é pensar que uma exponencial cresce sempre."
+  },
+  {
+   "id": "lim-02",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to0^+}\\ln x$?",
+   "opcoes": [
+    {
+     "tex": "$-\\infty$"
+    },
+    {
+     "tex": "$+\\infty$"
+    },
+    {
+     "tex": "$0$"
+    },
+    {
+     "tex": "$1$"
+    }
+   ],
+   "certa": 0,
+   "verifica": [
+    "ln(1e-30*x)<-60"
+   ],
+   "explicacao": "$\\ln x$ é o expoente a que tens de elevar $e$ para obter $x$. Para obteres números cada vez mais perto de 0 (positivos), o expoente tem de ser cada vez mais negativo: $\\ln0{,}001\\approx-6{,}9$ e $\\ln10^{-6}\\approx-13{,}8$, por isso $\\ln x\\to-\\infty$. O mesmo vale para $\\ln u(x)$ sempre que $u(x)\\to0^+$ (por exemplo, $\\ln\\dfrac1x$ quando $x\\to+\\infty$): «$\\ln0$ não existe» não quer dizer que o limite não exista. Não confundas com $\\ln1=0$, nem com $e^0=1$."
+  },
+  {
+   "id": "lim-03",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{x}$?",
+   "opcoes": [
+    {
+     "tex": "$1$",
+     "valor": "1"
+    },
+    {
+     "tex": "$+\\infty$",
+     "valor": "inf"
+    },
+    {
+     "tex": "$\\dfrac1e$",
+     "valor": "1/e"
+    },
+    {
+     "tex": "$0$",
+     "valor": "0"
+    }
+   ],
+   "certa": 3,
+   "ref": "round(lim(lambda s: ln(s)/s, inf), 6)",
+   "verifica": [
+    "ln(1e12)/1e12<1e-9",
+    "ln(x)/x<=1/e+1e-12"
+   ],
+   "explicacao": "A potência vence o logaritmo: $\\ln x$ cresce, mas muito mais devagar do que $x$. Com valores: $\\dfrac{\\ln10^{6}}{10^{6}}\\approx0{,}000014$ e $\\dfrac{\\ln10^{12}}{10^{12}}\\approx2{,}8\\times10^{-11}$. Repara que $\\dfrac{\\infty}{\\infty}$ não é «1»: depende de quem cresce mais depressa. ($\\dfrac1e$ é o valor máximo desta função, atingido em $x=e$, mas não é o limite.)"
+  },
+  {
+   "id": "lim-04",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to0}\\dfrac{e^{x}-1}{x}$?",
+   "opcoes": [
+    {
+     "tex": "$0$",
+     "valor": "0"
+    },
+    {
+     "tex": "$1$",
+     "valor": "1"
+    },
+    {
+     "tex": "$e$",
+     "valor": "e"
+    },
+    {
+     "tex": "$+\\infty$",
+     "valor": "inf"
+    }
+   ],
+   "certa": 1,
+   "ref": "round(lim(lambda s: (exp(s)-1)/s, 0), 6)",
+   "verifica": [
+    "ig(lim(lambda s: (exp(s)-1)/s, 0), 1)"
+   ],
+   "explicacao": "É um dos limites notáveis. Perto de 0, $e^x\\approx1+x$, logo $e^x-1\\approx x$ e o quociente fica perto de 1 (com $x=0{,}001$ dá $1{,}0005$). O erro típico é ver $\\dfrac00$ e escrever $0$ ou $\\infty$: é uma indeterminação e tens de a levantar."
+  },
+  {
+   "id": "lim-05",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to+\\infty}\\dfrac{e^{x}}{x^{3}}$?",
+   "opcoes": [
+    {
+     "tex": "$+\\infty$"
+    },
+    {
+     "tex": "$0$"
+    },
+    {
+     "tex": "$1$"
+    },
+    {
+     "tex": "Não tem limite, porque $\\dfrac{\\infty}{\\infty}$ é uma indeterminação"
+    }
+   ],
+   "certa": 0,
+   "verifica": [
+    "exp(40)/40**3>1e6",
+    "exp(100)/100**3>1e30"
+   ],
+   "explicacao": "A exponencial vence qualquer potência: $\\dfrac{e^x}{x^p}\\to+\\infty$ para todo o $p>0$. Vê os valores: $x=10$ dá $\\approx22$, $x=20$ dá $\\approx6\\times10^{4}$ e $x=40$ dá $\\approx3{,}7\\times10^{12}$. Uma indeterminação $\\dfrac{\\infty}{\\infty}$ não quer dizer «1» nem «não existe»: quer dizer que tens de ver quem cresce mais depressa."
+  },
+  {
+   "id": "lim-06",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to0}\\dfrac{e^{3x}-1}{2x}$?",
+   "opcoes": [
+    {
+     "tex": "$3$",
+     "valor": "3"
+    },
+    {
+     "tex": "$\\dfrac23$",
+     "valor": "2/3"
+    },
+    {
+     "tex": "$\\dfrac32$",
+     "valor": "3/2"
+    },
+    {
+     "tex": "$1$",
+     "valor": "1"
+    }
+   ],
+   "certa": 2,
+   "ref": "round(lim(lambda s: (exp(3*s)-1)/(2*s), 0), 6)",
+   "verifica": [
+    "ig(lim(lambda s: (exp(3*s)-1)/(2*s), 0), 1.5)"
+   ],
+   "explicacao": "Multiplica e divide por 3 para teres $3x$ no denominador: $\\dfrac{e^{3x}-1}{2x}=\\dfrac32\\times\\dfrac{e^{3x}-1}{3x}$. Com $y=3x$ (e $y\\to0$), o segundo fator é o limite notável $\\dfrac{e^{y}-1}{y}\\to1$, e o resultado é $\\dfrac32$. Esquecer o 2 dá $3$; inverter o fator dá $\\dfrac23$; usar o limite notável sem acertar o expoente com o denominador dá $1$."
+  },
+  {
+   "id": "lim-07",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to+\\infty}x\\left(e^{1/x}-1\\right)$?",
+   "opcoes": [
+    {
+     "tex": "$0$",
+     "valor": "0"
+    },
+    {
+     "tex": "$1$",
+     "valor": "1"
+    },
+    {
+     "tex": "$+\\infty$",
+     "valor": "inf"
+    },
+    {
+     "tex": "$e$",
+     "valor": "e"
+    }
+   ],
+   "certa": 1,
+   "ref": "round(lim(lambda s: s*(exp(1/s)-1), inf), 6)",
+   "verifica": [
+    "abs((lambda s: s*(exp(1/s)-1))(1e5)-1)<1e-4"
+   ],
+   "explicacao": "É do tipo $\\infty\\times0$ e não é «0»: tens de o transformar. Com $y=\\dfrac1x$, se $x\\to+\\infty$ então $y\\to0^+$, e $x\\left(e^{1/x}-1\\right)=\\dfrac{e^{y}-1}{y}\\to1$. Confirma com números: $x=1000$ dá $\\approx1{,}0005$. Não confundas com o limite famoso $\\left(1+\\dfrac1x\\right)^{x}\\to e$: é outro."
+  },
+  {
+   "id": "lim-08",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to+\\infty}\\left[\\ln(2x+1)-\\ln x\\right]$?",
+   "opcoes": [
+    {
+     "tex": "$0$",
+     "valor": "0"
+    },
+    {
+     "tex": "$+\\infty$",
+     "valor": "inf"
+    },
+    {
+     "tex": "$2$",
+     "valor": "2"
+    },
+    {
+     "tex": "$\\ln2$",
+     "valor": "ln(2)"
+    }
+   ],
+   "certa": 3,
+   "ref": "ln(2)",
+   "verifica": [
+    "abs((lambda s: ln(2*s+1)-ln(s))(1e6)-ln(2))<1e-5",
+    "ig(ln(2*x+1)-ln(x), ln((2*x+1)/x))"
+   ],
+   "explicacao": "É $\\infty-\\infty$, e levanta-se com as propriedades dos logaritmos: $\\ln(2x+1)-\\ln x=\\ln\\dfrac{2x+1}{x}$ (o logaritmo de um <em>quociente</em>, não da diferença). Quando $x\\to+\\infty$, $\\dfrac{2x+1}{x}=2+\\dfrac1x\\to2$ e, como $\\ln$ é contínua em 2, o limite é $\\ln2\\approx0{,}69$. O erro típico é escrever $\\ln(2x+1-x)=\\ln(x+1)$ e concluir $+\\infty$."
+  },
+  {
+   "id": "lim-09",
+   "nivel": 2,
+   "enunciado": "Qual é a assíntota vertical do gráfico de $f(x)=\\ln(5-2x)$?",
+   "opcoes": [
+    {
+     "tex": "$x=0$",
+     "valor": "0"
+    },
+    {
+     "tex": "$x=\\dfrac52$",
+     "valor": "5/2"
+    },
+    {
+     "tex": "$x=5$",
+     "valor": "5"
+    },
+    {
+     "tex": "$x=-\\dfrac52$",
+     "valor": "-5/2"
+    }
+   ],
+   "certa": 1,
+   "ref": "5/2",
+   "verifica": [
+    "(5-2*t>0) == (t<2.5)",
+    "ln(5-2*(2.5-1e-9))<-18"
+   ],
+   "explicacao": "O domínio é $5-2x>0\\Leftrightarrow x<\\dfrac52$. Em $x=\\dfrac52$, que está fora do domínio, $5-2x\\to0^+$ e $\\ln(5-2x)\\to-\\infty$: é a assíntota vertical. Não é $x=0$: esse ponto está no domínio e $f(0)=\\ln5$ é um número. Os valores $5$ e $-\\dfrac52$ vêm de resolver mal $5-2x=0$."
+  },
+  {
+   "id": "lim-10",
+   "nivel": 2,
+   "enunciado": "Se o teu professor permitir a regra de Cauchy, em qual destes limites a podes aplicar logo, por ser uma indeterminação $\\dfrac00$ ou $\\dfrac{\\infty}{\\infty}$?",
+   "opcoes": [
+    {
+     "tex": "$\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{x^{2}}$"
+    },
+    {
+     "tex": "$\\lim_{x\\to1}\\dfrac{x^{2}+1}{\\ln x}$"
+    },
+    {
+     "tex": "$\\lim_{x\\to0}\\dfrac{e^{x}}{x+1}$"
+    },
+    {
+     "tex": "$\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{e^{-x}}$"
+    }
+   ],
+   "certa": 0,
+   "verifica": [
+    "ln(1e9)>20 and 1e9**2>1e17",
+    "(lambda s: s**2+1)(1+1e-9)>1.9 and abs(ln(1+1e-9))<1e-8",
+    "abs(exp(1e-9)/(1e-9+1)-1)<1e-8",
+    "exp(-50)<1e-20 and ln(50)>3"
+   ],
+   "explicacao": "A regra só serve quando o limite do quociente é $\\dfrac00$ ou $\\dfrac{\\infty}{\\infty}$. Em $\\dfrac{\\ln x}{x^2}$ os dois termos tendem para $+\\infty$, e dá $\\lim\\dfrac{1/x}{2x}=\\lim\\dfrac{1}{2x^2}=0$. Nos outros três o quociente não é indeterminado ($\\dfrac20$, $\\dfrac11$ e $\\dfrac{+\\infty}{0^+}$), e aplicar a regra à pressa dá erros: em $\\dfrac{x^2+1}{\\ln x}$ daria $\\lim\\dfrac{2x}{1/x}=2$, quando o valor absoluto do quociente cresce sem limite perto de 1."
+  },
+  {
+   "id": "lim-11",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\displaystyle\\lim_{x\\to1^+}\\dfrac{2}{1-e^{x-1}}$?",
+   "opcoes": [
+    {
+     "tex": "$+\\infty$"
+    },
+    {
+     "tex": "$0$"
+    },
+    {
+     "tex": "$-\\infty$"
+    },
+    {
+     "tex": "$2$"
+    }
+   ],
+   "certa": 2,
+   "verifica": [
+    "(lambda s: 2/(1-exp(s-1)))(1+1e-9)<-1e6",
+    "(lambda s: 2/(1-exp(s-1)))(1-1e-9)>1e6"
+   ],
+   "explicacao": "Quando $x\\to1^+$, $x-1\\to0^+$, logo $e^{x-1}\\to1^+$ (um pouco acima de 1) e $1-e^{x-1}\\to0^-$ (um pouco abaixo de 0). Então $\\dfrac{2}{0^-}=-\\infty$. O erro é ver $\\dfrac20$ e escrever $+\\infty$ sem estudar o sinal: do outro lado, com $x\\to1^-$, o denominador é $0^+$ e o limite é $+\\infty$."
+  },
+  {
+   "id": "lim-12",
+   "nivel": 3,
+   "enunciado": "Quais são as assíntotas verticais do gráfico de $f(x)=\\dfrac{3}{\\ln x}$?",
+   "opcoes": [
+    {
+     "tex": "$x=0$ e $x=1$"
+    },
+    {
+     "tex": "Só $x=0$"
+    },
+    {
+     "tex": "Não tem assíntotas verticais"
+    },
+    {
+     "tex": "Só $x=1$"
+    }
+   ],
+   "certa": 3,
+   "verifica": [
+    "abs(3/ln(1e-300))<0.01",
+    "3/ln(1+1e-9)>1e8",
+    "3/ln(1-1e-9)<-1e8"
+   ],
+   "explicacao": "O domínio é $]0,1[\\cup]1,+\\infty[$ e $f$ é contínua, por isso só $x=0$ e $x=1$ podem ser assíntotas. Em $x=1$: $\\ln x\\to0^-$ à esquerda e $\\ln x\\to0^+$ à direita, logo $\\dfrac{3}{0^-}=-\\infty$ e $\\dfrac{3}{0^+}=+\\infty$: é assíntota. Quando $x\\to0^+$: $\\ln x\\to-\\infty$ e $\\dfrac{3}{\\ln x}\\to\\dfrac{3}{-\\infty}=0^-$, um limite finito: não é assíntota. Estar fora do domínio não chega, é o limite que decide."
+  },
+  {
+   "id": "lim-13",
+   "nivel": 3,
+   "enunciado": "Quantas assíntotas tem o gráfico de $f(x)=x+\\dfrac{\\ln x}{x}$, de domínio $\\mathbb{R}^+$, e quais são?",
+   "opcoes": [
+    {
+     "tex": "Só a oblíqua $y=x$"
+    },
+    {
+     "tex": "Duas: a vertical $x=0$ e a oblíqua $y=x$"
+    },
+    {
+     "tex": "Só a vertical $x=0$"
+    },
+    {
+     "tex": "Três: $x=0$, $y=x$ e a horizontal $y=0$"
+    }
+   ],
+   "certa": 1,
+   "verifica": [
+    "(lambda s: s+ln(s)/s)(1e-8)<-1e8",
+    "abs((lambda s: s+ln(s)/s-s)(1e6))<1e-4",
+    "(lambda s: s+ln(s)/s)(1e6)>1e5"
+   ],
+   "explicacao": "Quando $x\\to0^+$: $\\dfrac{\\ln x}{x}=\\dfrac{-\\infty}{0^+}=-\\infty$, logo $f\\to-\\infty$ e $x=0$ é assíntota vertical. Quando $x\\to+\\infty$: $m=\\lim\\left(1+\\dfrac{\\ln x}{x^2}\\right)=1$ e $b=\\lim\\dfrac{\\ln x}{x}=0$ (a potência vence o logaritmo), logo $y=x$ é assíntota oblíqua. Não há horizontal, porque $f\\to+\\infty$: o $0$ de $\\dfrac{\\ln x}{x}$ é o valor de $b$, não uma assíntota $y=0$."
+  },
+  {
+   "id": "lim-14",
+   "nivel": 3,
+   "enunciado": "Quantas assíntotas tem o gráfico de $f(x)=x\\,e^{x}$?",
+   "opcoes": [
+    {
+     "tex": "Uma: a reta $y=0$, só quando $x\\to-\\infty$"
+    },
+    {
+     "tex": "Uma: a reta $y=0$, só quando $x\\to+\\infty$"
+    },
+    {
+     "tex": "Duas: a reta $y=0$, nos dois sentidos"
+    },
+    {
+     "tex": "Nenhuma, porque $f(x)\\to+\\infty$ quando $x\\to+\\infty$ e $f(x)\\to-\\infty$ quando $x\\to-\\infty$"
+    }
+   ],
+   "certa": 0,
+   "verifica": [
+    "abs(-60*exp(-60))<1e-20",
+    "60*exp(60)>1e20",
+    "abs(-600*exp(-600))<1e-200"
+   ],
+   "explicacao": "$f$ é contínua em $\\mathbb{R}$, logo não há assíntotas verticais. Quando $x\\to+\\infty$: $x\\,e^x\\to+\\infty$ e $m=\\lim e^x=+\\infty$, não há assíntota. Quando $x\\to-\\infty$: é do tipo $-\\infty\\times0$; com $y=-x$ ($y\\to+\\infty$) fica $x\\,e^{x}=-\\dfrac{y}{e^{y}}\\to0^-$, porque a exponencial vence a potência (por exemplo, $f(-20)\\approx-4\\times10^{-8}$). Logo $y=0$ é assíntota só quando $x\\to-\\infty$."
+  }
+ ]
+}

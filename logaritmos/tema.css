@@ -1,0 +1,19 @@
+/* Exponenciais e logaritmos: cores e pouco mais, comuns a todos os widgets do tema.
+   Contraste sobre branco (e sobre o creme do fundo): exp 6,7:1, log 5,5:1, id 6,6:1,
+   tg 5,3:1, der 7,0:1, assint 6,4:1. A zona é um enchimento, não leva texto. */
+
+:root {
+  --c-exp:    #1d5f94;                  /* a^x e e^x: azul */
+  --c-log:    #b4452f;                  /* log_a x e ln x: vermelho */
+  --c-id:     #6b5a4e;                  /* a reta y = x (a inversa é um espelho nela) */
+  --c-tg:     #2d7a4b;                  /* tangente e o que lhe pertence: verde */
+  --c-der:    #7a3f98;                  /* derivada: roxo */
+  --c-assint: #56606b;                  /* assíntotas: cinzento-azulado, para não se confundir com y = x */
+  --c-zona:   rgba(199, 154, 63, 0.28); /* sombreado: dourado translúcido */
+}
+
+/* rótulos de leituras com a cor da curva a que se referem (como .leitura--seno) */
+.leitura--exp .leitura__rotulo { color: var(--c-exp); }
+.leitura--log .leitura__rotulo { color: var(--c-log); }
+.leitura--tg .leitura__rotulo { color: var(--c-tg); }
+.leitura--der .leitura__rotulo { color: var(--c-der); }

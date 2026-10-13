@@ -1,0 +1,1163 @@
+{
+ "grupos": [
+  {"id": "exp", "titulo": "Exponenciais"},
+  {"id": "log", "titulo": "Logarítmicas"},
+  {"id": "ineq", "titulo": "Inequações"}
+ ],
+ "predefinidas": [
+  {
+   "id": "mesma-base",
+   "grupo": "exp",
+   "chip": "Mesma base",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "\\left(\\frac{1}{2}\\right)^{x+1}=\\sqrt{8}",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "(1/2)^(x+1)",
+    "dir": "sqrt(8)",
+    "dominio": [],
+    "procura": [-8, 8],
+    "solucoes": [
+     {"v": -2.5, "tex": "-\\frac{5}{2}"}
+    ],
+    "rejeitadas": []
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-5, 2],
+     "y": [-1, 8],
+     "aria": "Gráfico dos dois membros da equação: uma exponencial decrescente e uma reta horizontal.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "(1/2)^(x+1)", "tex": "\\left(\\frac{1}{2}\\right)^{x+1}"},
+      {"id": "dir", "papel": "dir", "expr": "sqrt(8)", "tex": "\\sqrt{8}"}
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$, por isso o domínio é $\\mathbb{R}$: qualquer $x$ real pode ser solução.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Mesma base nos dois lados",
+     "fase": "resolver",
+     "texto": "Passa tudo para a base 2. A base $\\frac12$ é $2^{-1}$, e $\\sqrt8=8^{1/2}=(2^3)^{1/2}$.",
+     "linhas": [
+      {"tex": "\\left(\\frac{1}{2}\\right)^{x+1}=\\left(2^{-1}\\right)^{x+1}=2^{-x-1}"},
+      {"tex": "\\sqrt{8}=8^{\\frac{1}{2}}=\\left(2^{3}\\right)^{\\frac{1}{2}}=2^{\\frac{3}{2}}"}
+     ]
+    },
+    {
+     "titulo": "Igualar os expoentes",
+     "fase": "resolver",
+     "texto": "Com a mesma base positiva e diferente de 1, duas potências só são iguais se os expoentes forem iguais, porque a exponencial é injetiva.",
+     "linhas": [
+      {"tex": "2^{-x-1}=2^{\\frac{3}{2}}\\Leftrightarrow-x-1=\\frac{3}{2}"}
+     ]
+    },
+    {
+     "titulo": "Resolver a equação do 1.º grau",
+     "fase": "resolver",
+     "texto": "Isola $x$. No gráfico, a curva e a reta cruzam-se nesse valor.",
+     "linhas": [
+      {"tex": "-x-1=\\frac{3}{2}\\Leftrightarrow-x=\\frac{5}{2}\\Leftrightarrow x=-\\frac{5}{2}"}
+     ]
+    },
+    {
+     "titulo": "Verificar",
+     "fase": "verificar",
+     "texto": "Substitui no enunciado. Com $x=-\\frac52$ o expoente é $x+1=-\\frac32$. A solução pertence ao domínio, que é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "\\left(\\frac{1}{2}\\right)^{-\\frac{3}{2}}=2^{\\frac{3}{2}}=\\sqrt{8}"}
+     ]
+    }
+   ],
+   "resposta": "S=\\left\\{-\\frac{5}{2}\\right\\}"
+  },
+  {
+   "id": "parametro-k",
+   "grupo": "exp",
+   "chip": "Parâmetro k",
+   "tipo": "equacao",
+   "enunciado": "Resolve em ordem a $x$ a equação seguinte. Mexe no slider para mudar $k$.",
+   "modelo": {
+    "tex": "2^{x}=k",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "2^x",
+    "dir": "k",
+    "dominio": [],
+    "procura": [-8, 10],
+    "solucoes": [],
+    "rejeitadas": []
+   },
+   "param": {
+    "nome": "k",
+    "min": -2,
+    "max": 16,
+    "passo": 0.5,
+    "inicial": 5,
+    "dominio": ["k"],
+    "solucao": "logb(2,k)",
+    "leitura": "potencia",
+    "rotulo": "Valor de k"
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-3, 5],
+     "y": [-3, 18],
+     "aria": "Gráfico da exponencial de base 2 e da reta horizontal y igual a k.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "2^x", "tex": "2^{x}"},
+      {"id": "dir", "papel": "dir", "expr": "k", "tex": "k"}
+     ],
+     "zonas": [
+      {
+       "eixo": "y",
+       "de": null,
+       "ate": 0,
+       "desde": 0,
+       "rotulo": ["2^x nunca chega aqui"],
+       "legenda": "valores que 2^x nunca toma"
+      }
+     ],
+     "pontos": [
+      {"x": "param", "em": "esq", "estado": "aceite"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Quando é que tem solução?",
+     "fase": "dominio",
+     "texto": "Uma potência de base 2 é sempre positiva: $2^x>0$ para todo o $x$. No gráfico, a curva nunca entra na zona riscada. Por isso $2^x=k$ só tem solução se $k>0$. Experimenta $k$ negativo no slider.",
+     "linhas": [
+      {"tex": "2^{x}>0"}
+     ]
+    },
+    {
+     "titulo": "Da exponencial ao logaritmo",
+     "fase": "resolver",
+     "texto": "$2^x=k$ diz que $x$ é o expoente a que se eleva 2 para obter $k$. É a definição de logaritmo de base 2.",
+     "linhas": [
+      {"tex": "2^{x}=k\\Leftrightarrow x=\\log_2 k"}
+     ]
+    },
+    {
+     "titulo": "Calcular com a calculadora",
+     "fase": "resolver",
+     "texto": "A calculadora só tem $\\ln$ e $\\log$ (base 10). Usa a mudança de base e arredonda só no fim.",
+     "linhas": [
+      {"tex": "\\log_2 k=\\frac{\\ln k}{\\ln 2}"}
+     ]
+    },
+    {
+     "titulo": "Verificar",
+     "fase": "verificar",
+     "texto": "A exponencial e o logaritmo desfazem-se um ao outro. Repara no slider: cada vez que $k$ duplica, a solução sobe 1.",
+     "linhas": [
+      {"tex": "2^{\\log_2 k}=k"},
+      {"tex": "\\log_2(2k)=\\log_2 k+1"}
+     ]
+    }
+   ],
+   "resposta": "\\begin{gathered}k>0:\\ x=\\log_2 k=\\frac{\\ln k}{\\ln 2}\\\\[0.3em] k\\le0:\\ \\text{sem solução}\\end{gathered}"
+  },
+  {
+   "id": "evidencia",
+   "grupo": "exp",
+   "chip": "Pôr em evidência",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "e^{x+1}-e^{x}=6",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "exp(x+1)-exp(x)",
+    "dir": "6",
+    "dominio": [],
+    "procura": [-6, 6],
+    "solucoes": [
+     {"v": 1.250434614615137, "tex": "\\ln\\left(\\frac{6}{e-1}\\right)"}
+    ],
+    "rejeitadas": []
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-3, 3],
+     "y": [-1, 10],
+     "aria": "Gráfico da exponencial e^(x+1) menos e^x e da reta horizontal y igual a 6.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "exp(x+1)-exp(x)", "tex": "e^{x+1}-e^{x}"},
+      {"id": "dir", "papel": "dir", "expr": "6", "tex": "6"}
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$: o domínio é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Pôr $e^x$ em evidência",
+     "fase": "resolver",
+     "texto": "Os dois termos têm o fator $e^x$, porque $e^{x+1}=e^x\\times e$. Põe-no em evidência.",
+     "linhas": [
+      {"tex": "e^{x+1}-e^{x}=e^{x}\\cdot e-e^{x}=e^{x}(e-1)"}
+     ]
+    },
+    {
+     "titulo": "Isolar a exponencial",
+     "fase": "resolver",
+     "texto": "Divide os dois membros por $e-1$, que é positivo porque $e\\approx2{,}718$.",
+     "linhas": [
+      {"tex": "e^{x}(e-1)=6\\Leftrightarrow e^{x}=\\frac{6}{e-1}"}
+     ]
+    },
+    {
+     "titulo": "Aplicar o logaritmo neperiano",
+     "fase": "resolver",
+     "texto": "$e^x=a\\Leftrightarrow x=\\ln a$, com $a>0$. Aqui $a=\\frac{6}{e-1}$ é positivo. No gráfico, é onde a curva chega à altura 6.",
+     "linhas": [
+      {"tex": "e^{x}=\\frac{6}{e-1}\\Leftrightarrow x=\\ln\\left(\\frac{6}{e-1}\\right)"}
+     ]
+    },
+    {
+     "titulo": "Valor aproximado",
+     "fase": "resolver",
+     "texto": "A calculadora só entra no fim. Guarda o valor exato e arredonda apenas o resultado.",
+     "linhas": [
+      {"tex": "\\ln\\left(\\frac{6}{e-1}\\right)=\\ln 6-\\ln(e-1)\\approx1{,}25"}
+     ]
+    },
+    {
+     "titulo": "Verificar",
+     "fase": "verificar",
+     "texto": "Substitui $e^x$ por $\\frac{6}{e-1}$ na forma fatorizada. O domínio é $\\mathbb{R}$, por isso a solução serve.",
+     "linhas": [
+      {"tex": "e^{\\ln\\left(\\frac{6}{e-1}\\right)}(e-1)=\\frac{6}{e-1}(e-1)=6"}
+     ]
+    }
+   ],
+   "resposta": "S=\\left\\{\\ln\\left(\\frac{6}{e-1}\\right)\\right\\}\\approx\\{1{,}25\\}"
+  },
+  {
+   "id": "substituicao-duas",
+   "grupo": "exp",
+   "chip": "Substituição, 2 raízes",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "4^{x}-6\\cdot2^{x}+8=0",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "4^x-6*2^x+8",
+    "dir": "0",
+    "dominio": [],
+    "procura": [-6, 6],
+    "solucoes": [
+     {"v": 1, "tex": "1"},
+     {"v": 2, "tex": "2"}
+    ],
+    "rejeitadas": []
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Em x (original)",
+     "x": [-1, 3.5],
+     "y": [-3, 10],
+     "aria": "Gráfico do primeiro membro da equação. As soluções são os pontos onde a curva cruza o eixo dos xx.",
+     "curvas": [
+      {
+       "id": "esq",
+       "papel": "esq",
+       "expr": "4^x-6*2^x+8",
+       "legenda": "Membro esquerdo (o direito é 0)",
+       "tex": "4^{x}-6\\cdot2^{x}+8"
+      }
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 6, "pos": "cima"},
+      {"sol": 1, "em": "esq", "estado": "aceite", "desde": 6, "pos": "cima"}
+     ]
+    },
+    {
+     "id": "u",
+     "rotulo": "Em u (substituição)",
+     "variavel": "u",
+     "x": [-2, 6],
+     "y": [-3, 12],
+     "rotuloX": "u",
+     "aria": "Gráfico da função u ao quadrado menos 6u mais 8, uma parábola, com a zona u menor ou igual a zero riscada.",
+     "modelo": {
+      "variavel": "u",
+      "rel": "=",
+      "esq": "u^2-6*u+8",
+      "dir": "0",
+      "dominio": ["u"],
+      "procura": [-6, 10],
+      "solucoes": [
+       {"v": 2, "tex": "2"},
+       {"v": 4, "tex": "4"}
+      ],
+      "rejeitadas": []
+     },
+     "curvas": [
+      {
+       "id": "esq",
+       "papel": "esq",
+       "expr": "u^2-6*u+8",
+       "legenda": "Equação em u (o membro direito é 0)",
+       "tex": "u^{2}-6u+8"
+      }
+     ],
+     "zonas": [
+      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: 2^x nunca toma estes valores"}
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3, "decide": 4, "pos": "baixo"},
+      {"sol": 1, "em": "esq", "estado": "aceite", "desde": 3, "decide": 4, "pos": "baixo"}
+     ]
+    },
+    {
+     "id": "ponte",
+     "rotulo": "Voltar a x",
+     "x": [-1, 3],
+     "y": [-3, 6],
+     "aria": "Gráfico de 2 elevado a x com as retas horizontais u igual a 2 e u igual a 4, que cortam a curva em x igual a 1 e x igual a 2.",
+     "curvas": [
+      {"id": "pot", "papel": "esq", "expr": "2^x", "legenda": "A exponencial", "tex": "2^{x}"}
+     ],
+     "retasH": [
+      {"y": 2, "rotulo": "u = 2"},
+      {"y": 4, "rotulo": "u = 4"}
+     ],
+     "zonas": [
+      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["2^x > 0"], "legenda": "2^x nunca toma estes valores"}
+     ],
+     "pontos": [
+      {"x": 1, "y": 2, "em": "pot", "estado": "aceite", "pos": "baixo"},
+      {"x": 2, "y": 4, "em": "pot", "estado": "aceite", "pos": "baixo"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$: o domínio é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Tudo em potências de $2^x$",
+     "fase": "resolver",
+     "texto": "Como $4=2^2$, tem-se $4^x=(2^2)^x=(2^x)^2$. Assim, a equação só tem a potência $2^x$.",
+     "linhas": [
+      {"tex": "4^{x}=\\left(2^{2}\\right)^{x}=\\left(2^{x}\\right)^{2}"}
+     ]
+    },
+    {
+     "titulo": "Mudança de variável",
+     "fase": "resolver",
+     "texto": "Faz $u=2^x$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-6u+8$.",
+     "vista": "u",
+     "linhas": [
+      {"tex": "u=2^{x}", "v": "txt"},
+      {"tex": "4^{x}-6\\cdot2^{x}+8=0\\Leftrightarrow u^{2}-6u+8=0", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Resolver em $u$",
+     "fase": "resolver",
+     "texto": "Procura dois números com soma 6 e produto 8: são 2 e 4. Fatoriza e usa a lei do anulamento do produto.",
+     "var": "u",
+     "linhas": [
+      {"tex": "u^{2}-6u+8=(u-2)(u-4)"},
+      {"tex": "(u-2)(u-4)=0\\Leftrightarrow u=2\\lor u=4"}
+     ]
+    },
+    {
+     "titulo": "Só servem valores $u>0$",
+     "fase": "verificar",
+     "texto": "Como $u=2^x$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. Aqui $2>0$ e $4>0$: as duas raízes servem. A zona riscada é onde $u\\le0$.",
+     "var": "u",
+     "linhas": [
+      {"tex": "2>0\\land4>0"}
+     ]
+    },
+    {
+     "titulo": "Voltar a $x$",
+     "fase": "resolver",
+     "texto": "Cada valor de $u$ dá uma equação exponencial simples, $2^x=u$. No gráfico, cada reta horizontal corta a curva uma só vez.",
+     "vista": "ponte",
+     "linhas": [
+      {"tex": "2^{x}=2\\Leftrightarrow x=1"},
+      {"tex": "2^{x}=4\\Leftrightarrow x=2"}
+     ]
+    },
+    {
+     "titulo": "Verificar na equação original",
+     "fase": "verificar",
+     "texto": "Substitui cada valor de $x$ no enunciado. Os dois pontos estão no eixo dos xx, na curva do primeiro membro.",
+     "vista": "x",
+     "linhas": [
+      {"tex": "4^{1}-6\\cdot2^{1}+8=4-12+8=0"},
+      {"tex": "4^{2}-6\\cdot2^{2}+8=16-24+8=0"}
+     ]
+    }
+   ],
+   "resposta": "S=\\{1,\\,2\\}"
+  },
+  {
+   "id": "substituicao-rejeitada",
+   "grupo": "exp",
+   "chip": "Substituição, 1 rejeitada",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "9^{x}-3^{x}-6=0",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "9^x-3^x-6",
+    "dir": "0",
+    "dominio": [],
+    "procura": [-6, 6],
+    "solucoes": [
+     {"v": 1, "tex": "1"}
+    ],
+    "rejeitadas": []
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Em x (original)",
+     "x": [-2, 2],
+     "y": [-8, 14],
+     "aria": "Gráfico do primeiro membro da equação. A única solução é onde a curva cruza o eixo dos xx.",
+     "curvas": [
+      {
+       "id": "esq",
+       "papel": "esq",
+       "expr": "9^x-3^x-6",
+       "legenda": "Membro esquerdo (o direito é 0)",
+       "tex": "9^{x}-3^{x}-6"
+      }
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 6, "pos": "baixo"}
+     ]
+    },
+    {
+     "id": "u",
+     "rotulo": "Em u (substituição)",
+     "variavel": "u",
+     "x": [-3, 5],
+     "y": [-8, 14],
+     "rotuloX": "u",
+     "aria": "Gráfico da função u ao quadrado menos u menos 6, uma parábola com zeros em u igual a menos 2 e u igual a 3. A zona u menor ou igual a zero está riscada, e o zero negativo é rejeitado.",
+     "modelo": {
+      "variavel": "u",
+      "rel": "=",
+      "esq": "u^2-u-6",
+      "dir": "0",
+      "dominio": ["u"],
+      "procura": [-6, 10],
+      "solucoes": [
+       {"v": 3, "tex": "3"}
+      ],
+      "rejeitadas": [
+       {"v": -2, "tex": "-2"}
+      ]
+     },
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "u^2-u-6", "legenda": "Equação em u (o membro direito é 0)", "tex": "u^{2}-u-6"}
+     ],
+     "zonas": [
+      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: 3^x nunca toma estes valores"}
+     ],
+     "pontos": [
+      {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3, "decide": 4, "pos": "dir"},
+      {"rej": 0, "em": "esq", "estado": "rejeitada", "desde": 3, "decide": 4, "pos": "baixo"}
+     ]
+    },
+    {
+     "id": "ponte",
+     "rotulo": "Voltar a x",
+     "x": [-2, 3],
+     "y": [-4, 10],
+     "aria": "Gráfico de 3 elevado a x. A reta u igual a 3 corta a curva em x igual a 1. A reta u igual a menos 2 está na zona riscada e nunca toca a curva.",
+     "curvas": [
+      {"id": "pot", "papel": "esq", "expr": "3^x", "legenda": "A exponencial", "tex": "3^{x}"}
+     ],
+     "retasH": [
+      {"y": 3, "rotulo": "u = 3"},
+      {"y": -2, "rotulo": "u = −2", "estado": "rejeitada"}
+     ],
+     "zonas": [
+      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["3^x > 0"], "legenda": "3^x nunca toma estes valores"}
+     ],
+     "pontos": [
+      {"x": 1, "y": 3, "em": "pot", "estado": "aceite", "pos": "baixo"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$: o domínio é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Tudo em potências de $3^x$",
+     "fase": "resolver",
+     "texto": "Como $9=3^2$, tem-se $9^x=(3^2)^x=(3^x)^2$. Assim, a equação só tem a potência $3^x$.",
+     "linhas": [
+      {"tex": "9^{x}=\\left(3^{2}\\right)^{x}=\\left(3^{x}\\right)^{2}"}
+     ]
+    },
+    {
+     "titulo": "Mudança de variável",
+     "fase": "resolver",
+     "texto": "Faz $u=3^x$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-u-6$.",
+     "vista": "u",
+     "linhas": [
+      {"tex": "u=3^{x}", "v": "txt"},
+      {"tex": "9^{x}-3^{x}-6=0\\Leftrightarrow u^{2}-u-6=0", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Resolver em $u$",
+     "fase": "resolver",
+     "texto": "Procura dois números com soma $1$ e produto $-6$: são $3$ e $-2$. Fatoriza e usa a lei do anulamento do produto.",
+     "var": "u",
+     "linhas": [
+      {"tex": "u^{2}-u-6=(u-3)(u+2)"},
+      {"tex": "(u-3)(u+2)=0\\Leftrightarrow u=3\\lor u=-2"}
+     ]
+    },
+    {
+     "titulo": "Só servem valores $u>0$",
+     "fase": "verificar",
+     "texto": "Como $u=3^x$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. $u=3$ serve. $u=-2$ é rejeitada: está na zona riscada, onde $3^x$ nunca chega.",
+     "var": "u",
+     "linhas": [
+      {"tex": "3>0"},
+      {"tex": "-2<0"}
+     ]
+    },
+    {
+     "titulo": "Voltar a $x$",
+     "fase": "resolver",
+     "texto": "$3^x=3$ dá $x=1$. Já $3^x=-2$ é impossível: a reta $u=-2$ nunca toca a curva, porque $3^x>0$ para todo o $x$.",
+     "vista": "ponte",
+     "linhas": [
+      {"tex": "3^{x}=3\\Leftrightarrow x=1"}
+     ]
+    },
+    {
+     "titulo": "Verificar na equação original",
+     "fase": "verificar",
+     "texto": "Substitui $x=1$ no enunciado. É a única solução, e o ponto está no eixo dos xx, na curva do primeiro membro.",
+     "vista": "x",
+     "linhas": [
+      {"tex": "9^{1}-3^{1}-6=9-3-6=0"}
+     ]
+    }
+   ],
+   "resposta": "S=\\{1\\}"
+  },
+  {
+   "id": "log-simples",
+   "grupo": "log",
+   "chip": "Logaritmo simples",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação seguinte. Começa com $c=3$ e mexe no slider para ver a solução mover-se.",
+   "modelo": {
+    "tex": "\\log_2(x+1)=c",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "logb(2,x+1)",
+    "dir": "c",
+    "dominio": ["x+1"],
+    "procura": [-2, 16],
+    "solucoes": [],
+    "rejeitadas": []
+   },
+   "param": {
+    "nome": "c",
+    "min": -3,
+    "max": 3.5,
+    "passo": 0.5,
+    "inicial": 3,
+    "dominio": [],
+    "solucao": "2^c-1",
+    "leitura": "logaritmo",
+    "rotulo": "Valor de c"
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-3, 12],
+     "y": [-4, 5],
+     "aria": "Gráfico de log de base 2 de x mais 1, que só existe à direita da assíntota x igual a menos 1, e da reta horizontal y igual a c.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "logb(2,x+1)", "tex": "\\log_2(x+1)"},
+      {"id": "dir", "papel": "dir", "expr": "c", "tex": "c"}
+     ],
+     "zonas": [
+      {"eixo": "x", "de": null, "ate": -1, "desde": 0, "assintota": "x = −1", "legenda": "x ≤ −1: fora do domínio"}
+     ],
+     "pontos": [
+      {"x": "param", "em": "esq", "estado": "aceite", "pos": "dir"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio primeiro",
+     "fase": "dominio",
+     "texto": "O argumento de um logaritmo tem de ser positivo. A zona riscada é onde $x\\le-1$, e $x=-1$ é uma assíntota vertical: a curva nunca lá chega.",
+     "linhas": [
+      {"tex": "x+1>0\\Leftrightarrow x>-1"},
+      {"tex": "D=\\left]-1,+\\infty\\right[", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Da forma logarítmica à exponencial",
+     "fase": "resolver",
+     "texto": "$\\log_2(x+1)=c$ quer dizer que $c$ é o expoente a que se eleva 2 para obter $x+1$.",
+     "linhas": [
+      {"tex": "\\log_2(x+1)=c\\Leftrightarrow x+1=2^{c}"}
+     ]
+    },
+    {
+     "titulo": "Resolver",
+     "fase": "resolver",
+     "texto": "Isola $x$. Com $c=3$ fica $x=2^3-1=7$. Mexe no slider para ver outros valores.",
+     "linhas": [
+      {"tex": "x+1=2^{c}\\Leftrightarrow x=2^{c}-1"}
+     ]
+    },
+    {
+     "titulo": "Verificar no domínio",
+     "fase": "verificar",
+     "texto": "Como $2^c>0$, tem-se $x=2^c-1>-1$: a solução está sempre no domínio, seja qual for $c$. No gráfico, a reta $y=c$ corta a curva num só ponto, à direita da assíntota.",
+     "linhas": [
+      {"tex": "2^{c}-1>-1"}
+     ]
+    }
+   ],
+   "resposta": "\\begin{gathered}x=2^{c}-1\\\\[0.3em] \\text{para qualquer }c\\in\\mathbb{R}\\end{gathered}"
+  },
+  {
+   "id": "raiz-rejeitada",
+   "grupo": "log",
+   "chip": "Raiz rejeitada",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "\\ln x+\\ln(x-3)=\\ln 4",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "ln(x)+ln(x-3)",
+    "dir": "ln(4)",
+    "dominio": ["x", "x-3"],
+    "procura": [-10, 12],
+    "auxiliar": {
+     "esq": "ln(x^2-3*x)",
+     "dir": "ln(4)"
+    },
+    "solucoes": [
+     {"v": 4, "tex": "4"}
+    ],
+    "rejeitadas": [
+     {"v": -1, "tex": "-1"}
+    ]
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-3, 8],
+     "y": [-3, 4],
+     "aria": "Gráfico do membro esquerdo, que só existe para x maior que 3, e do membro direito, uma reta horizontal. A curva a tracejado é a forma com um só logaritmo, que também existe para x negativo.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "ln(x)+ln(x-3)", "tex": "\\ln x+\\ln(x-3)"},
+      {"id": "dir", "papel": "dir", "expr": "ln(4)", "tex": "\\ln 4"},
+      {
+       "id": "aux",
+       "papel": "aux",
+       "expr": "ln(x^2-3*x)",
+       "tex": "\\ln\\left(x^{2}-3x\\right)",
+       "tracejado": true,
+       "desde": 1,
+       "legenda": "Com um só logaritmo"
+      }
+     ],
+     "zonas": [
+      {
+       "eixo": "x",
+       "de": null,
+       "ate": 3,
+       "desde": 0,
+       "assintota": "x = 3",
+       "rotulo": ["fora do", "domínio"],
+       "legenda": "x ≤ 3: fora do domínio"
+      }
+     ],
+     "pontos": [
+      {"sol": 0, "em": "aux", "estado": "aceite", "desde": 3, "decide": 4, "pos": "dir"},
+      {"rej": 0, "em": "aux", "estado": "rejeitada", "desde": 3, "decide": 4, "pos": "dir"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio primeiro",
+     "fase": "dominio",
+     "texto": "Os dois argumentos têm de ser positivos ao mesmo tempo. A zona riscada é onde $x\\le3$.",
+     "linhas": [
+      {"tex": "x>0\\land x-3>0\\Leftrightarrow x>3"},
+      {"tex": "D=\\left]3,+\\infty\\right[", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Juntar num só logaritmo",
+     "fase": "resolver",
+     "texto": "A soma de logaritmos com a mesma base é o logaritmo do produto: $\\ln a+\\ln b=\\ln(ab)$, para $a,b>0$. A curva a tracejado coincide com a original para $x>3$, mas também existe para $x<0$.",
+     "linhas": [
+      {"tex": "\\ln x+\\ln(x-3)=\\ln\\left(x(x-3)\\right)"}
+     ]
+    },
+    {
+     "titulo": "Igualar os argumentos",
+     "fase": "resolver",
+     "texto": "O logaritmo é injetivo: $\\ln a=\\ln b\\Leftrightarrow a=b$, com $a,b>0$.",
+     "linhas": [
+      {"tex": "\\ln\\left(x(x-3)\\right)=\\ln 4\\Leftrightarrow x(x-3)=4"}
+     ]
+    },
+    {
+     "titulo": "Resolver a equação do 2.º grau",
+     "fase": "resolver",
+     "texto": "Passa tudo para um membro e fatoriza. Há duas candidatas, e as duas estão na curva a tracejado.",
+     "linhas": [
+      {"tex": "x(x-3)=4\\Leftrightarrow x^{2}-3x-4=0\\Leftrightarrow(x+1)(x-4)=0\\Leftrightarrow x=-1\\lor x=4"}
+     ]
+    },
+    {
+     "titulo": "Verificar no domínio",
+     "fase": "verificar",
+     "texto": "O domínio é $x>3$. $x=4$ pertence-lhe: serve. $x=-1$ não: $\\ln(-1)$ e $\\ln(-4)$ não existem, por isso é rejeitada. No gráfico, o ponto oco está na zona riscada.",
+     "linhas": [
+      {"tex": "4>3"},
+      {"tex": "-1<3"},
+      {"tex": "\\ln 4+\\ln(4-3)=\\ln 4+\\ln 1=\\ln 4"}
+     ]
+    }
+   ],
+   "resposta": "S=\\{4\\}"
+  },
+  {
+   "id": "bases-diferentes",
+   "grupo": "log",
+   "chip": "Bases diferentes",
+   "tipo": "equacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação:",
+   "modelo": {
+    "tex": "\\log_2 x=\\log_4(x+6)",
+    "variavel": "x",
+    "rel": "=",
+    "esq": "logb(2,x)",
+    "dir": "logb(4,x+6)",
+    "dominio": ["x", "x+6"],
+    "procura": [-10, 20],
+    "auxiliar": {
+     "esq": "logb(2,x^2)",
+     "dir": "logb(2,x+6)"
+    },
+    "solucoes": [
+     {"v": 3, "tex": "3"}
+    ],
+    "rejeitadas": [
+     {"v": -2, "tex": "-2"}
+    ]
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-4, 9],
+     "y": [-4, 4],
+     "aria": "Gráfico de log de base 2 de x, que só existe para x positivo, e de log de base 4 de x mais 6.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "logb(2,x)", "tex": "\\log_2 x"},
+      {"id": "dir", "papel": "dir", "expr": "logb(4,x+6)", "tex": "\\log_4(x+6)"}
+     ],
+     "zonas": [
+      {
+       "eixo": "x",
+       "de": null,
+       "ate": 0,
+       "desde": 0,
+       "assintota": "x = 0",
+       "rotulo": ["fora do", "domínio"],
+       "legenda": "x ≤ 0: fora do domínio"
+      }
+     ],
+     "pontos": [
+      {"sol": 0, "em": "dir", "estado": "aceite", "desde": 4, "decide": 5, "pos": "baixo"},
+      {"rej": 0, "em": "dir", "estado": "rejeitada", "desde": 4, "decide": 5, "pos": "dir"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio primeiro",
+     "fase": "dominio",
+     "texto": "Os dois argumentos têm de ser positivos ao mesmo tempo: $x>0$ e $x+6>0$. A segunda condição está dentro da primeira. A zona riscada é onde $x\\le0$.",
+     "linhas": [
+      {"tex": "x>0\\land x+6>0\\Leftrightarrow x>0"},
+      {"tex": "D=\\left]0,+\\infty\\right[", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Passar tudo para a base 2",
+     "fase": "resolver",
+     "texto": "Usa a mudança de base, $\\log_b a=\\frac{\\log_c a}{\\log_c b}$. Como $\\log_2 4=2$, o logaritmo de base 4 passa a ter denominador 2.",
+     "linhas": [
+      {"tex": "\\log_4(x+6)=\\frac{\\log_2(x+6)}{\\log_2 4}=\\frac{\\log_2(x+6)}{2}"}
+     ]
+    },
+    {
+     "titulo": "Juntar os logaritmos",
+     "fase": "resolver",
+     "texto": "Multiplica os dois membros por 2 e leva o 2 para o expoente: $2\\log_2 x=\\log_2\\left(x^2\\right)$. Isto só vale para $x>0$, que é o domínio.",
+     "linhas": [
+      {"tex": "\\log_2 x=\\frac{\\log_2(x+6)}{2}\\Leftrightarrow2\\log_2 x=\\log_2(x+6)"},
+      {"tex": "2\\log_2 x=\\log_2\\left(x^{2}\\right)"}
+     ]
+    },
+    {
+     "titulo": "Igualar os argumentos",
+     "fase": "resolver",
+     "texto": "O logaritmo é injetivo, com a mesma base: $\\log_2 a=\\log_2 b\\Leftrightarrow a=b$.",
+     "linhas": [
+      {"tex": "\\log_2\\left(x^{2}\\right)=\\log_2(x+6)\\Leftrightarrow x^{2}=x+6"}
+     ]
+    },
+    {
+     "titulo": "Resolver a equação do 2.º grau",
+     "fase": "resolver",
+     "texto": "Passa tudo para um membro e fatoriza. Há duas candidatas.",
+     "linhas": [
+      {"tex": "x^{2}=x+6\\Leftrightarrow x^{2}-x-6=0\\Leftrightarrow(x+2)(x-3)=0\\Leftrightarrow x=-2\\lor x=3"}
+     ]
+    },
+    {
+     "titulo": "Verificar no domínio",
+     "fase": "verificar",
+     "texto": "O domínio é $x>0$. $x=3$ serve. $x=-2$ é rejeitada: $\\log_2(-2)$ não existe, mesmo que o membro direito exista, $\\log_4 4=1$. No gráfico, a curva vermelha existe em $x=-2$ mas a azul não.",
+     "linhas": [
+      {"tex": "3>0"},
+      {"tex": "-2<0"},
+      {"tex": "\\log_4(3+6)=\\log_4 9=\\frac{2\\log_2 3}{2}=\\log_2 3"},
+      {"tex": "\\log_4(-2+6)=\\log_4 4=1"}
+     ]
+    }
+   ],
+   "resposta": "S=\\{3\\}"
+  },
+  {
+   "id": "ineq-base-maior",
+   "grupo": "ineq",
+   "chip": "Base maior que 1",
+   "tipo": "inequacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a inequação:",
+   "modelo": {
+    "tex": "2^{x}>5",
+    "variavel": "x",
+    "rel": ">",
+    "esq": "2^x",
+    "dir": "5",
+    "dominio": [],
+    "procura": [-8, 8],
+    "solucoes": [],
+    "rejeitadas": [],
+    "conjunto": [
+     {
+      "de": 2.321928094887362,
+      "ate": null,
+      "abertoDe": true,
+      "abertoAte": true,
+      "tex": "\\left]\\log_2 5,+\\infty\\right["
+     }
+    ]
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-2, 5],
+     "y": [-1, 10],
+     "aria": "Gráfico de 2 elevado a x e da reta horizontal y igual a 5. A curva está acima da reta à direita do ponto onde se cruzam.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "2^x", "tex": "2^{x}"},
+      {"id": "dir", "papel": "dir", "expr": "5", "tex": "5"}
+     ],
+     "conjunto": {
+      "desde": 2,
+      "legenda": "solução da inequação"
+     },
+     "pontos": [
+      {"fim": [0, "de"], "em": "esq", "estado": "fronteira", "desde": 2, "pos": "baixo"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$: o domínio é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Escrever 5 como potência de 2",
+     "fase": "resolver",
+     "texto": "Para comparar expoentes, os dois membros têm de ser potências da mesma base. O expoente a que se eleva 2 para dar 5 é $\\log_2 5$.",
+     "linhas": [
+      {"tex": "5=2^{\\log_2 5}"},
+      {"tex": "2^{x}>5\\Leftrightarrow2^{x}>2^{\\log_2 5}"}
+     ]
+    },
+    {
+     "titulo": "Comparar os expoentes",
+     "fase": "resolver",
+     "texto": "A base 2 é maior que 1, por isso $2^x$ é crescente: a potência maior tem o expoente maior, e o sentido da desigualdade mantém-se. No gráfico, a curva está acima da reta à direita do cruzamento.",
+     "linhas": [
+      {"tex": "2^{x}>2^{\\log_2 5}\\Leftrightarrow x>\\log_2 5"}
+     ]
+    },
+    {
+     "titulo": "Valor aproximado",
+     "fase": "resolver",
+     "texto": "Com a calculadora, e só no fim: usa a mudança de base.",
+     "linhas": [
+      {"tex": "\\log_2 5=\\frac{\\ln 5}{\\ln 2}\\approx2{,}32"}
+     ]
+    },
+    {
+     "titulo": "Testar com valores",
+     "fase": "verificar",
+     "texto": "Escolhe um valor de cada lado de $2{,}32$: um que deve servir e outro que não.",
+     "linhas": [
+      {"tex": "2^{3}=8>5"},
+      {"tex": "2^{2}=4<5"}
+     ]
+    }
+   ],
+   "resposta": "S=\\left]\\log_2 5,+\\infty\\right[\\approx\\left]2{,}32,+\\infty\\right["
+  },
+  {
+   "id": "ineq-base-menor",
+   "grupo": "ineq",
+   "chip": "Base entre 0 e 1",
+   "tipo": "inequacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a inequação:",
+   "modelo": {
+    "tex": "\\left(\\frac{1}{2}\\right)^{x}>4",
+    "variavel": "x",
+    "rel": ">",
+    "esq": "(1/2)^x",
+    "dir": "4",
+    "dominio": [],
+    "procura": [-8, 8],
+    "solucoes": [],
+    "rejeitadas": [],
+    "conjunto": [
+     {"de": null, "ate": -2, "abertoDe": true, "abertoAte": true, "tex": "\\left]-\\infty,-2\\right["}
+    ]
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-5, 3],
+     "y": [-1, 10],
+     "aria": "Gráfico de um meio elevado a x, uma exponencial decrescente, e da reta horizontal y igual a 4. A curva está acima da reta à esquerda do ponto onde se cruzam.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "(1/2)^x", "tex": "\\left(\\frac{1}{2}\\right)^{x}"},
+      {"id": "dir", "papel": "dir", "expr": "4", "tex": "4"}
+     ],
+     "conjunto": {
+      "desde": 2,
+      "legenda": "solução da inequação"
+     },
+     "pontos": [
+      {"fim": [0, "ate"], "em": "esq", "estado": "fronteira", "desde": 2, "pos": "dir"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio",
+     "fase": "dominio",
+     "texto": "Não há logaritmos nem denominadores com $x$: o domínio é $\\mathbb{R}$.",
+     "linhas": [
+      {"tex": "D=\\mathbb{R}", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Escrever 4 como potência de $\\frac12$",
+     "fase": "resolver",
+     "texto": "Os dois membros têm de ser potências da mesma base. Como $\\left(\\frac12\\right)^{-2}=2^2=4$, escreve-se o 4 com a base $\\frac12$.",
+     "linhas": [
+      {"tex": "4=\\left(\\frac{1}{2}\\right)^{-2}"},
+      {
+       "tex": "\\left(\\frac{1}{2}\\right)^{x}>4\\Leftrightarrow\\left(\\frac{1}{2}\\right)^{x}>\\left(\\frac{1}{2}\\right)^{-2}"
+      }
+     ]
+    },
+    {
+     "titulo": "Comparar os expoentes, invertendo",
+     "fase": "resolver",
+     "texto": "A base $\\frac12$ está entre 0 e 1, por isso a função é decrescente: a potência maior tem o expoente menor, e o sentido da desigualdade inverte-se. No gráfico, a curva está acima da reta à esquerda do cruzamento.",
+     "linhas": [
+      {"tex": "\\left(\\frac{1}{2}\\right)^{x}>\\left(\\frac{1}{2}\\right)^{-2}\\Leftrightarrow x<-2"}
+     ]
+    },
+    {
+     "titulo": "Testar com valores",
+     "fase": "verificar",
+     "texto": "Escolhe um valor de cada lado de $-2$. Se tivesses mantido o sentido, obtinhas $x>-2$, e $x=0$ devia servir: mas falha.",
+     "linhas": [
+      {"tex": "\\left(\\frac{1}{2}\\right)^{-3}=8>4"},
+      {"tex": "\\left(\\frac{1}{2}\\right)^{0}=1<4"}
+     ]
+    }
+   ],
+   "resposta": "S=\\left]-\\infty,-2\\right["
+  },
+  {
+   "id": "ineq-log",
+   "grupo": "ineq",
+   "chip": "Logarítmica",
+   "tipo": "inequacao",
+   "enunciado": "Resolve em $\\mathbb{R}$ a inequação:",
+   "modelo": {
+    "tex": "\\log_2(x-1)<3",
+    "variavel": "x",
+    "rel": "<",
+    "esq": "logb(2,x-1)",
+    "dir": "3",
+    "dominio": ["x-1"],
+    "procura": [-4, 14],
+    "solucoes": [],
+    "rejeitadas": [],
+    "conjunto": [
+     {"de": 1, "ate": 9, "abertoDe": true, "abertoAte": true, "tex": "\\left]1,9\\right["}
+    ]
+   },
+   "vistas": [
+    {
+     "id": "x",
+     "rotulo": "Gráfico",
+     "x": [-1, 12],
+     "y": [-4, 5],
+     "aria": "Gráfico de log de base 2 de x menos 1, que só existe à direita da assíntota x igual a 1, e da reta horizontal y igual a 3. A curva está abaixo da reta entre x igual a 1 e x igual a 9.",
+     "curvas": [
+      {"id": "esq", "papel": "esq", "expr": "logb(2,x-1)", "tex": "\\log_2(x-1)"},
+      {"id": "dir", "papel": "dir", "expr": "3", "tex": "3"}
+     ],
+     "zonas": [
+      {"eixo": "x", "de": null, "ate": 1, "desde": 0, "assintota": "x = 1", "legenda": "x ≤ 1: fora do domínio"}
+     ],
+     "conjunto": {
+      "desde": 3,
+      "legenda": "solução da inequação"
+     },
+     "pontos": [
+      {"fim": [0, "ate"], "em": "esq", "estado": "fronteira", "desde": 2, "pos": "baixo"}
+     ]
+    }
+   ],
+   "passos": [
+    {
+     "titulo": "Domínio primeiro",
+     "fase": "dominio",
+     "texto": "O argumento do logaritmo tem de ser positivo. A zona riscada é onde $x\\le1$, e $x=1$ é uma assíntota vertical.",
+     "linhas": [
+      {"tex": "x-1>0\\Leftrightarrow x>1"},
+      {"tex": "D=\\left]1,+\\infty\\right[", "v": "txt"}
+     ]
+    },
+    {
+     "titulo": "Escrever 3 como logaritmo de base 2",
+     "fase": "resolver",
+     "texto": "O logaritmo é um expoente: como $2^3=8$, tem-se $3=\\log_2 8$.",
+     "linhas": [
+      {"tex": "3=\\log_2\\left(2^{3}\\right)=\\log_2 8"}
+     ]
+    },
+    {
+     "titulo": "Comparar os argumentos",
+     "fase": "resolver",
+     "texto": "A base 2 é maior que 1, por isso $\\log_2$ é crescente e o sentido da desigualdade mantém-se. Isto vale dentro do domínio, onde $x-1>0$.",
+     "linhas": [
+      {"tex": "\\log_2(x-1)<\\log_2 8\\Leftrightarrow x-1<8"},
+      {"tex": "x-1<8\\Leftrightarrow x<9"}
+     ]
+    },
+    {
+     "titulo": "Juntar ao domínio",
+     "fase": "resolver",
+     "texto": "A solução tem de cumprir as duas condições ao mesmo tempo: estar no domínio ($x>1$) e verificar a inequação ($x<9$). No gráfico, a curva está abaixo da reta nesse intervalo.",
+     "linhas": [
+      {"tex": "x>1\\land x<9\\Leftrightarrow1<x<9"}
+     ]
+    },
+    {
+     "titulo": "Testar com valores",
+     "fase": "verificar",
+     "texto": "Em $x=5$ serve. Em $x=9$ dá igualdade, por isso fica de fora (a inequação é estrita). Em $x=0$ nem existe: $\\log_2(-1)$ não está definido.",
+     "linhas": [
+      {"tex": "\\log_2(5-1)=\\log_2 4=2<3"},
+      {"tex": "\\log_2(9-1)=\\log_2 8=3"}
+     ]
+    }
+   ],
+   "resposta": "S=\\left]1,9\\right["
+  }
+ ]
+}

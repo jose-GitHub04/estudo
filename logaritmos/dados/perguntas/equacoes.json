@@ -1,0 +1,160 @@
+{
+ "tema": "equacoes",
+ "perguntas": [
+  { "id": "equ-01", "nivel": 1,
+    "enunciado": "Resolve a equação $3^x=20$. Qual é o valor exato de $x$?",
+    "opcoes": [
+      {"tex": "$\\log_{20}3$", "valor": "logb(20, 3)"},
+      {"tex": "$\\log_3 20$", "valor": "logb(3, 20)"},
+      {"tex": "$\\dfrac{20}{3}$", "valor": "20/3"},
+      {"tex": "$\\sqrt[3]{20}$", "valor": "20**(1/3)"} ],
+    "certa": 1,
+    "ref": "logb(3, 20)",
+    "explicacao": "$3^x=20$ pergunta «a que expoente elevo 3 para obter 20?», e essa pergunta escreve-se $\\log_3 20\\approx2{,}73$ (faz sentido, porque $3^2=9<20<27=3^3$). $\\log_{20}3$ troca a base com o argumento. $\\sqrt[3]{20}$ resolveria $x^3=20$, em que $x$ é a base e não o expoente." },
+
+  { "id": "equ-02", "nivel": 1,
+    "enunciado": "Resolve a equação $\\log_5 x=2$.",
+    "opcoes": [
+      {"tex": "$25$", "valor": "25"},
+      {"tex": "$32$", "valor": "32"},
+      {"tex": "$10$", "valor": "10"},
+      {"tex": "$\\dfrac{1}{25}$", "valor": "1/25"} ],
+    "certa": 0,
+    "ref": "5**2",
+    "explicacao": "$\\log_5 x=2$ significa $5^2=x$, logo $x=25$. O 32 vem de trocar a base com o expoente ($2^5$), o 10 de multiplicar $5\\times2$ e $\\frac1{25}$ de trocar o sinal do expoente. Confere: $\\log_5 25=2$." },
+
+  { "id": "equ-03", "nivel": 1,
+    "enunciado": "Qual é a condição de existência (o domínio) da equação $\\ln(x-3)=\\ln(5-x)$?",
+    "opcoes": [
+      {"tex": "$]3,+\\infty[$"},
+      {"tex": "$]-\\infty,5[$"},
+      {"tex": "$]3,5[$"},
+      {"tex": "$]-\\infty,3[\\,\\cup\\,]5,+\\infty[$"} ],
+    "certa": 2,
+    "verifica": ["((x-3>0) and (5-x>0)) == (3<x<5)"],
+    "explicacao": "Os dois logaritmos têm de existir ao mesmo tempo: $x-3>0$ dá $x>3$ e $5-x>0$ dá $x<5$. Juntas as duas condições com «e», ou seja, fazes a interseção: $]3,5[$. Quem fica só com uma das condições esquece a outra. E a união $]-\\infty,3[\\,\\cup\\,]5,+\\infty[$ é o contrário do que queres: em cada um desses valores, um dos logaritmos não existe." },
+
+  { "id": "equ-04", "nivel": 1,
+    "enunciado": "Resolve a inequação $\\left(\\dfrac12\\right)^x>\\dfrac14$.",
+    "opcoes": [
+      {"tex": "$]2,+\\infty[$"},
+      {"tex": "$]-2,+\\infty[$"},
+      {"tex": "$]-\\infty,-2[$"},
+      {"tex": "$]-\\infty,2[$"} ],
+    "certa": 3,
+    "verifica": ["(0.5**x>0.25) == (x<2)"],
+    "explicacao": "Como $\\frac14=\\left(\\frac12\\right)^2$, a inequação é $\\left(\\frac12\\right)^x>\\left(\\frac12\\right)^2$. A base está entre 0 e 1, a exponencial é decrescente e o sentido inverte-se: $x<2$. Quem mantém o sentido chega a $]2,+\\infty[$. Confere: $x=1$ dá $\\frac12>\\frac14$ (certo) e $x=3$ dá $\\frac18>\\frac14$ (falso)." },
+
+  { "id": "equ-05", "nivel": 1,
+    "enunciado": "Quantas soluções reais tem a equação $5^x=-4$?",
+    "opcoes": [
+      {"tex": "Uma, $x=\\log_5 4$"},
+      {"tex": "Nenhuma, porque $5^x>0$ para todo o $x$"},
+      {"tex": "Uma, $x=-\\log_5 4$"},
+      {"tex": "Duas, $x=\\pm\\log_5 4$"} ],
+    "certa": 1,
+    "verifica": ["5**t>0", "not ig(5**t, -4)"],
+    "explicacao": "Uma potência de base positiva é sempre positiva, nunca chega a $-4$. Também não podes escrever $x=\\log_5(-4)$, porque esse logaritmo não existe. Se «tirares» o sinal, ficas com $5^x=4$, que é outra equação." },
+
+  { "id": "equ-06", "nivel": 2,
+    "enunciado": "Resolve $\\log x+\\log(x-3)=\\log 4$ (logaritmos de base 10). Qual é o conjunto-solução?",
+    "opcoes": [
+      {"tex": "$\\{4\\}$"},
+      {"tex": "$\\{-1,4\\}$"},
+      {"tex": "$\\left\\{\\dfrac72\\right\\}$"},
+      {"tex": "$\\{4,7\\}$"} ],
+    "certa": 0,
+    "verifica": ["ig(log(4)+log(4-3), log(4))", "not ig(log(3.5)+log(3.5-3), log(4))", "not ig(log(7)+log(7-3), log(4))", "-1-3<0"],
+    "explicacao": "Domínio: $x>0$ e $x-3>0$, ou seja, $x>3$. Juntando: $\\log\\big(x(x-3)\\big)=\\log4\\Leftrightarrow x^2-3x-4=0\\Leftrightarrow x=4\\lor x=-1$, e $-1$ está fora do domínio, logo $S=\\{4\\}$. O $\\frac72$ vem de somar os argumentos ($x+x-3=4$), mas a soma de logaritmos dá o logaritmo do <em>produto</em>. O $\\{4,7\\}$ vem de «anular» $x(x-3)=4$ fator a fator, o que só se faz quando o produto é 0." },
+
+  { "id": "equ-07", "nivel": 2,
+    "enunciado": "Resolve $e^{2x}-4e^x-5=0$. Qual é o conjunto-solução?",
+    "opcoes": [
+      {"tex": "$\\{5\\}$"},
+      {"tex": "$\\{-1,5\\}$"},
+      {"tex": "$\\{\\ln5\\}$"},
+      {"tex": "$\\{0\\}$"} ],
+    "certa": 2,
+    "verifica": ["ig(exp(2*ln(5))-4*exp(ln(5))-5, 0)", "not ig(exp(2*5)-4*exp(5)-5, 0)", "not ig(exp(2*0)-4*exp(0)-5, 0)", "exp(t)+1>0"],
+    "explicacao": "Com $u=e^x$ (e $e^{2x}=u^2$): $u^2-4u-5=0\\Leftrightarrow u=5\\lor u=-1$. Como $e^x>0$, $u=-1$ é impossível, e $e^x=5\\Leftrightarrow x=\\ln5$. Os conjuntos $\\{5\\}$ e $\\{-1,5\\}$ ainda são valores de $u$, não de $x$. O $0$ vem de trocar o sinal de $-b$ na fórmula resolvente, que dá $u=1$ em vez de $u=5$." },
+
+  { "id": "equ-08", "nivel": 2,
+    "enunciado": "Resolve $e^{x+2}-e^x=5$. Qual é o valor exato de $x$?",
+    "opcoes": [
+      {"tex": "$\\dfrac{\\ln5}{\\ln(e^2-1)}$", "valor": "ln(5)/ln(e**2-1)"},
+      {"tex": "$\\ln5-2$", "valor": "ln(5)-2"},
+      {"tex": "$\\ln\\big(5(e^2-1)\\big)$", "valor": "ln(5*(e**2-1))"},
+      {"tex": "$\\ln\\dfrac{5}{e^2-1}$", "valor": "ln(5/(e**2-1))"} ],
+    "certa": 3,
+    "ref": "ln(5/(e**2-1))",
+    "explicacao": "$e^{x+2}=e^x\\times e^2$, logo $e^x(e^2-1)=5\\Leftrightarrow e^x=\\dfrac{5}{e^2-1}\\Leftrightarrow x=\\ln\\dfrac{5}{e^2-1}\\approx-0{,}25$. Os outros vêm de erros: $\\dfrac{\\ln5}{\\ln(e^2-1)}$ confunde $\\ln\\frac ab$ com $\\frac{\\ln a}{\\ln b}$; $\\ln\\big(5(e^2-1)\\big)$ multiplica por $e^2-1$ em vez de dividir; e $\\ln5-2$ parte $\\ln(e^2-1)$ em $\\ln e^2-\\ln1$, mas o logaritmo de uma diferença não é a diferença dos logaritmos." },
+
+  { "id": "equ-09", "nivel": 2,
+    "enunciado": "Resolve $\\ln x^2=\\ln 49$. Qual é o conjunto-solução?",
+    "opcoes": [
+      {"tex": "$\\{-7,7\\}$"},
+      {"tex": "$\\{7\\}$"},
+      {"tex": "$\\{49\\}$"},
+      {"tex": "$\\{2401\\}$"} ],
+    "certa": 0,
+    "verifica": ["ig(ln((-7)**2), ln(49))", "ig(ln(7**2), ln(49))", "not ig(ln(49**2), ln(49))", "ig(ln(t**2), 2*ln(abs(t)))"],
+    "explicacao": "Domínio: $x^2>0$, ou seja, $x\\neq0$. Então $\\ln x^2=\\ln49\\Leftrightarrow x^2=49\\Leftrightarrow x=7\\lor x=-7$, e os dois valores estão no domínio. Se escreveres $2\\ln x=\\ln49$ perdes o $-7$, porque $2\\ln x$ só existe para $x>0$ (o certo é $\\ln x^2=2\\ln|x|$)." },
+
+  { "id": "equ-10", "nivel": 2,
+    "enunciado": "Resolve $\\log_{\\frac12}(x-1)>2$.",
+    "opcoes": [
+      {"tex": "$\\left]\\dfrac54,+\\infty\\right[$"},
+      {"tex": "$\\left]-\\infty,\\dfrac54\\right[$"},
+      {"tex": "$\\left]1,\\dfrac54\\right[$"},
+      {"tex": "$]3,+\\infty[$"} ],
+    "certa": 2,
+    "verifica": ["((x>1) and (logb(0.5, x-1)>2)) == (1<x<1.25)", "logb(0.5, 1.1-1)>2", "not (logb(0.5, 1.5-1)>2)", "not (logb(0.5, 3-1)>2)"],
+    "explicacao": "Domínio: $x-1>0$, ou seja, $x>1$. Escreve $2=\\log_{\\frac12}\\frac14$; como a base $\\frac12$ está entre 0 e 1, o logaritmo é decrescente e o sentido inverte-se: $x-1<\\frac14$, isto é, $x<\\frac54$. A solução é a interseção com o domínio: $\\left]1,\\frac54\\right[$. Os outros resultam de manter o sentido ($\\left]\\frac54,+\\infty\\right[$), de esquecer o domínio ($\\left]-\\infty,\\frac54\\right[$) e de comparar $x-1$ com 2 em vez de com $\\left(\\frac12\\right)^2$ ($]3,+\\infty[$)." },
+
+  { "id": "equ-11", "nivel": 2,
+    "enunciado": "Resolve $5\\times3^x=40$. Qual é a solução, arredondada às centésimas?",
+    "opcoes": [
+      {"tex": "$\\dfrac{\\ln40}{\\ln15}\\approx1{,}36$", "valor": "ln(40)/ln(15)"},
+      {"tex": "$\\log_3 35\\approx3{,}24$", "valor": "logb(3, 35)"},
+      {"tex": "$\\dfrac{\\ln8}{3}\\approx0{,}69$", "valor": "ln(8)/3"},
+      {"tex": "$\\dfrac{\\ln8}{\\ln3}\\approx1{,}89$", "valor": "ln(8)/ln(3)"} ],
+    "certa": 3,
+    "ref": "ln(8)/ln(3)",
+    "verifica": ["ig(5*3**(ln(8)/ln(3)), 40)", "abs(ln(8)/ln(3)-1.89)<0.005"],
+    "explicacao": "Primeiro isola a potência: $3^x=\\frac{40}{5}=8$, logo $x=\\log_38=\\dfrac{\\ln8}{\\ln3}\\approx1{,}89$. O 5 multiplica a potência, não faz parte da base ($5\\times3^x\\neq15^x$), e não se elimina subtraindo 5 a 40. Em $\\frac{\\ln8}{3}$ confundiu-se $\\ln3$ com $3$." },
+
+  { "id": "equ-12", "nivel": 3,
+    "enunciado": "Resolve $\\log_3 x=\\log_9(4x-3)$. Qual é o conjunto-solução?",
+    "opcoes": [
+      {"tex": "$\\{1\\}$"},
+      {"tex": "$\\{1,3\\}$"},
+      {"tex": "$\\{3\\}$"},
+      {"tex": "$\\left\\{\\dfrac{9}{16},1\\right\\}$"} ],
+    "certa": 1,
+    "verifica": ["ig(logb(3, 1), logb(9, 4*1-3))", "ig(logb(3, 3), logb(9, 4*3-3))", "4*(9/16)-3<0", "ig(9/16, (4*9/16-3)**2)", "ig(1, (4*1-3)**2)", "ig(logb(9, x), logb(3, x)/2)"],
+    "explicacao": "Domínio: $x>0$ e $4x-3>0$, logo $x>\\frac34$. Como $\\log_9y=\\frac{\\log_3y}{2}$, a equação fica $2\\log_3x=\\log_3(4x-3)$, isto é, $x^2=4x-3\\Leftrightarrow x=1\\lor x=3$. Ambas estão em $]\\frac34,+\\infty[$, por isso $S=\\{1,3\\}$: não se rejeita nada por hábito, só o que está fora do domínio. O $\\frac9{16}$ vem de pôr o 2 do lado errado ($\\log_3x=2\\log_3(4x-3)$, ou seja, $x=(4x-3)^2$) e está fora do domínio; quem faz esse erro e rejeita $\\frac9{16}$ fica com $\\{1\\}$, que também está errado." },
+
+  { "id": "equ-13", "nivel": 3,
+    "enunciado": "Quantas soluções reais tem a equação $2^x=x+3$? (Pensa nos gráficos de $y=2^x$ e da reta $y=x+3$.)",
+    "opcoes": [
+      {"tex": "Nenhuma", "valor": "0"},
+      {"tex": "Uma", "valor": "1"},
+      {"tex": "Duas", "valor": "2"},
+      {"tex": "Três", "valor": "3"} ],
+    "certa": 2,
+    "ref": "2",
+    "verifica": ["2**(-3)>(-3)+3", "2**(-2)<(-2)+3", "2**0<0+3", "2**3>3+3", "abs(2**(-2.8625)-(-2.8625+3))<0.001", "abs(2**2.4449-(2.4449+3))<0.001"],
+    "explicacao": "Compara a curva com a reta. Em $x=-3$ a curva está acima ($0{,}125>0$), em $x=-2$ está abaixo ($0{,}25<1$), em $x=0$ ainda abaixo ($1<3$) e em $x=3$ está acima ($8>6$). A curva passa de cima para baixo e depois de baixo para cima: cruza a reta duas vezes, perto de $-2{,}86$ e de $2{,}44$. Não há mais, porque a exponencial só «curva para cima» e uma reta corta uma curva assim no máximo duas vezes." },
+
+  { "id": "equ-14", "nivel": 3,
+    "enunciado": "Resolve a inequação $4^x-3\\times2^x-4>0$.",
+    "opcoes": [
+      {"tex": "$]-\\infty,2[$"},
+      {"tex": "$]2,+\\infty[$"},
+      {"tex": "$]-\\infty,-1[\\,\\cup\\,]2,+\\infty[$"},
+      {"tex": "$]4,+\\infty[$"} ],
+    "certa": 1,
+    "verifica": ["((4**x-3*2**x-4)>0) == (x>2)", "4**2.1-3*2**2.1-4>0", "not (4**1.9-3*2**1.9-4>0)", "not (4**(-3)-3*2**(-3)-4>0)"],
+    "explicacao": "Com $u=2^x$ (e $4^x=u^2$): $u^2-3u-4>0\\Leftrightarrow(u-4)(u+1)>0\\Leftrightarrow u<-1\\lor u>4$. Como $2^x>0$, $u<-1$ é impossível, e $2^x>4=2^2\\Leftrightarrow x>2$ (base maior que 1, o sentido mantém-se). Logo $S=]2,+\\infty[$. O $]-\\infty,2[$ vem de escolher o intervalo entre as raízes, o $]4,+\\infty[$ de não voltar a $x$ e o $]-\\infty,-1[\\cup]2,+\\infty[$ de não rejeitar $u<-1$." }
+ ]
+}

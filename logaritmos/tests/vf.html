@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do verdadeiro ou falso</title>
+<!-- Testes do widget logaritmos/widgets/vf.js (verdadeiro ou falso, com figuras de assets/motor/grafico.js).
+     Abrir /logaritmos/tests/vf.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=40000 --dump-dom http://127.0.0.1:8820/logaritmos/tests/vf.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Atenção: cada teste apaga o progresso guardado neste browser para este endereço (como os outros testes do site).
+     Os testes de «dados reais» e da página a 390 px usam logaritmos/dados/vf/*.json e verdadeiro-falso.html.
+     Com ?demo=inicio|figura|fim monta o widget com os dados reais e leva-o a esse estado, para tirar screenshots
+     (por exemplo ?demo=figura&id=fun-vf-simetria, ?demo=fim&tema=funcao); detalhes junto da função demo(). -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/vf.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  #palco { opacity: 0.5; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+  body[data-modo="demo"] #palco { opacity: 1; }
+  .galeria .vf-topo, .galeria .vf-progresso, .galeria .vf-barra, .galeria .vf-enunciado, .galeria .vf-respostas,
+  .galeria .vf-veredito, .galeria .vf-expl, .galeria .vf-erro, .galeria .vf-rodape { display: none; }
+  .galeria .widget { margin: 0 0 0.4rem; padding: 0.4rem; }
+  .galeria .vf-palco { margin: 0; }
+  .galeria .vf-resultado { margin: 0; padding: 0.2rem; }
+  .gal-id { margin: 0.4rem 0 0; font: 12px monospace; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes do verdadeiro ou falso</h1></div>
+<pre id="resultado">A correr...</pre>
+<main>
+  <section class="seccao"><div class="envolve"><div id="palco"></div></div></section>
+</main>
+<script type="module">
+import { GRUPOS } from '../grupos.js';
+import * as P from '../../assets/motor/progresso.js';
+import * as vf from '../widgets/vf.js';
+
+const palco = document.getElementById('palco');
+const saida = document.getElementById('resultado');
+const TRACO_LONGO = String.fromCharCode(0x2014);
+const TRACO_CURTO = String.fromCharCode(0x2013);
+
+// ---------- dados de amostra: 6 afirmações, 2 com figura válida e 1 com figura ilegível ----------
+
+const LEGENDA = 'Gráfico de 2 elevado a x: sobe sempre e passa em (0, 1).';
+const AFIRMACOES = [
+  { id: 't-exp-contradominio', tema: 'exponencial', texto: 'O contradomínio de $f(x)=2^x$ é $\\mathbb{R}^+$.', verdadeira: true,
+    explicacao: 'EXPL-contra: uma potência de base positiva nunca é nula nem negativa.',
+    figura: { tipo: 'grafico', x: [-3, 3], y: [-1, 9], curvas: [{ expr: '2^x', rotulo: 'y = 2^x' }], retasH: [0],
+      pontos: [{ x: 0, y: 1, rotulo: '(0, 1)' }], legenda: LEGENDA } },
+  { id: 't-exp-decrescente', tema: 'exponencial', texto: 'Se $a>1$, a função $f(x)=a^x$ é decrescente.', verdadeira: false,
+    explicacao: 'EXPL-decresc: com $a>1$ o valor sobe. Por exemplo, $2^1=2$ e $2^2=4$.',
+    erroComum: 'ERRO-decresc: confundir a base com o expoente.' },
+  { id: 't-log-negativo', tema: 'logaritmo', texto: 'Existe $\\log_2(-4)$.', verdadeira: false,
+    explicacao: 'EXPL-neg: nenhuma potência de 2 dá um número negativo.',
+    erroComum: 'ERRO-neg: pensar que $2^{-2}=-4$.' },
+  { id: 't-log-um', tema: 'logaritmo', texto: 'Para $a>0$ e $a\\neq1$, tem-se $\\log_a 1=0$.', verdadeira: true,
+    explicacao: 'EXPL-um: $a^0=1$ para qualquer base.',
+    figura: { tipo: 'grafico', x: [-1, 6], y: [-3, 3],
+      curvas: [{ expr: 'logb(2, x)', rotulo: 'y = log₂ x' }, { expr: 'logb(1/2, x)', rotulo: 'y = log_½ x' }],
+      pontos: [{ x: 1, y: 0, rotulo: '(1, 0)' }], retasV: [0] } },
+  { id: 't-pro-soma', tema: 'propriedades', texto: 'Para $x,y>0$, $\\ln(x+y)=\\ln x+\\ln y$.', verdadeira: false,
+    explicacao: 'EXPL-soma: com $x=y=1$, $\\ln 2\\approx0{,}69$ mas $\\ln1+\\ln1=0$.',
+    erroComum: 'ERRO-soma: «o logaritmo distribui-se pela soma».',
+    figura: { tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: '2^^x((' }] } },
+  { id: 't-pro-produto', tema: 'propriedades', texto: 'Para $x,y>0$, $\\ln(xy)=\\ln x+\\ln y$.', verdadeira: true,
+    explicacao: 'EXPL-prod: o logaritmo transforma produtos em somas.' },
+];
+const POR_ID = new Map(AFIRMACOES.map((a) => [a.id, a]));
+const COM_FIGURA = new Set(['t-exp-contradominio', 't-log-um']); // as que desenham mesmo
+const DADOS = { vf: { afirmacoes: AFIRMACOES } };
+
+// ---------- infraestrutura ----------
+
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+const errosNaoApanhados = [];
+window.addEventListener('error', (e) => errosNaoApanhados.push(e.message));
+window.addEventListener('unhandledrejection', (e) => errosNaoApanhados.push('promessa: ' + (e.reason && e.reason.message)));
+
+const esperar = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const q = (el, s) => el.querySelector(s);
+const qa = (el, s) => [...el.querySelectorAll(s)];
+const texto = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+
+const aLimpar = [];
+function novoEl() {
+  const d = document.createElement('div');
+  d.dataset.widget = 'vf';
+  palco.append(d);
+  aLimpar.push(d);
+  return d;
+}
+function limparTudo() {
+  while (aLimpar.length) aLimpar.pop().remove();
+}
+
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 4) erros.push(msg); }
+  };
+  try {
+    P.apagarTudo();
+    await fn(ok);
+  } catch (e) {
+    total++;
+    erros.push('exceção: ' + (e && e.message));
+  } finally {
+    limparTudo();
+  }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+/** Todo o progresso atualmente no armazenamento (as secções), ou {} se não houver. */
+function lerTudo() {
+  try { return JSON.parse(localStorage.getItem('mat100-estudo-v1')) || {}; } catch (e) { return {}; }
+}
+
+async function montar(dados = DADOS, semente = 5) {
+  const el = novoEl();
+  await vf.montar(el, dados, { semente });
+  return el;
+}
+/** Monta com os dados exatamente como vêm (inclui undefined e null, que `montar` trocaria pelos de amostra). */
+async function montarCom(dados) {
+  const el = novoEl();
+  await vf.montar(el, dados, { semente: 5 });
+  return el;
+}
+
+const idAtual = (el) => { const c = q(el, '.vf-cartao[data-id]'); return c ? c.dataset.id : null; };
+const botao = (el, valor) => q(el, `.vf-resp[data-valor="${valor}"]`);
+const chipDe = (el, tema) => q(el, `.chip[data-tema="${tema}"]`);
+
+/**
+ * Percorre uma ronda inteira. `decidir(a)` devolve o que clicar (true = Verdadeiro); `antes(a, el)` corre
+ * antes de responder e `depois(a, el, valor)` logo a seguir. Termina no ecrã final. Devolve os ids pela ordem.
+ */
+function percorrer(el, decidir, antes = () => {}, depois = () => {}) {
+  const vistos = [];
+  for (let i = 0; i < 400 && q(el, '.vf-resp'); i++) {
+    const id = idAtual(el);
+    const a = POR_ID.get(id) || REAIS.get(id);
+    vistos.push(id);
+    antes(a, el);
+    const valor = decidir(a);
+    botao(el, valor).click();
+    depois(a, el, valor);
+    q(el, '.vf-seguinte').click();
+  }
+  return vistos;
+}
+
+const certa = (a) => a.verdadeira;
+const errada = (a) => !a.verdadeira;
+
+// dados reais (logaritmos/dados/vf/<grupo>.json), juntos como faz o app.js
+const REAIS = new Map();
+const DADOS_REAIS = { vf: { afirmacoes: [] } };
+for (const g of GRUPOS) {
+  try {
+    const r = await fetch(`../dados/vf/${g.id}.json`);
+    if (!r.ok) continue;
+    const d = await r.json();
+    for (const a of d.afirmacoes || []) {
+      const x = { ...a, tema: a.tema || d.tema || g.id };
+      DADOS_REAIS.vf.afirmacoes.push(x);
+      REAIS.set(x.id, x);
+    }
+  } catch (e) { /* ficheiro ainda por escrever ou inválido: conta como vazio, como no app.js */ }
+}
+
+// ---------- testes ----------
+async function testes() {
+
+  await teste('monta sem exceção: filtros, primeira afirmação e botões', async (ok) => {
+    const el = await montar();
+    ok(!!q(el, '.widget.vf'), 'falta o .widget.vf');
+    const chips = qa(el, '.chip');
+    ok(chips.length === 4, `4 filtros (Todos + 3 temas), há ${chips.length}`);
+    ok(texto(chips[0]) === 'Todos (6)', 'primeiro filtro: ' + texto(chips[0]));
+    const titulo = (id) => GRUPOS.find((g) => g.id === id).titulo;
+    ok(texto(chips[1]) === `${titulo('exponencial')} (2)`, 'filtro 1: ' + texto(chips[1]));
+    ok(texto(chips[2]) === `${titulo('logaritmo')} (2)`, 'filtro 2: ' + texto(chips[2]));
+    ok(texto(chips[3]) === `${titulo('propriedades')} (2)`, 'filtro 3: ' + texto(chips[3]));
+    ok(chips.every((c) => c.getAttribute('aria-pressed') === (c.dataset.tema === 'todos' ? 'true' : 'false')), 'só «Todos» está premido no início');
+    ok(!!botao(el, true) && !!botao(el, false), 'faltam os botões Verdadeiro e Falso');
+    ok(texto(botao(el, true)).startsWith('Verdadeiro') && texto(botao(el, false)).startsWith('Falso'), 'rótulos dos botões');
+    ok(texto(q(el, '.vf-contador')) === '1 de 6', 'contador: ' + texto(q(el, '.vf-contador')));
+    ok(/Já acertaste à primeira em 0 de 6 afirmações/.test(texto(q(el, '.vf-estat'))), 'frase de progresso: ' + texto(q(el, '.vf-estat')));
+    ok(!q(el, '.katex-error'), 'erro de KaTeX');
+    ok(!!q(el, '.vf-enunciado .katex'), 'a fórmula do enunciado devia estar renderizada');
+  });
+
+  await teste('a figura não existe antes de responder e existe depois (só nas válidas)', async (ok) => {
+    const el = await montar();
+    const vistas = percorrer(el, certa,
+      (a, e) => {
+        ok(!q(e, '.vf-fig') && !q(e, 'svg.figura'), `${a.id}: há figura antes de responder`);
+        ok(!q(e, '.vf-expl'), `${a.id}: a explicação aparece antes de responder`);
+      },
+      (a, e) => {
+        const fig = q(e, '.vf-fig');
+        ok(!!fig === COM_FIGURA.has(a.id), `${a.id}: figura depois de responder = ${!!fig}, esperado ${COM_FIGURA.has(a.id)}`);
+        ok(!!q(e, '.vf-expl'), `${a.id}: falta a explicação (a figura ilegível não pode parti-la)`);
+        if (fig) {
+          const svg = q(fig, 'svg');
+          ok(svg.classList.contains('figura') && svg.classList.contains('figura--fixa'), `${a.id}: o svg devia ser figura figura--fixa`);
+          ok(svg.getAttribute('role') === 'img', `${a.id}: role`);
+          ok(qa(svg, '[data-camada="curvas"] path').every((p) => (p.getAttribute('d') || '').length > 10), `${a.id}: curva vazia`);
+          ok(!!q(svg, '[data-camada="pontos"] circle'), `${a.id}: falta o ponto marcado`);
+        }
+      });
+    ok(vistas.length === 6 && new Set(vistas).size === 6, 'a ronda devia mostrar as 6 afirmações uma vez cada: ' + vistas.join(','));
+    ok(!!q(el, '.vf-fim'), 'devia acabar no ecrã final');
+    ok(!q(el, '.vf-fig'), 'o ecrã final não tem figuras');
+  });
+
+  await teste('figura: legenda vira aria-label; sem legenda gera uma descrição; aceita «aria»', async (ok) => {
+    const el = await montar();
+    percorrer(el, certa, () => {}, (a, e) => {
+      const svg = q(e, '.vf-fig svg');
+      if (!svg) return;
+      const rotulo = svg.getAttribute('aria-label') || '';
+      if (a.id === 't-exp-contradominio') ok(rotulo === LEGENDA, 'legenda: ' + rotulo);
+      if (a.id === 't-log-um') {
+        ok(rotulo.startsWith('Gráfico de y = log₂ x e y = log_½ x.'), 'descrição gerada: ' + rotulo);
+        ok(/Reta vertical: x = 0\./.test(rotulo) && /Ponto marcado: \(1; 0\)\./.test(rotulo), 'descrição gerada (retas e pontos): ' + rotulo);
+        ok(!/undefined|NaN/.test(rotulo), 'descrição com undefined/NaN');
+      }
+    });
+    const com = (figura) => ({ vf: { afirmacoes: [{ id: 'x-vf-1', tema: 'exponencial', texto: 'T', verdadeira: true, explicacao: 'E', figura }] } });
+    const el2 = await montar(com({ tipo: 'grafico', x: [-2, 2], y: [-1, 5], curvas: [{ expr: '2^x' }], aria: 'Texto do campo aria.' }));
+    botao(el2, true).click();
+    ok(q(el2, '.vf-fig svg').getAttribute('aria-label') === 'Texto do campo aria.', 'o campo «aria» devia servir de legenda');
+  });
+
+  await teste('figuras ilegíveis ou fora do contrato são ignoradas (fica só a explicação)', async (ok) => {
+    const casos = {
+      'expressão ilegível': { tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: '2^^x((' }] },
+      'curva sem expr': { tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ rotulo: 'f' }] },
+      'curva fora da janela': { tipo: 'grafico', x: [-3, -1], y: [-1, 5], curvas: [{ expr: 'ln(x)' }] },
+      'janela invertida': { tipo: 'grafico', x: [3, -3], y: [-1, 5], curvas: [{ expr: 'x' }] },
+      'janela sem y': { tipo: 'grafico', x: [-3, 3], curvas: [{ expr: 'x' }] },
+      'ponto sem número': { tipo: 'grafico', x: [-3, 3], y: [-1, 5], curvas: [{ expr: 'x' }], pontos: [{ x: 'a', y: 1 }] },
+      'reta vertical sem x': { tipo: 'grafico', x: [-3, 3], y: [-1, 5], retasV: [{ rotulo: 'x = ?' }] },
+      'área mal definida': { tipo: 'grafico', x: [-3, 3], y: [-1, 5], area: { expr: 'x', de: 'a', ate: 2 } },
+      'tipo que não é gráfico': { tipo: 'barras', x: [0, 1], p: [0.5, 0.5] },
+      'figura que não é objeto': 'gráfico',
+    };
+    for (const [nome, figura] of Object.entries(casos)) {
+      const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-1', tema: 'exponencial', texto: 'T', verdadeira: true, explicacao: 'Explicação visível.', figura }] } });
+      botao(el, true).click();
+      ok(!q(el, '.vf-fig'), `${nome}: devia ser ignorada`);
+      ok(texto(q(el, '.vf-expl')) === 'Explicação visível.', `${nome}: a explicação desapareceu`);
+      ok(!!q(el, '.vf-seguinte'), `${nome}: falta o botão para continuar`);
+    }
+  });
+
+  await teste('figura: curvas, retas, guias, pontos e área; cores diferentes por defeito', async (ok) => {
+    const figura = {
+      tipo: 'grafico', x: [-2, 6], y: [-2, 6],
+      curvas: [{ expr: '2^x', rotulo: 'y = 2^x' }, { expr: 'logb(2, x)', rotulo: 'y = log₂ x' }, { expr: 'x', cor: 'tg' }],
+      retas: [{ declive: 1, ordenada: 1, rotulo: 'r' }], retasV: [0, { x: 3, rotulo: 'x = 3' }], retasH: [{ y: 4 }],
+      pontos: [{ x: 2, y: 4, rotulo: '(2, 4)' }], area: { expr: 'ln(x)', de: 1, ate: 3 },
+    };
+    const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-1', tema: 'funcao', texto: 'T', verdadeira: true, explicacao: 'E', figura }] } });
+    ok(!q(el, 'svg.figura'), 'figura antes de responder');
+    botao(el, true).click();
+    const svg = q(el, '.vf-fig svg');
+    ok(!!svg, 'a figura devia desenhar');
+    const cores = qa(svg, '[data-camada="curvas"] > path, [data-camada="curvas"] > g > path').map((p) => p.getAttribute('style'));
+    ok(cores.length === 3, 'devia haver 3 curvas, há ' + cores.length);
+    ok(cores[0].includes('--c-exp') && cores[1].includes('--c-log') && cores[2].includes('--c-tg'), 'cores das curvas: ' + cores.join(' | '));
+    ok(qa(svg, '[data-camada="retas"] path').length === 4, 'devia haver 4 retas (1 reta, 2 verticais, 1 horizontal)');
+    ok(!!q(svg, '[data-camada="areas"] path') && q(svg, '[data-camada="areas"] path').getAttribute('d').length > 10, 'falta a área');
+    const rotulos = qa(svg, 'text').map((t) => t.textContent);
+    ok(rotulos.includes('x = 0') && rotulos.includes('x = 3') && rotulos.includes('y = 4'), 'rótulos das guias: ' + rotulos.join(' | '));
+  });
+
+  await teste('figura: rótulos que se sobrepõem são afastados e ficam dentro da zona do gráfico', async (ok) => {
+  const figura = {
+    tipo: 'grafico', x: [-3, 3], y: [-1, 5],
+    curvas: [{ expr: '2^x', rotulo: 'y = 2^x' }, { expr: '2^x', rotulo: 'y = 2^x (a mesma)' }, { expr: '2^x+0.05', rotulo: 'y = 2^x + 0,05' }],
+    pontos: [{ x: 0, y: 1, rotulo: '(0, 1)' }, { x: 0.05, y: 1.05, rotulo: '(0,05; 1,05)' }],
+  };
+  const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-1', tema: 'exponencial', texto: 'T', verdadeira: true, explicacao: 'E', figura }] } });
+  botao(el, true).click();
+  const svg = q(el, '.vf-fig svg');
+  ok(!!svg, 'a figura devia desenhar');
+  const zona = q(svg, 'clipPath rect');
+  const [zx, zy, zw, zh] = ['x', 'y', 'width', 'height'].map((a) => Number(zona.getAttribute(a)));
+  const caixas = qa(svg, '[data-camada="curvas"] text, [data-camada="pontos"] text').filter((t) => t.getClientRects().length > 0).map((t) => t.getBBox());
+  ok(caixas.length === 5, 'devia haver 5 rótulos visíveis, há ' + caixas.length);
+  const cruzam = (a, b) => a.x < b.x + b.width - 0.5 && b.x < a.x + a.width - 0.5 && a.y < b.y + b.height - 0.5 && b.y < a.y + a.height - 0.5;
+  let sobrepostos = 0;
+  caixas.forEach((a, i) => caixas.slice(i + 1).forEach((b) => { if (cruzam(a, b)) sobrepostos++; }));
+  ok(sobrepostos === 0, `${sobrepostos} pares de rótulos ainda se sobrepõem`);
+  ok(caixas.every((b) => b.x >= zx && b.y >= zy && b.x + b.width <= zx + zw && b.y + b.height <= zy + zh), 'há rótulos fora da zona do gráfico');
+});
+
+await teste('as chaves guardadas começam por log- e guardam o certo', async (ok) => {
+    const el = await montar();
+    const acertadas = [];
+    percorrer(el, (a) => (a.id === 't-log-negativo' ? !a.verdadeira : a.verdadeira), () => {}, (a, e, valor) => {
+      if (valor === a.verdadeira) acertadas.push(a.id);
+    });
+    const tudo = lerTudo();
+    const chaves = Object.keys(tudo);
+    ok(chaves.length > 0 && chaves.every((k) => k.startsWith('log-')), 'chaves: ' + chaves.join(', '));
+    ok(chaves.includes('log-vf'), 'falta log-vf');
+    ok(JSON.stringify(Object.keys(tudo['log-vf'] || {}).sort()) === JSON.stringify([...acertadas].sort()), 'log-vf: ' + JSON.stringify(tudo['log-vf']));
+    chipDe(el, 'logaritmo').click();
+    ok(lerTudo()['log-vf-tema'] === 'logaritmo', 'log-vf-tema: ' + lerTudo()['log-vf-tema']);
+    ok(Object.keys(lerTudo()).every((k) => k.startsWith('log-')), 'chaves depois do filtro: ' + Object.keys(lerTudo()).join(', '));
+  });
+
+  await teste('o armazenamento é partilhado: não mexe nas secções dos outros temas', async (ok) => {
+    P.guardar('vf', { 'vf-prob-1': 1 }); // chave da trigonometria/probabilidades
+    P.guardar('vf-tema', 'urna');
+    const el = await montar();
+    ok(/em 0 de 6/.test(texto(q(el, '.vf-estat'))), 'não pode herdar o progresso da chave «vf»: ' + texto(q(el, '.vf-estat')));
+    percorrer(el, certa);
+    chipDe(el, 'propriedades').click();
+    const tudo = lerTudo();
+    ok(JSON.stringify(tudo.vf) === JSON.stringify({ 'vf-prob-1': 1 }), 'a chave «vf» foi alterada: ' + JSON.stringify(tudo.vf));
+    ok(tudo['vf-tema'] === 'urna', 'a chave «vf-tema» foi alterada');
+  });
+
+  await teste('filtro por tema: só mostra as afirmações do tema, guarda e repõe', async (ok) => {
+    const el = await montar();
+    const tit = GRUPOS.find((g) => g.id === 'logaritmo').titulo;
+    chipDe(el, 'logaritmo').click();
+    ok(chipDe(el, 'logaritmo').getAttribute('aria-pressed') === 'true' && chipDe(el, 'todos').getAttribute('aria-pressed') === 'false', 'aria-pressed dos filtros');
+    ok(texto(q(el, '.vf-contador')) === '1 de 2', 'contador: ' + texto(q(el, '.vf-contador')));
+    ok(/de 2 afirmações deste filtro/.test(texto(q(el, '.vf-estat'))), 'frase: ' + texto(q(el, '.vf-estat')));
+    const vistas = percorrer(el, certa, (a, e) => {
+      ok(texto(q(e, '.vf-etiqueta')) === tit, 'etiqueta: ' + texto(q(e, '.vf-etiqueta')));
+    });
+    ok(vistas.length === 2 && vistas.every((id) => POR_ID.get(id).tema === 'logaritmo'), 'ids: ' + vistas.join(','));
+    ok(/Acertaste 2 de 2/.test(texto(q(el, '.vf-titulo'))), 'ecrã final: ' + texto(q(el, '.vf-titulo')));
+    // montar outra vez: repõe o filtro
+    const el2 = await montar();
+    ok(chipDe(el2, 'logaritmo').getAttribute('aria-pressed') === 'true', 'o filtro devia repor-se');
+    ok(texto(q(el2, '.vf-contador')) === '1 de 2', 'contador depois de repor: ' + texto(q(el2, '.vf-contador')));
+    // «Todos» volta a tudo
+    chipDe(el2, 'todos').click();
+    ok(texto(q(el2, '.vf-contador')) === '1 de 6' && lerTudo()['log-vf-tema'] === 'todos', 'todos: ' + texto(q(el2, '.vf-contador')));
+    // um filtro guardado que já não existe cai em «Todos»
+    P.guardar('log-vf-tema', 'tema-que-nao-existe');
+    const el3 = await montar();
+    ok(chipDe(el3, 'todos').getAttribute('aria-pressed') === 'true' && texto(q(el3, '.vf-contador')) === '1 de 6', 'filtro inválido devia dar «Todos»');
+  });
+
+  await teste('acertar e errar mostram a explicação certa', async (ok) => {
+    const el = await montar();
+    // acertar numa falsa: veredito, marcas, explicação e erro comum
+    chipDe(el, 'exponencial').click();
+    const vistos = {};
+    for (let i = 0; i < 2; i++) {
+      const a = POR_ID.get(idAtual(el));
+      vistos[a.id] = true;
+      const acerta = a.id === 't-exp-decrescente'; // a falsa acerta-se, a verdadeira falha-se
+      const valor = acerta ? a.verdadeira : !a.verdadeira;
+      botao(el, valor).click();
+      const res = q(el, '.vf-resultado');
+      ok(res.classList.contains(acerta ? 'vf-resultado--certo' : 'vf-resultado--errado'), `${a.id}: classe do resultado`);
+      ok(texto(q(res, '.vf-veredito')).startsWith(acerta ? '✓Certo' : '✗Errado'), `${a.id}: veredito «${texto(q(res, '.vf-veredito'))}»`);
+      ok(texto(q(res, '.vf-veredito')).endsWith(a.verdadeira ? 'A afirmação é verdadeira.' : 'A afirmação é falsa.'), `${a.id}: frase da afirmação «${texto(q(res, '.vf-veredito'))}»`);
+      ok(texto(q(res, '.vf-expl')).startsWith(a.explicacao.slice(0, 13)), `${a.id}: explicação «${texto(q(res, '.vf-expl'))}»`);
+      if (a.erroComum) ok(texto(q(res, '.vf-erro__texto')).startsWith(a.erroComum.slice(0, 12)) && texto(q(res, '.vf-erro__titulo')) === 'Erro comum', `${a.id}: erro comum`);
+      else ok(!q(res, '.vf-erro'), `${a.id}: uma verdadeira não tem «Erro comum»`);
+      ok(botao(el, true).disabled && botao(el, false).disabled, `${a.id}: os botões devem ficar desativados`);
+      const bEsc = botao(el, valor);
+      ok(bEsc.classList.contains('vf-resp--escolhida') && texto(bEsc.querySelector('.vf-resp__marca')) === (acerta ? '✓ Certo' : '✗ Errado'), `${a.id}: marca do botão escolhido`);
+      const bOutro = botao(el, !valor);
+      ok(texto(bOutro.querySelector('.vf-resp__marca')) === (acerta ? '' : '✓ Era esta'), `${a.id}: marca do outro botão «${texto(bOutro.querySelector('.vf-resp__marca'))}»`);
+      // carregar outra vez não muda nada (já respondida)
+      bOutro.click();
+      ok(q(el, '.vf-resultado').classList.contains(acerta ? 'vf-resultado--certo' : 'vf-resultado--errado'), `${a.id}: segunda resposta contou`);
+      ok(document.activeElement === q(el, '.vf-seguinte'), `${a.id}: o foco devia ir para o botão «Próxima»`);
+      q(el, '.vf-seguinte').click();
+    }
+    ok(Object.keys(vistos).length === 2, 'devia ter visto as 2 afirmações de exponencial');
+    ok(lerTudo()['log-vf'] && lerTudo()['log-vf']['t-exp-decrescente'] === 1 && !('t-exp-contradominio' in lerTudo()['log-vf']), 'só a acertada fica guardada: ' + JSON.stringify(lerTudo()['log-vf']));
+  });
+
+  await teste('ecrã final, «Para rever» e rondas de revisão', async (ok) => {
+    const el = await montar();
+    let falhada = null;
+    percorrer(el, (a) => { if (!falhada) { falhada = a; return !a.verdadeira; } return a.verdadeira; });
+    ok(texto(q(el, '.vf-titulo')) === 'Acertaste 5 de 6', 'título: ' + texto(q(el, '.vf-titulo')));
+    ok(document.activeElement === q(el, '.vf-titulo'), 'o foco devia ir para o título');
+    ok(/Para rever \(1\)/.test(texto(q(el, '.vf-subtitulo'))), 'subtítulo');
+    ok(qa(el, '.vf-errada').length === 1 && texto(q(el, '.vf-errada__nota')) === `✗ Era ${falhada.verdadeira ? 'verdadeira' : 'falsa'}.`, 'lista de erradas: ' + texto(q(el, '.vf-erradas')));
+    ok(texto(q(el, '.vf-errada__tema')) === GRUPOS.find((g) => g.id === falhada.tema).titulo, 'tema da errada');
+    ok(/Estás no bom caminho/.test(texto(q(el, '.vf-fim'))), 'frase do fim');
+    ok(!!q(el, '.vf-vivo') && q(el, '.vf-vivo').getAttribute('aria-live') === 'polite', 'falta o aria-live do resultado');
+    await esperar(120);
+    ok(texto(q(el, '.vf-vivo')) === 'Fim. Acertaste 5 de 6.', 'anúncio: ' + texto(q(el, '.vf-vivo')));
+    const guardadasAntes = JSON.stringify(lerTudo()['log-vf']);
+    const botoes = qa(el, '.vf-acoes .botao').map(texto);
+    ok(botoes.join('|') === 'Recomeçar só com as erradas|Recomeçar com todas', 'botões: ' + botoes.join('|'));
+    qa(el, '.vf-acoes .botao')[0].click();
+    ok(texto(q(el, '.vf-contador')) === '1 de 1' && /\(a rever\)$/.test(texto(q(el, '.vf-etiqueta'))), 'revisão: ' + texto(q(el, '.vf-progresso')));
+    ok(idAtual(el) === falhada.id, 'a revisão devia ser a afirmação falhada');
+    botao(el, falhada.verdadeira).click();
+    ok(JSON.stringify(lerTudo()['log-vf']) === guardadasAntes, 'acertar numa ronda de revisão não conta como «à primeira»');
+    ok(texto(q(el, '.vf-seguinte')) === 'Ver resultado', 'último botão: ' + texto(q(el, '.vf-seguinte')));
+    q(el, '.vf-seguinte').click();
+    ok(texto(q(el, '.vf-titulo')) === 'Acertaste 1 de 1' && /Sem falhas/.test(texto(q(el, '.vf-fim'))) && qa(el, '.vf-acoes .botao').length === 1, 'revisão sem falhas');
+    qa(el, '.vf-acoes .botao')[0].click();
+    ok(texto(q(el, '.vf-contador')) === '1 de 6', 'recomeçar com todas: ' + texto(q(el, '.vf-contador')));
+  });
+
+  await teste('teclado: setas passam de Verdadeiro a Falso; progresso e rótulos para leitores de ecrã', async (ok) => {
+    const el = await montar();
+    const bV = botao(el, true);
+    const bF = botao(el, false);
+    bV.focus();
+    ok(document.activeElement === bV, 'o foco não ficou no botão');
+    bV.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    ok(document.activeElement === bF, 'ArrowRight devia ir para Falso');
+    bF.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+    ok(document.activeElement === bV, 'ArrowLeft devia voltar a Verdadeiro');
+    const grupo = q(el, '.vf-respostas');
+    ok(grupo.getAttribute('role') === 'group' && document.getElementById(grupo.getAttribute('aria-labelledby')) === q(el, '.vf-enunciado'), 'o grupo devia ser rotulado pelo enunciado');
+    ok(q(el, '.vf-resultado').getAttribute('aria-live') === 'polite', 'aria-live no resultado');
+    const barra = q(el, '[role="progressbar"]');
+    ok(barra.getAttribute('aria-valuenow') === '0' && barra.getAttribute('aria-valuemax') === '6', 'barra antes: ' + barra.getAttribute('aria-valuenow'));
+    bV.click();
+    ok(barra.getAttribute('aria-valuenow') === '1', 'barra depois de responder: ' + barra.getAttribute('aria-valuenow'));
+    ok(qa(el, '.chip').every((c) => c.tagName === 'BUTTON' && c.type === 'button'), 'filtros devem ser <button type=button>');
+  });
+
+  await teste('pontuação colada à fórmula (sem ficar sozinha na linha)', async (ok) => {
+    const el = await montar();
+    chipDe(el, 'exponencial').click();
+    for (let i = 0; i < 2; i++) { if (idAtual(el) === 't-exp-contradominio') break; botao(el, true).click(); q(el, '.vf-seguinte').click(); }
+    ok(idAtual(el) === 't-exp-contradominio', 'não cheguei à afirmação com ponto final');
+    const cola = q(el, '.vf-enunciado .vf-cola');
+    ok(!!cola && cola.textContent.endsWith('.'), 'o ponto final devia estar dentro de .vf-cola');
+  });
+
+  await teste('dados em falta, vazios ou inválidos: aviso simpático, sem exceção', async (ok) => {
+    for (const dados of [undefined, null, {}, { vf: null }, { vf: {} }, { vf: { afirmacoes: [] } }, { vf: { afirmacoes: [{ id: 'a' }, null, 7] } }]) {
+      const el = await montarCom(dados);
+      ok(texto(q(el, '.nota')) === 'Ainda não há afirmações.', `dados ${JSON.stringify(dados)}: «${texto(el)}»`);
+      ok(!q(el, '.vf-resp'), 'não devia mostrar botões');
+    }
+  });
+
+  await teste('dados: array direto, ids repetidos, inválidas e tema desconhecido', async (ok) => {
+    const lista = [
+      ...AFIRMACOES.slice(0, 2),
+      { ...AFIRMACOES[0] }, // id repetido
+      { id: 'z-sem-texto', tema: 'exponencial', verdadeira: true, explicacao: 'E' },
+      { id: 'z-sem-bool', tema: 'exponencial', texto: 'T', verdadeira: 'sim', explicacao: 'E' },
+      { id: 'z-estranha', tema: 'tema-novo', texto: 'Tema que não está nos GRUPOS.', verdadeira: true, explicacao: 'E' },
+    ];
+    const el = await montar({ vf: lista });
+    const chips = qa(el, '.chip').map(texto);
+    ok(chips.length === 3 && chips[0] === 'Todos (3)' && chips[2] === 'tema-novo (1)', 'filtros: ' + chips.join(' | '));
+    ok(texto(q(el, '.vf-contador')) === '1 de 3', 'contador: ' + texto(q(el, '.vf-contador')));
+  });
+
+  await teste('símbolos < e & dentro de fórmulas e HTML nos textos', async (ok) => {
+    const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-1', tema: 'exponencial', texto: 'Se $0<a<1$ e $a\\ne1$, então <strong>decresce</strong>.', verdadeira: true, explicacao: 'Com $a<1$ & $a>0$.' }] } });
+    ok(!!q(el, '.vf-enunciado strong') && !q(el, '.katex-error'), 'o texto devia aceitar <strong> e fórmulas com <');
+    botao(el, true).click();
+    ok(!q(el, '.vf-expl .katex-error') && !!q(el, '.vf-expl .katex'), 'a explicação com < e & devia renderizar');
+  });
+
+  await teste('sem armazenamento (janela privada): monta, percorre e avisa no fim', async (ok) => {
+    const setOriginal = Storage.prototype.setItem;
+    const getOriginal = Storage.prototype.getItem;
+    Storage.prototype.setItem = () => { throw new Error('quota'); };
+    Storage.prototype.getItem = () => { throw new Error('bloqueado'); };
+    try {
+      const el = await montar();
+      percorrer(el, certa);
+      ok(!!q(el, '.vf-fim'), 'devia chegar ao fim');
+      ok(/Não consegui guardar o progresso/.test(texto(q(el, '.vf-fim'))), 'devia avisar que não guardou');
+      ok(/em 6 de 6/.test(texto(q(el, '.vf-estat'))), 'a memória da sessão devia contar: ' + texto(q(el, '.vf-estat')));
+    } finally {
+      Storage.prototype.setItem = setOriginal;
+      Storage.prototype.getItem = getOriginal;
+    }
+  });
+
+  await teste('sem texto das probabilidades, sem travessões, só chaves log- e sem localStorage direto', async (ok) => {
+    const el = await montar();
+    percorrer(el, errada, () => {}, () => {});
+    ok(!/probabilid|curva Normal|urna|moeda/i.test(texto(el)), 'texto de probabilidades no ecrã');
+    for (const f of ['../widgets/vf.js', '../widgets/vf.css', '../verdadeiro-falso.html']) {
+      const s = await (await fetch(f)).text();
+      ok(!s.includes(TRACO_LONGO) && !s.includes(TRACO_CURTO), `${f}: travessão`);
+      ok(!/probabilid/i.test(s), `${f}: menciona probabilidades`);
+    }
+    const js = await (await fetch('../widgets/vf.js')).text();
+    ok(!/localStorage|sessionStorage/.test(js), 'vf.js não pode usar o storage diretamente');
+    const chaves = [...js.matchAll(/P\.(?:ler|guardar)\('([^']+)'/g)].map((m) => m[1]);
+    ok(chaves.length >= 4 && chaves.every((k) => k.startsWith('log-')), 'chaves no código: ' + chaves.join(', '));
+    ok(!/\.\.\/\.\.\/probabilidades|\.\.\/\.\.\/trigonometria/.test(js), 'vf.js importa de outro tema');
+  });
+
+  await teste('dados reais (' + REAIS.size + ' afirmações): cada figura desenha-se depois de responder', async (ok) => {
+    ok(REAIS.size > 0, 'ainda não há dados em logaritmos/dados/vf/');
+    if (REAIS.size === 0) return;
+    const el = await montar(DADOS_REAIS, 9);
+    let comFigura = 0;
+    const vistas = percorrer(el, errada,
+      (a, e) => ok(!q(e, '.vf-fig') && !q(e, 'svg.figura'), `${a.id}: figura antes de responder`),
+      (a, e) => {
+        const fig = q(e, '.vf-fig svg');
+        if (a.figura) {
+          comFigura++;
+          ok(!!fig, `${a.id}: a figura não desenhou (veja a consola)`);
+          if (fig) {
+            const aria = fig.getAttribute('aria-label') || '';
+            ok(aria.length > 15 && !/undefined|NaN/.test(aria), `${a.id}: aria-label «${aria}»`);
+            ok(qa(fig, '[data-camada="curvas"] path').every((p) => (p.getAttribute('d') || '').length > 10), `${a.id}: curva sem traço`);
+          }
+        } else {
+          ok(!fig, `${a.id}: não tem figura nos dados mas desenhou uma`);
+        }
+        ok(!q(e, '.katex-error'), `${a.id}: erro de KaTeX`);
+        ok(texto(q(e, '.vf-expl')).length > 10, `${a.id}: explicação vazia`);
+        ok(!a.erroComum || !!q(e, '.vf-erro'), `${a.id}: falta o erro comum`);
+      });
+    ok(vistas.length === REAIS.size, `a ronda mostrou ${vistas.length} de ${REAIS.size}`);
+    ok(qa(el, '.chip').length === 1 + new Set([...REAIS.values()].map((a) => a.tema)).size, 'um filtro por tema');
+    linhas.push(`   (dados reais: ${REAIS.size} afirmações, ${comFigura} com figura)`);
+  });
+
+  await teste('a página verdadeiro-falso.html a 390 px: monta, sem scroll horizontal, com figuras', async (ok) => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; top:0; width:390px; height:900px; border:0';
+    f.src = '../verdadeiro-falso.html';
+    document.body.append(f);
+    let d = null;
+    for (let i = 0; i < 160; i++) {
+      await esperar(50);
+      try { d = f.contentDocument; } catch (e) { d = null; }
+      if (d && d.documentElement && d.documentElement.dataset.pronto === 'sim') break;
+    }
+    ok(!!d && d.documentElement.dataset.pronto === 'sim', 'a página não ficou pronta');
+    if (d && d.documentElement.dataset.pronto === 'sim') {
+      const raiz = d.documentElement;
+      ok(!!d.querySelector('.widget.vf') && !d.querySelector('.aviso-erro'), 'widget não montou');
+      ok(raiz.scrollWidth <= 390 && d.body.scrollWidth <= 390, `scrollWidth ${raiz.scrollWidth}/${d.body.scrollWidth} > 390`);
+      let largMax = 0;
+      for (let i = 0; i < 200 && d.querySelector('.vf-resp'); i++) {
+        const id = d.querySelector('.vf-cartao').dataset.id;
+        d.querySelector('.vf-resp[data-valor="true"]').click();
+        const larg = Math.max(raiz.scrollWidth, d.body.scrollWidth);
+        largMax = Math.max(largMax, larg);
+        if (larg > 390) {
+          const culpado = [...d.querySelectorAll('.vf *')].find((x) => x.getBoundingClientRect().right > 390.5);
+          ok(false, `${id}: scrollWidth ${larg}, passa do ecrã: <${culpado && culpado.tagName.toLowerCase()} class="${culpado && culpado.getAttribute('class')}">`);
+        }
+        const fig = d.querySelector('.vf-fig');
+        if (fig) ok(fig.getBoundingClientRect().width <= 390, 'figura mais larga que o ecrã');
+        d.querySelector('.vf-seguinte').click();
+      }
+      ok(largMax <= 390, `scrollWidth máximo durante a ronda: ${largMax}`);
+      ok(!d.querySelector('.katex-error'), 'erro de KaTeX na página');
+    }
+    f.remove();
+  });
+
+  await teste('nenhum erro não apanhado durante os testes', (ok) => {
+    ok(errosNaoApanhados.length === 0, errosNaoApanhados.slice(0, 3).join(' | '));
+  });
+
+  // ---------- resumo ----------
+  const ms = Math.round(performance.now() - t0);
+  linhas.push('');
+  linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+  saida.textContent = linhas.join('\n');
+  document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+
+// ---------- modo demo (para screenshots): ?demo=inicio | figura | fim ----------
+//   figura: &id=<id da afirmação> [&r=errada]   mostra essa afirmação depois de responder (certo por defeito)
+//   fim:    [&tema=<id do grupo>] [&falhas=2]   percorre a ronda e pára no ecrã final
+//   Usa os dados reais de logaritmos/dados/vf/. Mete <html data-demo="pronto"> no fim.
+async function demo(estado, params) {
+  document.body.dataset.modo = 'demo';
+  P.apagarTudo();
+  const el = novoEl();
+  el.id = 'vf-demo';
+  await vf.montar(el, DADOS_REAIS, { semente: Number(params.get('semente')) || 3 });
+  if (params.get('tema')) chipDe(el, params.get('tema')).click();
+  if (estado === 'figura') {
+    const id = params.get('id');
+    for (let i = 0; i < 400 && q(el, '.vf-resp') && idAtual(el) !== id; i++) {
+      botao(el, !REAIS.get(idAtual(el)).verdadeira).click(); // as outras falham-se de propósito: não guardam progresso
+      q(el, '.vf-seguinte').click();
+    }
+    const a = REAIS.get(idAtual(el));
+    if (a) botao(el, params.get('r') === 'errada' ? !a.verdadeira : a.verdadeira).click();
+  }
+  if (estado === 'fim') {
+    const total = Number(/de (\d+)$/.exec(texto(q(el, '.vf-contador')))[1]);
+    const falhas = params.get('falhas') === null ? 2 : Number(params.get('falhas'));
+    for (let i = 0; i < total; i++) {
+      const a = REAIS.get(idAtual(el));
+      botao(el, i < total - falhas ? a.verdadeira : !a.verdadeira).click();
+      q(el, '.vf-seguinte').click();
+    }
+  }
+  document.documentElement.dataset.demo = 'pronto';
+}
+
+// ?demo=galeria[&de=0&ate=6]: só as figuras das afirmações reais que as têm, uma por cada, já respondidas.
+async function galeria(params) {
+  document.body.dataset.modo = 'demo';
+  document.body.classList.add('galeria');
+  P.apagarTudo();
+  const todas = [...REAIS.values()].filter((a) => a.figura);
+  for (const a of todas.slice(Number(params.get('de')) || 0, Number(params.get('ate')) || todas.length)) {
+    const titulo = document.createElement('p');
+    titulo.className = 'gal-id';
+    titulo.textContent = a.id;
+    palco.append(titulo);
+    const el = novoEl();
+    await vf.montar(el, { vf: { afirmacoes: [a] } });
+    botao(el, a.verdadeira).click();
+  }
+  document.documentElement.dataset.demo = 'pronto';
+}
+
+const params = new URLSearchParams(location.search);
+if (params.get('demo') === 'galeria') await galeria(params);
+else if (params.get('demo')) await demo(params.get('demo'), params);
+else await testes();
+</script>
+</body>
+</html>

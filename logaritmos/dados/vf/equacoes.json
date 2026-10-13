@@ -1,0 +1,44 @@
+{
+ "tema": "equacoes",
+ "afirmacoes": [
+  { "id": "equ-vf-positivo", "tema": "equacoes",
+    "texto": "A equação $\\ln(2-x)=\\ln(x-5)$ dá $2-x=x-5$, ou seja, $x=\\frac72$. Como $\\frac72>0$, é solução da equação.",
+    "verdadeira": false,
+    "explicacao": "Substitui: $2-\\frac72=-\\frac32$ e $\\frac72-5=-\\frac32$. Os dois argumentos são negativos, por isso nem $\\ln(2-x)$ nem $\\ln(x-5)$ existem em $x=\\frac72$. O domínio ($x<2$ e $x>5$) é impossível, e a equação não tem soluções.",
+    "erroComum": "Confundir «o logaritmo só existe para números positivos» com «a solução tem de ser positiva». O que tem de ser positivo é o argumento de cada logaritmo, não o $x$.",
+    "verifica": ["not (2-3.5>0)", "not (3.5-5>0)"] },
+
+  { "id": "equ-vf-sem-solucao", "tema": "equacoes",
+    "texto": "A equação $e^{2x}+3e^x+2=0$ não tem soluções reais.",
+    "verdadeira": true,
+    "explicacao": "Com $u=e^x$ fica $u^2+3u+2=0\\Leftrightarrow(u+1)(u+2)=0$, logo $u=-1$ ou $u=-2$. Como $e^x>0$, nenhum serve. Vê-se também de outra forma: $e^{2x}$, $3e^x$ e $2$ são positivos, por isso a soma nunca dá 0.",
+    "verifica": ["exp(2*t)+3*exp(t)+2>0"] },
+
+  { "id": "equ-vf-ln-quadrado", "tema": "equacoes",
+    "texto": "As equações $\\ln x^2=\\ln 9$ e $2\\ln x=\\ln 9$ têm as mesmas soluções.",
+    "verdadeira": false,
+    "explicacao": "A primeira dá $x^2=9$, isto é, $x=3$ ou $x=-3$, e $-3$ serve porque $\\ln\\big((-3)^2\\big)=\\ln9$. A segunda só existe para $x>0$ e dá apenas $x=3$. A igualdade $\\ln x^2=2\\ln x$ só vale para $x>0$.",
+    "erroComum": "Aplicar $\\ln x^2=2\\ln x$ sem ver o domínio e perder a solução negativa.",
+    "verifica": ["ig(ln((-3)**2), ln(9))", "ig(ln(t**2), 2*ln(abs(t)))"] },
+
+  { "id": "equ-vf-argumento", "tema": "equacoes",
+    "texto": "Na equação $\\log_3(x^2-4x)=2$, as duas soluções de $x^2-4x=9$ servem, e não há nada a rejeitar.",
+    "verdadeira": true,
+    "explicacao": "$\\log_3(x^2-4x)=2\\Leftrightarrow x^2-4x=3^2=9$, e as soluções são $x=2\\pm\\sqrt{13}$. Em qualquer delas o argumento do logaritmo vale 9, que é positivo, por isso o logaritmo existe. É o que acontece em $\\log_a f(x)=c$: o argumento fica igual a $a^c>0$.",
+    "verifica": ["ig(logb(3, (2+sqrt(13))**2-4*(2+sqrt(13))), 2)", "ig(logb(3, (2-sqrt(13))**2-4*(2-sqrt(13))), 2)"] },
+
+  { "id": "equ-vf-inequacao", "tema": "equacoes",
+    "texto": "Se $0<a<1$ e $x,y>0$, então $\\log_a x<\\log_a y$ equivale a $x<y$.",
+    "verdadeira": false,
+    "explicacao": "Com $a=\\frac12$: $2<4$, mas $\\log_{\\frac12}2=-1$ e $\\log_{\\frac12}4=-2$, e $-1>-2$. Com base entre 0 e 1, $\\log_a$ é decrescente, por isso $\\log_a x<\\log_a y\\Leftrightarrow x>y$.",
+    "erroComum": "Manter sempre o sentido da desigualdade, como se faz quando a base é maior que 1.",
+    "verifica": ["logb(0.5, 2)>logb(0.5, 4)", "(logb(0.5, x)<logb(0.5, y)) == (x>y)"],
+    "figura": {"tipo": "grafico", "x": [-1, 6], "y": [-4, 3], "curvas": [{"expr": "logb(1/2, x)", "rotulo": "y = log_½ x"}], "pontos": [{"x": 2, "y": -1, "rotulo": "(2, −1)"}, {"x": 4, "y": -2, "rotulo": "(4, −2)"}], "retasH": [], "retasV": [0]} },
+
+  { "id": "equ-vf-arredondar", "tema": "equacoes",
+    "texto": "Arredondar $\\ln5$ e $\\ln2$ às centésimas antes de dividir pode mudar a segunda casa decimal da solução de $2^x=5$.",
+    "verdadeira": true,
+    "explicacao": "$x=\\dfrac{\\ln5}{\\ln2}\\approx2{,}32$. Mas, com $\\ln5\\approx1{,}61$ e $\\ln2\\approx0{,}69$, a divisão dá $\\dfrac{1{,}61}{0{,}69}\\approx2{,}33$. Guarda os valores completos na calculadora e arredonda só no fim.",
+    "verifica": ["ig(ln(5)/ln(2), logb(2, 5))", "abs(logb(2, 5)-2.32)<0.005", "abs(1.61/0.69-2.33)<0.005"] }
+ ]
+}

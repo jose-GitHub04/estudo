@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do widget logaritmo</title>
+<!-- Testes do widget «O logaritmo é um expoente»: a matemática pura (ler números, reconhecer
+     potências exatas, intervalo do expoente, texto dos passos) e o widget montado no browser.
+     Abrir /logaritmos/tests/logaritmo.html ou:
+       msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8812/logaritmos/tests/logaritmo.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Com ?demo=1 monta só o widget e leva-o a um estado, para tirar screenshots (marca <html data-demo="pronto">):
+       &base=1/2  &y=8  &x=-3  &calc=1 (abre «Mostrar como se calcula»)  -->
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/estilo.css">
+<link rel="stylesheet" href="../tema.css">
+<link rel="stylesheet" href="../widgets/logaritmo.css">
+<style>
+  .teste-cab { padding: 1rem 1.25rem 0; }
+  #resultado { margin: 0; padding: 0.5rem 1.25rem 1rem; font: 13px/1.4 monospace; white-space: pre-wrap; }
+  body[data-modo="demo"] .teste-cab, body[data-modo="demo"] #resultado { display: none; }
+</style>
+<script src="../../assets/katex/katex.min.js"></script>
+</head>
+<body>
+<div class="teste-cab"><h1>Testes do widget logaritmo</h1></div>
+<pre id="resultado">A correr...</pre>
+<main>
+  <section class="seccao"><div class="envolve"><article class="modulo" id="logaritmo"><div id="palco"></div></article></div></section>
+</main>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+import * as L from '../widgets/logaritmo.js';
+
+const params = new URLSearchParams(location.search);
+const demo = params.get('demo') === '1';
+document.body.dataset.modo = demo ? 'demo' : 'testes';
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+
+if (demo) {
+  await L.montar(palco, {});
+  const raiz = palco.querySelector('.lg');
+  const campo = (sel, valor) => {
+    const c = raiz.querySelector(sel);
+    c.value = valor;
+    c.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  if (params.get('base')) campo('.lg-campo[id$="-base"]', params.get('base'));
+  if (params.get('y')) campo('.lg-campo[id$="-y"]', params.get('y'));
+  if (params.get('x') !== null) {
+    const s = raiz.querySelector('.lg-slider');
+    s.value = params.get('x');
+    s.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  if (params.get('calc') === '1') raiz.querySelector('.lg-calculo-botao').click();
+  document.documentElement.dataset.demo = 'pronto';
+} else {
+  const linhas = [];
+  let nFalhas = 0;
+  let nCasos = 0;
+  const t0 = performance.now();
+
+  /** Corre um teste. `fn(ok)` chama ok(condicao, mensagem) por cada caso; a primeira exceção também conta. */
+  async function teste(nome, fn) {
+    const erros = [];
+    let total = 0;
+    let casos = 0;
+    const ok = (cond, msg) => {
+      casos++;
+      if (!cond) { total++; if (erros.length < 4) erros.push(msg); }
+    };
+    try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.stack || e)); }
+    nCasos += casos;
+    if (total === 0) linhas.push(`OK: ${nome} (${casos})`);
+    else {
+      nFalhas++;
+      linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+    }
+  }
+
+  const perto = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+  const TRACOS = new RegExp('[' + String.fromCharCode(0x2013, 0x2014) + ']');
+  const renderiza = (t) => {
+    try { window.katex.renderToString(t, { throwOnError: true }); return true; } catch (e) { return false; }
+  };
+  /** Texto de aluno com $...$: sem lixo, sem travessões, $ emparelhados e cada fórmula a renderizar. */
+  function textoLimpo(s) {
+    if (typeof s !== 'string' || !s) return 'vazio';
+    if (/NaN|undefined|null|Infinity/.test(s)) return 'tem NaN/undefined';
+    if (TRACOS.test(s)) return 'tem travessão';
+    const partes = s.split('$');
+    if (partes.length % 2 === 0) return '$ desemparelhados';
+    for (let i = 1; i < partes.length; i += 2) if (!renderiza(partes[i])) return `LaTeX inválido: ${partes[i]}`;
+    return '';
+  }
+  const linhaLimpa = (l) => (/NaN|undefined|Infinity/.test(l) ? 'tem NaN' : TRACOS.test(l) ? 'tem travessão' : renderiza(l) ? '' : `LaTeX inválido: ${l}`);
+  const fracStr = (f) => (f ? `${f[0]}/${f[1]}` : 'nenhuma');
+
+  // ---------- (a) logaritmos exatos ----------
+  // [base, número, expoente p, q]
+  const EXATOS = [
+    ['2', '8', 3, 1], ['2', '1/8', -3, 1], ['2', '1', 0, 1], ['2', '2', 1, 1], ['2', '16', 4, 1], ['2', '0,5', -1, 1],
+    ['2', '√2', 1, 2], ['2', '2^(1/3)', 1, 3], ['3', '27', 3, 1], ['3', '1/9', -2, 1], ['3', '√3', 1, 2],
+    ['5', '125', 3, 1], ['5', '1/25', -2, 1], ['5', '1/√5', -1, 2], ['10', '1000', 3, 1], ['10', '0,001', -3, 1],
+    ['10', '0,01', -2, 1], ['10', '1', 0, 1], ['10', '100', 2, 1], ['1/2', '2', -1, 1], ['1/2', '8', -3, 1],
+    ['1/2', '1/8', 3, 1], ['1/2', '1/2', 1, 1], ['1/2', '1', 0, 1], ['1/2', '4', -2, 1], ['√3', '1/81', -8, 1],
+    ['√3', '9', 4, 1], ['√3', '3', 2, 1], ['9', '27', 3, 2], ['9', '3', 1, 2], ['9', '1/27', -3, 2],
+    ['4', '8', 3, 2], ['4', '1/2', -1, 2], ['8', '2', 1, 3], ['8', '4', 2, 3], ['16', '8', 3, 4], ['27', '3', 1, 3],
+    ['1/4', '8', -3, 2], ['0,25', '8', -3, 2], ['0,5', '0,125', 3, 1], ['100', '0,1', -1, 2], ['125', '5', 1, 3],
+    ['32', '2', 1, 5], ['64', '8', 1, 2], ['6', '36', 2, 1], ['7', '1/49', -2, 1], ['1,5', '2,25', 2, 1],
+    ['2/3', '4/9', 2, 1], ['e', 'e^5', 5, 1], ['e', '1', 0, 1], ['e', 'e', 1, 1], ['e', 'e^-2', -2, 1], ['e', '1/e', -1, 1],
+    ['e', '√e', 1, 2], ['e^2', 'e^6', 3, 1],
+  ];
+  await teste('log exato: expoente inteiro ou fração certo', (ok) => {
+    for (const [b, y, p, q] of EXATOS) {
+      const an = L.calcular(b, y);
+      const txt = `log_{${b}} ${y}`;
+      ok(an.estado === 'ok', `${txt}: estado ${an.estado}`);
+      ok(an.exato === true, `${txt}: devia ser exato`);
+      ok(an.fracao && an.fracao[0] * q === p * an.fracao[1], `${txt}: esperava ${p}/${q}, deu ${fracStr(an.fracao)}`);
+      ok(perto(an.expoente, p / q), `${txt}: expoente ${an.expoente}`);
+    }
+  });
+
+  await teste('os exemplos do enunciado', (ok) => {
+    const f = (b, y) => L.calcular(b, y);
+    ok(f('2', '8').fracao[0] === 3, 'log_2 8 = 3');
+    ok(fracStr(f('1/2', '2').fracao) === '-1/1', 'log_{1/2} 2 = -1');
+    ok(fracStr(f('√3', '1/81').fracao) === '-8/1', 'log_{√3} (1/81) = -8');
+    ok(fracStr(f('sqrt(3)', '1/81').fracao) === '-8/1', 'a base escrita com sqrt(3)');
+    ok(fracStr(f('9', '27').fracao) === '3/2', 'log_9 27 = 3/2');
+    ok(fracStr(f('10', '0,001').fracao) === '-3/1', 'log 0,001 = -3');
+    ok(fracStr(f('e', 'e^5').fracao) === '5/1', 'ln e^5 = 5');
+    ok(f('e', 'e^5').tipoBase === 'e', 'ln e^5: base e');
+    ok(f('10', '0,001').tipoBase === '10', 'log 0,001: base 10');
+    const c = f('2', '5');
+    ok(c.exato === false && c.entre[0] === 2 && c.entre[1] === 3, 'log_2 5 entre 2 e 3');
+  });
+
+  // ---------- (b) logaritmos que não são exatos ----------
+  const INEXATOS = [
+    ['2', '5', 2, '2{,}322'], ['2', '3', 1, '1{,}585'], ['3', '10', 2, '2{,}096'], ['10', '5', 0, '0{,}699'],
+    ['10', '2000', 3, '3{,}301'], ['1/2', '5', -3, '-2{,}322'], ['2', '0,3', -2, '-1{,}737'], ['e', '5', 1, '1{,}609'],
+    ['e', '10', 2, '2{,}303'], ['5', '100', 2, '2{,}861'], ['2', '100', 6, '6{,}644'], ['7', '2', 0, '0{,}356'],
+    ['1/3', '2', -1, '-0{,}631'], ['2', '1000', 9, '9{,}966'], ['1,5', '10', 5, '5{,}679'],
+  ];
+  await teste('log não exato: entre dois inteiros e valor aproximado', (ok) => {
+    for (const [b, y, n, aprox] of INEXATOS) {
+      const an = L.calcular(b, y);
+      const txt = `log_{${b}} ${y}`;
+      ok(an.estado === 'ok' && an.exato === false, `${txt}: devia ser inexato`);
+      ok(an.entre && an.entre[0] === n && an.entre[1] === n + 1, `${txt}: entre ${an.entre}, esperava ${n}`);
+      ok(an.aprox3 === aprox, `${txt}: aprox ${an.aprox3}, esperava ${aprox}`);
+      ok(!an.fracao, `${txt}: não devia ter fração`);
+    }
+  });
+
+  await teste('o texto do caso inexato diz entre que inteiros e dá a nota do valor exato', (ok) => {
+    const an = L.calcular('2', '5');
+    const r = L.textoResposta(an);
+    ok(r.includes('entre $2$ e $3$') && r.includes('2{,}322'), `resposta: ${r}`);
+    const p = L.passos(an);
+    ok(p.tipo === 'inexato' && p.modos.length === 1, 'tipo inexato');
+    const linhas = p.modos[0].itens.flatMap((i) => i.linhas).join(' | ');
+    ok(linhas.includes('2^{2}=4<5<8=2^{3}'), `cadeia 2^2=4<5<8=2^3: ${linhas}`);
+    ok(linhas.includes('2<\\log_{2} 5<3'), 'intervalo do expoente');
+    const notas = p.modos[0].itens.map((i) => i.texto || '').join(' ');
+    ok(notas.includes('Para o valor exato escreve $\\log_{2} 5$ ou $\\dfrac{\\ln 5}{\\ln 2}$'), `nota do valor exato: ${notas}`);
+    const d = L.passos(L.calcular('1/2', '5'));
+    ok(d.modos[0].itens[1].linhas[0].includes('>5>'), 'base entre 0 e 1: a cadeia desce');
+    ok(d.modos[0].itens[2].texto.includes('decrescente'), 'base entre 0 e 1: função decrescente');
+    const e = L.passos(L.calcular('e', '5'));
+    ok(!e.modos[0].itens[3].texto.includes('\\dfrac'), 'em base e a nota não propõe ln y / ln e');
+    const dez = L.passos(L.calcular('10', '5'));
+    ok(dez.modos[0].itens[3].texto.includes('\\log 5') && dez.modos[0].itens[3].texto.includes('\\ln 10'), 'base 10: log 5 ou ln 5 / ln 10');
+  });
+
+  // ---------- (c) casos especiais ----------
+  const BASES_BOAS = ['2', '3', '5', '10', '1/2', 'e', '√3', '0,25', '7', '1,5', '1/10', '100'];
+  await teste('log_a 1 = 0 e log_a a = 1 em todas as bases', (ok) => {
+    for (const b of BASES_BOAS) {
+      const um = L.calcular(b, '1');
+      ok(um.estado === 'ok' && um.exato && um.caso === 'um' && um.fracao[0] === 0, `log_{${b}} 1 devia ser 0 (caso um)`);
+      ok(L.textoCasos(um)[0].includes('\\log_a 1=0'), `log_{${b}} 1: frase do caso especial`);
+      const a = L.calcular(b, b);
+      ok(a.estado === 'ok' && a.exato && a.caso === 'base' && a.fracao[0] === 1 && a.fracao[1] === 1, `log_{${b}} ${b} devia ser 1 (caso base)`);
+      ok(L.textoCasos(a)[0].includes('\\log_a a=1'), `log_{${b}} ${b}: frase do caso especial`);
+    }
+  });
+
+  await teste('y = a^k dá k (caso potência) e frações dão o caso fração', (ok) => {
+    const a = L.calcular('2', '8');
+    ok(a.caso === 'potencia' && L.textoCasos(a)[0].includes('\\log_{2} 2^{3}=3'), `2,8: ${L.textoCasos(a)[0]}`);
+    const b = L.calcular('1/2', '8');
+    ok(b.caso === 'potencia' && L.textoCasos(b)[0].includes('=-3'), `1/2,8: ${L.textoCasos(b)[0]}`);
+    const c = L.calcular('9', '27');
+    ok(c.caso === 'fracao' && L.textoCasos(c)[0].includes('\\frac{3}{2}'), `9,27: ${L.textoCasos(c)[0]}`);
+    const d = L.calcular('e', 'e^5');
+    ok(d.caso === 'potencia' && L.textoCasos(d)[0].includes('\\ln e^{5}=5'), `e,e^5: ${L.textoCasos(d)[0]}`);
+    ok(L.textoCasos(L.calcular('2', '5')).length === 0, 'inexato não tem caso especial');
+  });
+
+  await teste('base e escreve-se ln e base 10 escreve-se log', (ok) => {
+    const e = L.calcular('e', 'e^5');
+    ok(L.textoResposta(e).includes('\\ln e^{5}=5'), `resposta ln: ${L.textoResposta(e)}`);
+    ok(!L.textoResposta(e).includes('\\log_'), 'ln não leva subscrito');
+    ok(L.textoNotacaoBase(e).includes('neperiano'), 'frase do logaritmo neperiano');
+    ok(L.partesNotacao(e, true).fn === '\\ln' && L.partesNotacao(e, true).base === null, 'ln: sem base na forma logarítmica');
+    ok(L.partesNotacao(e, true).baseExp === 'e', 'ln: a base aparece na forma exponencial');
+    const d = L.calcular('10', '0,001');
+    ok(L.textoResposta(d).includes('\\log 0{,}001=-3'), `resposta log: ${L.textoResposta(d)}`);
+    ok(!L.textoResposta(d).includes('\\log_'), 'log não leva subscrito');
+    ok(L.textoNotacaoBase(d).includes('decimal'), 'frase do logaritmo decimal');
+    ok(L.partesNotacao(d, true).fn === '\\log' && L.partesNotacao(d, true).base === null, 'log: sem base na forma logarítmica');
+    const o = L.calcular('2', '8');
+    ok(L.textoNotacaoBase(o) === '' && L.partesNotacao(o, true).base === '2', 'outra base: leva subscrito');
+    ok(L.calcular('2,718281828459045', '1').tipoBase === 'e', 'o valor de e escrito em decimal conta como e');
+  });
+
+  // ---------- (d) o logaritmo não existe ----------
+  await teste('y = 0 e y < 0: não existe, e diz porquê', (ok) => {
+    const lista = [['2', '0'], ['2', '-4'], ['2', '−4'], ['10', '-1/8'], ['1/2', '0'], ['e', '-e'], ['3', '-0,01'], ['5', '0'], ['√3', '-2']];
+    for (const [b, y] of lista) {
+      const an = L.calcular(b, y);
+      const txt = `log_{${b}} (${y})`;
+      ok(an.estado === 'y-zero' || an.estado === 'y-negativo', `${txt}: estado ${an.estado}`);
+      ok(an.estado === (y === '0' ? 'y-zero' : 'y-negativo'), `${txt}: zero ou negativo`);
+      const t = L.textoNaoExiste(an);
+      ok(t.includes('não existe') && t.includes('sempre maior que $0$'), `${txt}: ${t}`);
+      ok(textoLimpo(t) === '', `${txt}: ${textoLimpo(t)}`);
+      const p = L.passos(an);
+      ok(p && p.tipo === 'inexistente' && p.modos[0].itens.length === 3, `${txt}: passos do inexistente`);
+      ok(L.partesNotacao(an, true).impossivel === true && L.partesNotacao(an, true).exp === '?', `${txt}: notação impossível`);
+    }
+  });
+
+  // ---------- (e) bases recusadas e escritas ilegíveis ----------
+  await teste('base <= 0 ou = 1: recusa com mensagem', (ok) => {
+    const lista = [['0', 'base-zero'], ['-2', 'base-negativa'], ['−1/2', 'base-negativa'], ['-1', 'base-negativa'],
+      ['1', 'base-um'], ['1,0', 'base-um'], ['1/1', 'base-um'], ['2/2', 'base-um'], ['e^0', 'base-um'],
+      ['10000000', 'base-extrema'], ['0,0000001', 'base-extrema']];
+    for (const [b, estado] of lista) {
+      const an = L.calcular(b, '8');
+      ok(an.estado === estado, `base ${b}: estado ${an.estado}, esperava ${estado}`);
+      const m = L.mensagemErro(an);
+      ok(m.length > 20 && textoLimpo(m) === '', `base ${b}: mensagem «${m}» (${textoLimpo(m)})`);
+      ok(L.passos(an) === null, `base ${b}: sem passos`);
+    }
+    ok(L.mensagemErro(L.calcular('1', '8')).includes('$1^x$ dá sempre $1$'), 'base 1: porquê');
+    ok(L.mensagemErro(L.calcular('-2', '8')).includes('positiva'), 'base negativa: porquê');
+    ok(L.calcular('-2', 'abc').estado === 'base-negativa', 'base inválida ganha a um número ilegível');
+  });
+
+  await teste('escritas ilegíveis: erro-base e erro-y', (ok) => {
+    for (const t of ['', '   ', 'abc', '1/0', '2 3', '(', '2+', '@']) {
+      const b = L.calcular(t, '8');
+      ok(b.estado === 'erro-base', `base «${t}» devia dar erro-base, deu ${b.estado}`);
+      const m = L.mensagemErro(b);
+      ok(m.length > 10 && textoLimpo(m) === '', `mensagem da base «${t}»: ${m}`);
+      const y = L.calcular('2', t);
+      ok(y.estado === 'erro-y', `número «${t}» devia dar erro-y, deu ${y.estado}`);
+      ok(L.mensagemErro(y).length > 10, `mensagem do número «${t}»`);
+    }
+    ok(L.mensagemErro(L.calcular('<b>', '8')).includes('&lt;b&gt;'), 'o texto do aluno é escapado');
+    ok(!L.mensagemErro(L.calcular('$x$', '8')).includes('$x$'), 'um $ do aluno não vira fórmula');
+    ok(L.calcular('2', '8').estado === 'ok', 'a escrita certa volta a funcionar');
+  });
+
+  // ---------- (f) aleatórios ----------
+  const BASES_ALEATORIAS = [2, 3, 5, 7, 10, 1 / 2, 1 / 3, 2 / 3, 3 / 2, 4, 9, 0.25, Math.E, Math.SQRT2, Math.sqrt(3), 1.5, 0.1, 100, 16, 27, 0.5, 6, 8];
+  await teste('600 pares (a, p/q): a^(p/q) é sempre reconhecido como exato', (ok) => {
+    const rng = M.criarRng(20261013);
+    let n = 0;
+    while (n < 600) {
+      const a = BASES_ALEATORIAS[Math.floor(rng() * BASES_ALEATORIAS.length)];
+      const q = 1 + Math.floor(rng() * 6);
+      const p = Math.floor(rng() * 25) - 12;
+      const y = L.potencia(a, p / q);
+      if (!(y > 1e-9 && y < 1e9)) continue;
+      n++;
+      const an = L.analisar(a, y);
+      const [rp, rq] = M.reduzir(p, q);
+      ok(an.estado === 'ok' && an.exato, `a=${a}, ${p}/${q}: devia ser exato`);
+      ok(an.fracao && an.fracao[0] === (rp || 0) && an.fracao[1] === rq, `a=${a}, ${p}/${q}: deu ${fracStr(an.fracao)}`);
+    }
+  });
+
+  await teste('600 pares (a, y) quaisquer: o intervalo do expoente fecha em y', (ok) => {
+    const rng = M.criarRng(13102026);
+    let n = 0;
+    while (n < 600) {
+      const a = BASES_ALEATORIAS[Math.floor(rng() * BASES_ALEATORIAS.length)];
+      const y = Math.exp((rng() * 2 - 1) * 7);
+      const x = L.logb(a, y);
+      const f = L.racionalDe(x, 16, 1e-6);
+      if (f) continue; // perto de um racional simples: pode ser exato
+      n++;
+      const an = L.analisar(a, y);
+      ok(an.estado === 'ok' && an.exato === false, `a=${a}, y=${y}: devia ser inexato`);
+      const [lo, hi] = an.entre;
+      ok(hi === lo + 1 && lo <= x && x < hi, `a=${a}, y=${y}: x=${x} fora de [${lo},${hi}]`);
+      const vlo = L.potencia(a, lo);
+      const vhi = L.potencia(a, hi);
+      ok(a > 1 ? vlo < y && y < vhi : vlo > y && y > vhi, `a=${a}, y=${y}: a^${lo}=${vlo} e a^${hi}=${vhi} não apanham y`);
+    }
+  });
+
+  // ---------- (g) números em LaTeX ----------
+  await teste('texNumero reconhece inteiros, frações, decimais, raízes, e^k e π', (ok) => {
+    const t = (v, o) => L.texNumero(v, o).tex;
+    const casos = [
+      [0.5, {}, '\\frac{1}{2}'], [0.5, { dec: true }, '0{,}5'], [0.125, {}, '\\frac{1}{8}'], [0.001, { dec: true }, '0{,}001'],
+      [0.001, {}, '\\frac{1}{1000}'], [8, {}, '8'], [10000, {}, '10\\,000'], [Math.SQRT2, {}, '\\sqrt{2}'],
+      [2 * Math.SQRT2, {}, '2\\sqrt{2}'], [Math.sqrt(3) / 2, {}, '\\frac{\\sqrt{3}}{2}'], [Math.SQRT1_2, {}, '\\frac{\\sqrt{2}}{2}'],
+      [Math.cbrt(4), {}, '\\sqrt[3]{4}'], [Math.E, {}, 'e'], [Math.exp(5), {}, 'e^{5}'], [Math.exp(-2), {}, 'e^{-2}'],
+      [Math.PI, {}, '\\pi'], [-4, {}, '-4'], [-0.25, {}, '-\\frac{1}{4}'], [Math.exp(5), { semE: true }, '148{,}413'],
+      [0.0001, { dec: true, semE: true }, '1\\times10^{-4}'], [1e6, { max: 1e6 }, '1\\times10^{6}'], [2.5, {}, '\\frac{5}{2}'],
+      [2.5, { dec: true }, '2{,}5'], [1 / 3, {}, '\\frac{1}{3}'], [1 / 3, { soDecimal: true }, '0{,}333'], [Math.sqrt(12), {}, '2\\sqrt{3}'],
+      [1 / 81, {}, '\\frac{1}{81}'], [0, {}, '0'], [Math.pow(2, 20), { max: 1e6 }, '1{,}05\\times10^{6}'], [1.5, { dec: true }, '1{,}5'],
+    ];
+    for (const [v, o, esperado] of casos) ok(t(v, o) === esperado, `texNumero(${v}, ${JSON.stringify(o)}) = ${t(v, o)}, esperava ${esperado}`);
+    ok(L.texNumero(0.5).exato === true && L.texNumero(Math.exp(5), { semE: true }).exato === false, 'a marca de exato');
+    for (const [v, o] of casos) ok(renderiza(t(v, o)), `texNumero(${v}) não renderiza: ${t(v, o)}`);
+  });
+
+  await teste('lerNumero aceita o que o aluno escreve', (ok) => {
+    const certos = [['8', 8], ['1/8', 0.125], ['0,01', 0.01], ['0.01', 0.01], ['√2', Math.SQRT2], ['sqrt(2)', Math.SQRT2], ['e', Math.E],
+      ['2^3', 8], ['e^5', Math.exp(5)], ['−4', -4], ['ln 3', Math.log(3)], ['3√2', 3 * Math.SQRT2], ['1/e', 1 / Math.E], ['  100  ', 100]];
+    for (const [t, v] of certos) {
+      const r = L.lerNumero(t);
+      ok(r.ok && perto(r.valor, v, 1e-12), `«${t}»: ${r.ok ? r.valor : r.erro}`);
+    }
+    ok(L.lerNumero('0,01').dec === true && L.lerNumero('1/8').dec === false, 'marca de decimal');
+    ok(L.lerNumero('').vazio === true && L.lerNumero('abc').ok === false, 'vazio e ilegível');
+  });
+
+  // ---------- (h) escada e marcador ----------
+  await teste('janela da escada: -3 a 4, alargada para o resultado caber', (ok) => {
+    const j = (b, y) => L.janela(L.calcular(b, y));
+    ok(j('2', '8').join() === '-3,4', `2,8: ${j('2', '8')}`);
+    ok(j('√3', '1/81').join() === '-8,4', `√3,1/81: ${j('√3', '1/81')}`);
+    ok(j('2', '100').join() === '-3,7', `2,100: ${j('2', '100')}`);
+    ok(j('1/2', '100').join() === '-7,4', `1/2,100: ${j('1/2', '100')}`);
+    ok(j('2', '0').join() === '-3,4' && j('2', '-4').join() === '-3,4', 'y <= 0: janela normal');
+    ok(j('10', '1000000000').join() === '-3,9', `10,1e9: ${j('10', '1000000000')}`);
+    ok(j('1,0001', '8').join() === '-3,20', `base quase 1: ${j('1,0001', '8')}`);
+    ok(L.janela(null).join() === '-3,4', 'sem análise');
+  });
+
+  await teste('valores da escada', (ok) => {
+    const v = (b, y, k) => { const r = L.valorDegrau(L.calcular(b, y), k); return r.tex + (r.exato ? '' : '~'); };
+    ok(v('2', '8', -3) === '\\frac{1}{8}', `2^-3 = ${v('2', '8', -3)}`);
+    ok(v('2', '8', 4) === '16' && v('2', '8', 0) === '1', '2^4 e 2^0');
+    ok(v('10', '8', -3) === '0{,}001', `10^-3 = ${v('10', '8', -3)}`);
+    ok(v('10', '8', 4) === '10\\,000', `10^4 = ${v('10', '8', 4)}`);
+    ok(v('1/2', '8', -3) === '8', `(1/2)^-3 = ${v('1/2', '8', -3)}`);
+    ok(v('1/2', '8', 3) === '\\frac{1}{8}', `(1/2)^3 = ${v('1/2', '8', 3)}`);
+    ok(v('e', '8', 2) === '7{,}389~', `e^2 = ${v('e', '8', 2)}`);
+    ok(v('e', '8', -3) === '0{,}050~', `e^-3 = ${v('e', '8', -3)}`);
+    ok(v('0,5', '8', 3) === '0{,}125', `0,5^3 = ${v('0,5', '8', 3)}`);
+    ok(v('√3', '3', 2) === '3' && v('√3', '3', 1) === '\\sqrt{3}', '√3 ao quadrado e à primeira');
+    ok(v('2', '8', 20) === '1{,}05\\times10^{6}~', `2^20 = ${v('2', '8', 20)}`);
+  });
+
+  await teste('comparar(a, y, x): achou, pequeno, grande, sobe, perto, nunca', (ok) => {
+    const c = L.comparar;
+    ok(c(2, 8, 3).estado === 'achou', '2^3 = 8');
+    ok(c(2, 8, 2).estado === 'pequeno' && c(2, 8, 2).sobe === true && c(2, 8, 2).perto === false, '2^2 < 8, sobe');
+    ok(c(2, 8, 4).estado === 'grande' && c(2, 8, 4).sobe === false, '2^4 > 8, desce');
+    ok(c(2, 8, 2.99).perto === true, '2^2,99 está perto de 8');
+    ok(c(0.5, 8, -3).estado === 'achou', '(1/2)^-3 = 8');
+    ok(c(0.5, 8, 0).estado === 'pequeno' && c(0.5, 8, 0).sobe === false, 'base < 1: pequeno demais pede DESCER o expoente');
+    ok(c(0.5, 8, -4).estado === 'grande' && c(0.5, 8, -4).sobe === true, 'base < 1: grande demais pede SUBIR o expoente');
+    ok(c(2, -4, 1).estado === 'nunca' && c(2, 0, 5).estado === 'nunca' && c(0.5, -1, -9).estado === 'nunca', 'y <= 0: nunca');
+    ok(c(9, 27, 1.5).estado === 'achou' && c(Math.E, Math.exp(5), 5).estado === 'achou', '9^1,5 = 27 e e^5');
+    ok(c(10, 0.001, -3).estado === 'achou', '10^-3');
+    // o passo fino 0,1 chega a qualquer décima: x = k/10
+    for (let k = -30; k <= 40; k++) ok(c(2, Math.pow(2, k / 10), k / 10).estado === 'achou', `2^${k / 10} = 2^${k / 10}`);
+  });
+
+  // ---------- (i) textos e passos: renderizam, sem lixo ----------
+  await teste('passos exatos: dois modos, certos no fim, tudo renderiza', (ok) => {
+    const rng = M.criarRng(77);
+    const todos = EXATOS.map(([b, y, p, q]) => ({ an: L.calcular(b, y), p, q, nome: `log_{${b}} ${y}` }));
+    // mais 120 aleatórios
+    for (let i = 0; i < 120; i++) {
+      const a = BASES_ALEATORIAS[Math.floor(rng() * BASES_ALEATORIAS.length)];
+      const q = 1 + Math.floor(rng() * 4);
+      const p = Math.floor(rng() * 13) - 6;
+      const y = L.potencia(a, p / q);
+      if (y > 1e-6 && y < 1e6) todos.push({ an: L.analisar(a, y), p, q, nome: `a=${a}, ${p}/${q}` });
+    }
+    for (const { an, p, q, nome } of todos) {
+      const ps = L.passos(an);
+      ok(ps && ps.tipo === 'exato' && ps.modos.length === 2, `${nome}: dois modos`);
+      if (!ps) continue;
+      const x = M.fracTex(p, q);
+      const m1 = ps.modos[0].itens;
+      const m2 = ps.modos[1].itens;
+      ok(m1.length >= 2 && m1.length <= 3 && m2.length >= 3 && m2.length <= 4, `${nome}: número de passos (${m1.length}, ${m2.length})`);
+      ok(m1[m1.length - 1].linhas[0].endsWith(`=${x}`), `${nome}: 1.º modo acaba em ${x}: ${m1[m1.length - 1].linhas[0]}`);
+      ok(m2[m2.length - 1].linhas[0].endsWith(`x=${x}`), `${nome}: 2.º modo acaba em x=${x}: ${m2[m2.length - 1].linhas[0]}`);
+      ok(m2[0].linhas[0].includes('\\Leftrightarrow'), `${nome}: o 2.º modo começa na forma exponencial`);
+      for (const modo of ps.modos) {
+        ok(textoLimpo(modo.titulo) === '', `${nome}: título «${modo.titulo}»: ${textoLimpo(modo.titulo)}`);
+        for (const it of modo.itens) {
+          ok(textoLimpo(it.titulo) === '', `${nome}: «${it.titulo}»: ${textoLimpo(it.titulo)}`);
+          if (it.texto) ok(textoLimpo(it.texto) === '', `${nome}: texto «${it.texto}»: ${textoLimpo(it.texto)}`);
+          ok(it.linhas.length >= 1, `${nome}: passo sem linhas`);
+          for (const l of it.linhas) ok(linhaLimpa(l) === '', `${nome}: ${linhaLimpa(l)}`);
+        }
+      }
+    }
+  });
+
+  await teste('os passos de alguns casos famosos', (ok) => {
+    const linhas = (b, y, modo) => L.passos(L.calcular(b, y)).modos[modo].itens.flatMap((i) => i.linhas);
+    const l9 = linhas('9', '27', 1);
+    ok(l9.some((l) => l.includes('\\left(3^{2}\\right)^{x}=3^{3}')), `9,27: ${l9.join(' | ')}`);
+    ok(l9.some((l) => l.includes('3^{2x}=3^{3}')) && l9.some((l) => l.includes('2x=3\\Leftrightarrow x=\\frac{3}{2}')), `9,27: expoentes`);
+    const l9a = linhas('9', '27', 0);
+    ok(l9a.some((l) => l.includes('27=3^{3}=\\left(3^{2}\\right)^{\\frac{3}{2}}=9^{\\frac{3}{2}}')), `9,27 modo 1: ${l9a.join(' | ')}`);
+    const l3 = linhas('√3', '1/81', 1);
+    ok(l3.some((l) => l.includes('3^{\\frac{x}{2}}=3^{-4}')) && l3.some((l) => l.includes('\\frac{x}{2}=-4\\Leftrightarrow x=-8')), `√3,1/81: ${l3.join(' | ')}`);
+    const l3a = linhas('√3', '1/81', 0);
+    ok(l3a.some((l) => l.includes('\\sqrt{3}=3^{\\frac{1}{2}}')) && l3a.some((l) => l.includes('\\frac{1}{81}=\\frac{1}{3^{4}}=3^{-4}')), `√3,1/81 modo 1: ${l3a.join(' | ')}`);
+    const lm = linhas('1/2', '2', 1);
+    ok(lm.some((l) => l.includes('2^{-x}=2^{1}')) && lm.some((l) => l.includes('-x=1\\Leftrightarrow x=-1')), `1/2,2: ${lm.join(' | ')}`);
+    const ld = linhas('2', '1/8', 0);
+    ok(ld[0] === '\\frac{1}{8}=\\frac{1}{2^{3}}=2^{-3}', `2,1/8: ${ld[0]}`);
+    const lz = linhas('10', '0,001', 0);
+    ok(lz[0] === '0{,}001=\\frac{1}{1000}=\\frac{1}{10^{3}}=10^{-3}', `10,0,001: ${lz[0]}`);
+    const le = linhas('e', 'e^5', 0);
+    ok(le[0] === 'e^{5}' && le[1] === '\\ln e^{5}=5', `e,e^5: ${le.join(' | ')}`);
+    const l1 = linhas('2', '1', 0);
+    ok(l1[0] === '1=2^{0}', `2,1: ${l1[0]}`);
+    const l2 = linhas('2', '2', 1);
+    ok(l2.some((l) => l === 'x=1'), `2,2: ${l2.join(' | ')}`);
+  });
+
+  await teste('frases de resposta e de pergunta', (ok) => {
+    for (const [b, y, p, q] of EXATOS) {
+      const an = L.calcular(b, y);
+      const x = M.fracTex(p, q);
+      const r = L.textoResposta(an);
+      ok(r.includes(`tens de elevar $${an.baseTex}$ a $${x}$`) && r.endsWith(`=${x}$.`), `${b},${y}: ${r}`);
+      ok(textoLimpo(r) === '' && textoLimpo(L.textoPergunta(an)) === '', `${b},${y}: ${textoLimpo(r) || textoLimpo(L.textoPergunta(an))}`);
+      for (const c of L.textoCasos(an)) ok(textoLimpo(c) === '', `${b},${y}: caso ${textoLimpo(c)}`);
+      ok(textoLimpo(L.textoNotacaoBase(an) || 'x $y$') === '', `${b},${y}: notação base`);
+      ok(/ tu|tens|Procura/.test(L.textoPergunta(an)), `${b},${y}: pergunta`);
+    }
+    ok(L.textoPergunta(L.calcular('2', '8')) === 'Procura o expoente: a que expoente tens de elevar $2$ para obter $8$?', 'a pergunta');
+    ok(L.textoResposta(L.calcular('2', '8')) === 'Para obter $8$ tens de elevar $2$ a $3$, por isso $\\log_{2} 8=3$.', 'a resposta de log_2 8');
+    for (const [b, y] of INEXATOS) ok(textoLimpo(L.textoResposta(L.calcular(b, y))) === '', `${b},${y}: resposta inexata`);
+    for (const [b, y] of INEXATOS) {
+      const ps = L.passos(L.calcular(b, y));
+      for (const it of ps.modos[0].itens) {
+        ok(textoLimpo(it.titulo) === '' && (!it.texto || textoLimpo(it.texto) === ''), `${b},${y}: ${it.titulo}`);
+        for (const l of it.linhas) ok(linhaLimpa(l) === '', `${b},${y}: ${linhaLimpa(l)}`);
+      }
+    }
+  });
+
+  await teste('tex2fala para leitores de ecrã', (ok) => {
+    ok(L.tex2fala('\\frac{1}{8}') === '1 sobre 8', L.tex2fala('\\frac{1}{8}'));
+    ok(L.tex2fala('\\sqrt{3}') === 'raiz de 3', L.tex2fala('\\sqrt{3}'));
+    ok(L.tex2fala('-3') === 'menos 3', L.tex2fala('-3'));
+    ok(L.tex2fala('e^{5}') === 'e elevado a 5', L.tex2fala('e^{5}'));
+    ok(L.tex2fala('0{,}001') === '0,001', L.tex2fala('0{,}001'));
+    ok(L.tex2fala('\\left(\\frac{1}{2}\\right)') === '(1 sobre 2)', L.tex2fala('\\left(\\frac{1}{2}\\right)'));
+  });
+
+  // ---------- (j) o widget montado ----------
+  const W = await import('../widgets/logaritmo.js');
+  await W.montar(palco, {});
+  const raiz = palco.querySelector('.lg');
+  const $ = (s) => raiz.querySelector(s);
+  const $$ = (s) => [...raiz.querySelectorAll(s)];
+  const regiao = () => $('.lg-resultado');
+  const fontes = (el) => [...el.querySelectorAll('annotation')].map((a) => a.textContent).join(' | ');
+  /** O texto de um elemento com cada fórmula trocada pelo seu LaTeX entre $: o textContent do KaTeX repete tudo (MathML + HTML). */
+  const plano = (el) => {
+    const c = el.cloneNode(true);
+    c.querySelectorAll('.katex').forEach((k) => {
+      const a = k.querySelector('annotation');
+      k.replaceWith(document.createTextNode(`$${a ? a.textContent : ''}$`));
+    });
+    return c.textContent;
+  };
+  const respondeu = () => /Para obter|é o expoente a que tens de elevar/.test(regiao().textContent);
+  const campoBase = $('.lg-campo[id$="-base"]');
+  const campoY = $('.lg-campo[id$="-y"]');
+  const escrever = (campo, v) => { campo.value = v; campo.dispatchEvent(new Event('input', { bubbles: true })); campo.dispatchEvent(new Event('change', { bubbles: true })); };
+  const deixar = () => { escrever(campoBase, '2'); escrever(campoY, '8'); setX(0); if ($('.lg-calculo').hidden === false) $('.lg-calculo-botao').click(); };
+  const setX = (v) => { const s = $('.lg-slider'); s.value = String(v); s.dispatchEvent(new Event('input', { bubbles: true })); };
+  const leitura = () => $('.lg-leitura').textContent;
+  const abrir = () => { if ($('.lg-calculo').hidden) $('.lg-calculo-botao').click(); };
+
+  await teste('widget: monta sem erros e só tem uma região em direto', (ok) => {
+    ok(raiz && raiz.classList.contains('widget'), 'montou');
+    ok(palco.querySelectorAll('.katex-error').length === 0, 'KaTeX sem erros');
+    ok(palco.querySelectorAll('.aviso-erro').length === 0, 'sem aviso de erro');
+    const vivos = $$('[aria-live]');
+    ok(vivos.length === 1 && vivos[0].getAttribute('aria-live') === 'polite' && vivos[0].classList.contains('lg-resultado'), `regiões em direto: ${vivos.length}`);
+    ok($$('output').every((o) => !o.hasAttribute('aria-live')), 'o output do slider não é região em direto');
+    ok(textoLimpo(regiao().textContent) !== 'vazio', 'região com texto');
+    ok(regiao().textContent.includes('Procura o expoente') && regiao().textContent.includes('tens de elevar'), `pergunta inicial: ${regiao().textContent}`);
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'sem scroll horizontal na página');
+  });
+
+  await teste('widget: o tradutor tem os três papéis em cada forma, com legenda', (ok) => {
+    for (const forma of ['.lg-bloco > .lg-formas .lg-forma--log', '.lg-bloco > .lg-formas .lg-forma--exp']) {
+      const papeis = [...$(forma).querySelectorAll('[data-papel]')].map((n) => n.dataset.papel).sort();
+      ok(papeis.join() === 'arg,base,exp', `${forma}: ${papeis}`);
+    }
+    const texto = $('.lg-legenda').textContent;
+    ok(texto.includes('A base fica base.') && texto.includes('O resultado do logaritmo passa a expoente.') && texto.includes('O argumento passa a resultado da potência.'), `legenda: ${texto}`);
+    ok($$('.lg-legenda [data-papel]').map((n) => n.dataset.papel).join() === 'base,exp,arg', 'legenda com os três papéis');
+    ok($('.lg-bloco .lg-forma--log').getAttribute('role') === 'img' && $('.lg-bloco .lg-forma--log').getAttribute('aria-label').length > 20, 'a forma tem aria-label');
+    // cor E forma: os três papéis distinguem-se sem cor
+    const est = (p) => getComputedStyle($(`.lg-legenda [data-papel="${p}"]`));
+    ok(est('base').borderBottomStyle === 'solid' && parseFloat(est('base').borderBottomWidth) >= 2 && parseFloat(est('base').borderTopWidth) === 0, 'base: sublinhado');
+    ok(est('exp').borderTopStyle === 'solid' && est('exp').borderLeftStyle === 'solid', 'expoente: caixa');
+    ok(est('arg').borderTopStyle === 'dashed' && parseFloat(est('arg').borderTopLeftRadius) > 6, 'argumento: cápsula tracejada');
+    const cores = ['base', 'exp', 'arg'].map((p) => est(p).color);
+    ok(new Set(cores).size === 3, `três cores diferentes: ${cores}`);
+    // contraste >= 4,5:1 sobre o branco
+    const lum = (rgb) => {
+      const [r, g, b] = rgb.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { const c = Number(v) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    for (const p of ['base', 'exp', 'arg']) {
+      const c = 1.05 / (lum(est(p).color) + 0.05);
+      ok(c >= 4.5, `contraste do papel ${p}: ${c.toFixed(2)}`);
+    }
+  });
+
+  await teste('widget: todos os chips de base', (ok) => {
+    for (const b of $$('.lg-chip[data-base]')) {
+      deixar();
+      b.click();
+      const t = b.dataset.base;
+      const an = L.calcular(t, '8');
+      ok(campoBase.value === t && b.getAttribute('aria-pressed') === 'true', `chip ${t}: campo e aria-pressed`);
+      ok($$('.lg-chip[data-base][aria-pressed="true"]').length === 1, `chip ${t}: só um premido`);
+      ok(regiao().textContent.includes('tens de elevar'), `chip ${t}: pergunta`);
+      ok($$('.lg-degrau').length === L.janela(an).reduce((a, c) => c - a + 1), `chip ${t}: degraus`);
+      ok(palco.querySelectorAll('.katex-error').length === 0, `chip ${t}: KaTeX`);
+      ok($$('.lg-forma--log').length >= 2, `chip ${t}: formas`);
+      if (t === 'e') ok(regiao().textContent.includes('neperiano') && fontes(regiao()).includes('\\ln'), 'chip e: ln e frase');
+      if (t === '10') ok(regiao().textContent.includes('decimal') && fontes(regiao()).includes('\\log '), 'chip 10: log e frase');
+      if (t === '1/2') ok($('.lg-escada').getAttribute('aria-label').includes('1 sobre 2'), 'chip 1/2: escada de 1 sobre 2');
+      // resolve com o botão: a resposta certa aparece
+      abrir();
+      ok(respondeu(), `chip ${t}: resposta depois de mostrar`);
+      ok(textoLimpo(plano(regiao()).replace(/\s+/g, ' ')) === '', `chip ${t}: resposta limpa: ${textoLimpo(plano(regiao()))}`);
+    }
+    deixar();
+  });
+
+  await teste('widget: todos os chips do número', (ok) => {
+    for (const b of $$('.lg-chip[data-y]')) {
+      deixar();
+      b.click();
+      const t = b.dataset.y;
+      ok(campoY.value === t && b.getAttribute('aria-pressed') === 'true', `chip ${t}: campo e aria-pressed`);
+      ok(palco.querySelectorAll('.katex-error').length === 0, `chip ${t}: KaTeX`);
+      const an = L.calcular('2', t);
+      if (an.estado === 'ok') {
+        // com o marcador em 0, y = 1 já está «encontrado»: 2^0 = 1
+        if (an.caso === 'um') ok(respondeu() && regiao().classList.contains('lg-resultado--ok'), `chip ${t}: já encontrado em x = 0`);
+        else ok(regiao().textContent.includes('Procura o expoente'), `chip ${t}: pergunta`);
+        abrir();
+        ok(respondeu(), `chip ${t}: resposta`);
+        if (an.exato) ok(plano(regiao()).includes(`a $${M.fracTex(...an.fracao)}$`), `chip ${t}: o expoente certo: ${plano(regiao())}`);
+        ok($$('.lg-modo').length === (an.exato ? 2 : 1), `chip ${t}: modos`);
+      } else {
+        ok(regiao().classList.contains('lg-resultado--nao') && regiao().textContent.includes('não existe'), `chip ${t}: não existe`);
+        ok(regiao().textContent.includes('sempre maior que 0'), `chip ${t}: porquê`);
+        ok(regiao().querySelector('.lg-impossivel'), `chip ${t}: marca impossível`);
+        abrir();
+        ok($$('.lg-modo').length === 1 && $('.lg-calculo').textContent.includes('sempre positiva'), `chip ${t}: passos do inexistente`);
+        // a escada mostra que 2^x > 0 sempre
+        ok($$('.lg-degrau__val').every((n) => !n.querySelector('annotation').textContent.startsWith('-')), `chip ${t}: degraus positivos`);
+        setX(-3);
+        ok(leitura().includes('positivo') && !$('.lg-leitura').classList.contains('lg-leitura--achou'), `chip ${t}: o marcador diz que é sempre positivo: ${leitura()}`);
+      }
+    }
+    deixar();
+  });
+
+  await teste('widget: marcador, botões e «Encontraste»', (ok) => {
+    deixar();
+    ok(leitura().includes('pequeno demais') && leitura().includes('Sobe o expoente'), `x=0: ${leitura()}`);
+    setX(2);
+    ok(leitura().includes('pequeno demais'), `x=2: ${leitura()}`);
+    const antes = regiao().innerHTML;
+    setX(2.5);
+    ok(regiao().innerHTML === antes, 'mexer no slider sem encontrar não muda a região em direto');
+    setX(4);
+    ok(leitura().includes('grande demais') && leitura().includes('Desce o expoente'), `x=4: ${leitura()}`);
+    ok(regiao().innerHTML === antes, 'a região em direto não muda a cada passo');
+    setX(3);
+    ok($('.lg-leitura').classList.contains('lg-leitura--achou') && leitura().includes('Encontraste'), `x=3: ${leitura()}`);
+    ok(fontes($('.lg-leitura')).includes('\\log_{2} 8=3'), `x=3: ${fontes($('.lg-leitura'))}`);
+    ok(regiao().textContent.includes('tens de elevar') && regiao().classList.contains('lg-resultado--ok'), 'a região mostra a resposta');
+    ok($('.lg-saida').textContent === '3', `saída: ${$('.lg-saida').textContent}`);
+    setX(4);
+    ok(regiao().classList.contains('lg-resultado--ok'), 'a resposta fica depois de o marcador sair');
+    // botões
+    setX(0);
+    const btn = (d) => $(`.lg-passo[data-d="${d}"]`);
+    btn(5).click();
+    ok($('.lg-saida').textContent === '0,5', `+0,5: ${$('.lg-saida').textContent}`);
+    btn(1).click();
+    ok($('.lg-saida').textContent === '0,6', `+0,1: ${$('.lg-saida').textContent}`);
+    btn(-5).click();
+    ok($('.lg-saida').textContent === '0,1', `-0,5: ${$('.lg-saida').textContent}`);
+    btn(-1).click();
+    btn(-1).click();
+    ok($('.lg-saida').textContent === '−0,1', `-0,1: ${$('.lg-saida').textContent}`);
+    ok(Number($('.lg-slider').value) === -0.1, `slider: ${$('.lg-slider').value}`);
+    ok($('.lg-slider').getAttribute('aria-valuetext').includes('expoente'), 'aria-valuetext');
+    setX(-3);
+    ok(btn(-5).disabled && btn(-1).disabled && !btn(1).disabled, 'no mínimo os botões de descer ficam desativados');
+    setX(4);
+    ok(btn(5).disabled && btn(1).disabled && !btn(-1).disabled, 'no máximo os botões de subir ficam desativados');
+    // a escada: clicar num degrau põe lá o marcador
+    deixar();
+    $('.lg-degrau[data-k="3"]').click();
+    ok($('.lg-saida').textContent === '3' && $('.lg-degrau[data-k="3"]').classList.contains('lg-degrau--aqui'), 'clicar num degrau');
+    ok($('.lg-marca__rotulo').textContent === 'x = 3', `etiqueta: ${$('.lg-marca__rotulo').textContent}`);
+    // com base < 1 o conselho inverte-se
+    deixar();
+    escrever(campoBase, '1/2');
+    ok(leitura().includes('pequeno demais') && leitura().includes('Desce o expoente'), `base 1/2, x=0: ${leitura()}`);
+    setX(-3);
+    ok(leitura().includes('Encontraste') && fontes($('.lg-leitura')).includes('\\log_{\\frac{1}{2}} 8=-3'), `base 1/2, x=-3: ${fontes($('.lg-leitura'))}`);
+    deixar();
+  });
+
+  await teste('widget: mostrar como se calcula (dois processos) e esconder', (ok) => {
+    deixar();
+    const b = $('.lg-calculo-botao');
+    ok($('.lg-calculo').hidden && b.getAttribute('aria-expanded') === 'false', 'começa fechado');
+    b.click();
+    ok(!$('.lg-calculo').hidden && b.getAttribute('aria-expanded') === 'true' && b.textContent === 'Esconder o cálculo', 'abre');
+    ok($$('.lg-modo').length === 2, 'dois modos');
+    ok($('.lg-modo__titulo').textContent.includes('potência'), 'título do 1.º modo');
+    ok(regiao().classList.contains('lg-resultado--ok') && regiao().textContent.includes('Para obter'), 'abrir mostra a resposta');
+    ok(Number($('.lg-slider').value) === 3 && $('.lg-leitura').classList.contains('lg-leitura--achou'), 'o marcador vai para a resposta (3)');
+    ok($('.lg-calculo').querySelectorAll('.lg-passo-item').length >= 5, 'passos');
+    ok($('.lg-calculo').querySelectorAll('.katex-error').length === 0, 'passos sem erros de KaTeX');
+    b.click();
+    ok($('.lg-calculo').hidden && b.textContent === 'Mostrar como se calcula', 'fecha');
+    // mudar o número esconde a resposta e o cálculo
+    b.click();
+    $('.lg-chip[data-y="1"]').click();
+    ok($('.lg-calculo').hidden && regiao().textContent.includes('Procura o expoente'), 'mudar o número reinicia');
+    abrir();
+    ok(regiao().textContent.includes('Caso especial') && fontes(regiao()).includes('\\log_a 1=0'), `y=1: ${regiao().textContent}`);
+    ok(Number($('.lg-slider').value) === 0, 'y=1: marcador em 0');
+    escrever(campoY, '2');
+    abrir();
+    ok(regiao().textContent.includes('Caso especial') && fontes(regiao()).includes('\\log_a a=1'), `y=a: ${regiao().textContent}`);
+    escrever(campoY, '8');
+    abrir();
+    ok(fontes(regiao()).includes('\\log_{2} 2^{3}=3'), `y=a^k: ${fontes(regiao())}`);
+    deixar();
+  });
+
+  await teste('widget: base escrita à mão (√3), fração (9, 27) e não exato', (ok) => {
+    deixar();
+    escrever(campoBase, '√3');
+    escrever(campoY, '1/81');
+    ok($$('.lg-chip[aria-pressed="true"]').filter((c) => c.dataset.base).length === 0, 'nenhum chip de base premido');
+    ok(regiao().textContent.includes('Procura o expoente'), 'pergunta');
+    ok($$('.lg-degrau').length === 13 && $('.lg-degrau[data-k="-8"]'), `a escada alarga para o expoente −8: ${$$('.lg-degrau').length} degraus`);
+    abrir();
+    ok(fontes(regiao()).includes('\\log_{\\sqrt{3}} \\frac{1}{81}=-8'), `resposta: ${fontes(regiao())}`);
+    ok(Number($('.lg-slider').value) === -8 && $('.lg-leitura').classList.contains('lg-leitura--achou'), `o marcador vai para −8: ${$('.lg-slider').value}`);
+    ok(fontes($('.lg-calculo')).includes('3^{\\frac{x}{2}}=3^{-4}'), 'passos pela base 3');
+    escrever(campoBase, '9');
+    escrever(campoY, '27');
+    ok(regiao().textContent.includes('Procura o expoente'), '9 e 27: pergunta');
+    setX(1.5);
+    ok(leitura().includes('Encontraste') && fontes($('.lg-leitura')).includes('\\log_{9} 27=1{,}5'), `x=1,5: ${fontes($('.lg-leitura'))}`);
+    ok(fontes(regiao()).includes('\\frac{3}{2}'), `log_9 27 = 3/2: ${fontes(regiao())}`);
+    escrever(campoBase, '2');
+    escrever(campoY, '5');
+    abrir();
+    ok(plano(regiao()).includes('entre $2$ e $3$') && fontes(regiao()).includes('2{,}322'), `log_2 5: ${plano(regiao())}`);
+    ok($$('.lg-modo').length === 1 && $('.lg-calculo').textContent.includes('Para o valor exato escreve'), 'log_2 5: passos com a nota do valor exato');
+    ok(fontes($('.lg-calculo')).includes('2^{2}=4<5<8=2^{3}'), `log_2 5: ${fontes($('.lg-calculo'))}`);
+    ok(!$('.lg-leitura').classList.contains('lg-leitura--achou'), 'log_2 5 nunca é «encontrado» na escada');
+    // 10 e 0,001 (decimal) e e e^5
+    escrever(campoBase, '10');
+    escrever(campoY, '0,001');
+    abrir();
+    ok(fontes(regiao()).includes('\\log 0{,}001=-3') && regiao().textContent.includes('decimal'), `log 0,001: ${fontes(regiao())}`);
+    escrever(campoBase, 'e');
+    escrever(campoY, 'e^5');
+    abrir();
+    ok(fontes(regiao()).includes('\\ln e^{5}=5') && regiao().textContent.includes('neperiano'), `ln e^5: ${fontes(regiao())}`);
+    escrever(campoY, 'e^5');
+    deixar();
+  });
+
+  await teste('widget: bases recusadas e escritas ilegíveis', (ok) => {
+    deixar();
+    for (const [b, trecho] of [['1', 'não pode ser'], ['0', 'não pode ser'], ['-2', 'positiva'], ['abc', 'Não consegui ler a base'], ['', 'Escreve a base']]) {
+      escrever(campoBase, b);
+      ok(regiao().classList.contains('lg-resultado--erro') && regiao().textContent.includes(trecho), `base «${b}»: ${regiao().textContent}`);
+      ok(campoBase.getAttribute('aria-invalid') === 'true', `base «${b}»: aria-invalid`);
+      ok($('.lg-calculo-botao').disabled, `base «${b}»: botão desativado`);
+      ok($('.lg-escada').closest('.lg--sem-escada') !== null, `base «${b}»: escada esbatida`);
+      ok($$('.katex-error').length === 0, `base «${b}»: KaTeX`);
+    }
+    escrever(campoBase, '2');
+    ok(!regiao().classList.contains('lg-resultado--erro') && campoBase.getAttribute('aria-invalid') === 'false' && !$('.lg-calculo-botao').disabled, 'corrigir a base recupera');
+    escrever(campoY, 'xyz');
+    ok(regiao().classList.contains('lg-resultado--erro') && regiao().textContent.includes('Não consegui ler o número') && campoY.getAttribute('aria-invalid') === 'true', `número ilegível: ${regiao().textContent}`);
+    escrever(campoY, '');
+    ok(regiao().textContent.includes('Escreve o número'), 'número vazio');
+    escrever(campoY, '8');
+    ok(regiao().textContent.includes('Procura o expoente'), 'recupera');
+    deixar();
+  });
+
+  await teste('widget: alvos de toque, escada rolante e sem scroll na página', (ok) => {
+    deixar();
+    for (const el of $$('.lg-chip, .lg-passo, .lg-campo, .lg-calculo-botao, .lg-slider')) {
+      const r = el.getBoundingClientRect();
+      ok(r.height >= 43.5, `${el.className} ${el.textContent.trim() || el.id}: altura ${r.height.toFixed(1)}`);
+      ok(r.width >= 43.5, `${el.className} ${el.textContent.trim() || el.id}: largura ${r.width.toFixed(1)}`);
+    }
+    const esc = $('.lg-escada');
+    ok(getComputedStyle(esc).overflowX === 'auto' && esc.getAttribute('tabindex') === '0', 'a escada rola por dentro e é focável');
+    ok(esc.getBoundingClientRect().right <= document.documentElement.clientWidth + 1, 'a escada cabe na janela');
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'sem scroll horizontal na página');
+    // o marcador fica à vista quando a escada é mais larga do que o contentor
+    escrever(campoBase, '√3');
+    escrever(campoY, '1/81');
+    setX(-8);
+    const w = $('.lg-degrau').offsetWidth;
+    const centro = parseFloat(getComputedStyle($('.lg-trilho')).paddingLeft) + (0.5) * w;
+    ok(esc.scrollLeft <= centro && centro <= esc.scrollLeft + esc.clientWidth, `o marcador em −8 está à vista (scrollLeft ${esc.scrollLeft})`);
+    setX(4);
+    const centro2 = parseFloat(getComputedStyle($('.lg-trilho')).paddingLeft) + (4 + 8 + 0.5) * w;
+    ok(esc.scrollLeft <= centro2 && centro2 <= esc.scrollLeft + esc.clientWidth + 1, `o marcador em 4 está à vista (scrollLeft ${esc.scrollLeft})`);
+    ok(document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1, 'sem scroll horizontal na página (escada larga)');
+    deixar();
+  });
+
+  const total = ((performance.now() - t0) / 1000).toFixed(1);
+  linhas.push('');
+  linhas.push(nFalhas === 0 ? `TUDO OK: ${nCasos} casos em ${total} s` : `${nFalhas} TESTE(S) FALHARAM (${nCasos} casos, ${total} s)`);
+  saida.textContent = linhas.join('\n');
+  document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+}
+</script>
+</body>
+</html>

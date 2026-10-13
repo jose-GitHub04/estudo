@@ -1,0 +1,357 @@
+{
+ "tema": "propriedades",
+ "perguntas": [
+  {
+   "id": "pro-01",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\log_2 24-\\log_2 3$?",
+   "opcoes": [
+    {
+     "tex": "$\\log_2 21$",
+     "valor": "logb(2, 21)"
+    },
+    {
+     "tex": "$\\dfrac{\\log_2 24}{\\log_2 3}$",
+     "valor": "logb(2, 24)/logb(2, 3)"
+    },
+    {
+     "tex": "$3$",
+     "valor": "3"
+    },
+    {
+     "tex": "$8$",
+     "valor": "8"
+    }
+   ],
+   "certa": 2,
+   "ref": "logb(2, 24)-logb(2, 3)",
+   "explicacao": "Subtrair logaritmos da mesma base é dividir os argumentos: $\\log_2 24-\\log_2 3=\\log_2\\dfrac{24}{3}=\\log_2 8=3$, porque $2^3=8$. Subtrair os argumentos dá $\\log_2 21$, que é outro número, e parar no $8$ esquece que ainda falta calcular o logaritmo. O quociente $\\dfrac{\\log_2 24}{\\log_2 3}$ também não serve: é uma mudança de base, vale $\\log_3 24\\approx2{,}89$ e não é o logaritmo do quociente."
+  },
+  {
+   "id": "pro-02",
+   "nivel": 1,
+   "enunciado": "Quanto vale $\\log_3\\left(9^4\\right)$?",
+   "opcoes": [
+    {
+     "tex": "$8$",
+     "valor": "8"
+    },
+    {
+     "tex": "$16$",
+     "valor": "16"
+    },
+    {
+     "tex": "$6$",
+     "valor": "6"
+    },
+    {
+     "tex": "$4$",
+     "valor": "4"
+    }
+   ],
+   "certa": 0,
+   "ref": "logb(3, 9**4)",
+   "explicacao": "O expoente 4 vem para a frente a multiplicar: $\\log_3\\left(9^4\\right)=4\\log_3 9=4\\times2=8$. Confirmas com $9^4=(3^2)^4=3^8$. Somar ($4+2=6$) mistura com a regra do produto, e $4$ só seria a resposta se a base fosse $9$. O $16$ vem de elevar o logaritmo a 4, mas $(\\log_3 9)^4$ não é o mesmo que $\\log_3\\left(9^4\\right)$."
+  },
+  {
+   "id": "pro-03",
+   "nivel": 1,
+   "enunciado": "Para $x>0$, a que é igual $\\log_5\\dfrac{1}{x}$?",
+   "opcoes": [
+    {
+     "tex": "$\\dfrac{1}{\\log_5 x}$"
+    },
+    {
+     "tex": "$1-\\log_5 x$"
+    },
+    {
+     "tex": "$\\log_5(-x)$"
+    },
+    {
+     "tex": "$-\\log_5 x$"
+    }
+   ],
+   "certa": 3,
+   "verifica": [
+    "ig(logb(5, 1/x), -logb(5, x))"
+   ],
+   "explicacao": "Como $\\dfrac1x=x^{-1}$, o expoente $-1$ vem para a frente: $\\log_5 x^{-1}=-\\log_5 x$. Também podes ver um quociente: $\\log_5 1-\\log_5 x=0-\\log_5 x$. O erro $1-\\log_5 x$ esquece que $\\log_5 1=0$ e não 1; $\\dfrac{1}{\\log_5 x}$ é o inverso do logaritmo, não o logaritmo do inverso; e $\\log_5(-x)$ nem existe, porque $-x<0$."
+  },
+  {
+   "id": "pro-04",
+   "nivel": 1,
+   "enunciado": "Como se escreve $2^x$ na forma de uma potência de base $e$?",
+   "opcoes": [
+    {
+     "tex": "$e^{2\\ln x}$"
+    },
+    {
+     "tex": "$e^{x\\ln 2}$"
+    },
+    {
+     "tex": "$e^{x+\\ln 2}$"
+    },
+    {
+     "tex": "$e^{2x}$"
+    }
+   ],
+   "certa": 1,
+   "verifica": [
+    "ig(2**t, exp(t*ln(2)))"
+   ],
+   "explicacao": "Como $2=e^{\\ln 2}$, vem $2^x=\\left(e^{\\ln 2}\\right)^x=e^{x\\ln 2}$. Cuidado com as outras: $e^{2\\ln x}=x^2$ troca a base com o expoente, $e^{x+\\ln 2}=2e^x$ soma em vez de multiplicar, e $e^{2x}$ esquece o $\\ln$."
+  },
+  {
+   "id": "pro-05",
+   "nivel": 1,
+   "enunciado": "Qual destas propriedades das potências explica a regra $\\log_a(xy)=\\log_a x+\\log_a y$?",
+   "opcoes": [
+    {
+     "tex": "$a^m\\times a^n=a^{m+n}$"
+    },
+    {
+     "tex": "$\\left(a^m\\right)^n=a^{mn}$"
+    },
+    {
+     "tex": "$\\dfrac{a^m}{a^n}=a^{m-n}$"
+    },
+    {
+     "tex": "$a^m+a^n=a^{m+n}$"
+    }
+   ],
+   "certa": 0,
+   "verifica": [
+    "ig(a**t*a**k, a**(t+k))",
+    "not ig(3**2+3**3, 3**5)"
+   ],
+   "explicacao": "$\\log_a x$ e $\\log_a y$ são expoentes: se $x=a^m$ e $y=a^n$, então $xy=a^m\\times a^n=a^{m+n}$, e o expoente do produto é $m+n$. A regra $\\left(a^m\\right)^n$ está por trás do logaritmo de uma potência, e a do quociente por trás da diferença. A última é falsa: $3^2+3^3=36$, mas $3^5=243$."
+  },
+  {
+   "id": "pro-06",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\log_4 8$?",
+   "opcoes": [
+    {
+     "tex": "$2$",
+     "valor": "2"
+    },
+    {
+     "tex": "$\\dfrac23$",
+     "valor": "2/3"
+    },
+    {
+     "tex": "$\\dfrac32$",
+     "valor": "3/2"
+    },
+    {
+     "tex": "$\\dfrac34$",
+     "valor": "3/4"
+    }
+   ],
+   "certa": 2,
+   "ref": "logb(4, 8)",
+   "explicacao": "Põe tudo em potências de 2: $4=2^2$ e $8=2^3$. Procuras $x$ tal que $\\left(2^2\\right)^x=2^3$, isto é, $2x=3$ e $x=\\dfrac32$. Pela mudança de base: $\\log_4 8=\\dfrac{\\log_2 8}{\\log_2 4}=\\dfrac32$. Os erros: dividir $8$ por $4$ dá 2, mas um logaritmo não é o argumento a dividir pela base; $\\dfrac23=\\log_8 4$ troca a base com o argumento; e $\\dfrac34$ vem de dividir $\\log_2 8=3$ por 4 em vez de por $\\log_2 4=2$."
+  },
+  {
+   "id": "pro-07",
+   "nivel": 2,
+   "enunciado": "Para $x,y,z>0$, qual das expressões é igual a $2\\ln x-\\ln y+3\\ln z$?",
+   "opcoes": [
+    {
+     "tex": "$\\ln\\dfrac{6xz}{y}$"
+    },
+    {
+     "tex": "$\\ln\\left(x^2-y+z^3\\right)$"
+    },
+    {
+     "tex": "$\\ln\\dfrac{x^2y}{z^3}$"
+    },
+    {
+     "tex": "$\\ln\\dfrac{x^2z^3}{y}$"
+    }
+   ],
+   "certa": 3,
+   "verifica": [
+    "ig(2*ln(x)-ln(y)+3*ln(z), ln(x**2*z**3/y))"
+   ],
+   "explicacao": "Primeiro os coeficientes passam a expoentes: $\\ln x^2-\\ln y+\\ln z^3$. Depois, somar é multiplicar e subtrair é dividir: $\\ln\\dfrac{x^2z^3}{y}$. Os coeficientes são expoentes e não fatores (é isso que dá o $6xz$), e o logaritmo não se pode fazer desaparecer deixando as somas e subtrações lá dentro."
+  },
+  {
+   "id": "pro-08",
+   "nivel": 2,
+   "enunciado": "Para $x,y>0$, qual é a expansão de $\\log_a\\sqrt{\\dfrac{x}{y^3}}$?",
+   "opcoes": [
+    {
+     "tex": "$\\dfrac12\\log_a x-3\\log_a y$"
+    },
+    {
+     "tex": "$\\dfrac12\\log_a x-\\dfrac32\\log_a y$"
+    },
+    {
+     "tex": "$\\dfrac12\\log_a x+\\dfrac32\\log_a y$"
+    },
+    {
+     "tex": "$\\dfrac12\\log_a x-\\dfrac13\\log_a y$"
+    }
+   ],
+   "certa": 1,
+   "verifica": [
+    "ig(logb(a, sqrt(x/y**3)), logb(a, x)/2-3*logb(a, y)/2)"
+   ],
+   "explicacao": "A raiz é o expoente $\\frac12$, que vem para a frente de tudo: $\\dfrac12\\log_a\\dfrac{x}{y^3}=\\dfrac12\\left(\\log_a x-3\\log_a y\\right)$. O $\\frac12$ multiplica as duas parcelas, por isso o segundo termo é $-\\dfrac32\\log_a y$. A opção com $-3\\log_a y$ esquece de multiplicar essa parcela por $\\frac12$."
+  },
+  {
+   "id": "pro-09",
+   "nivel": 2,
+   "enunciado": "Sabe-se que $\\ln 2=p$ e $\\ln 5=q$. Qual é o valor de $\\ln 40$ em função de $p$ e $q$?",
+   "opcoes": [
+    {
+     "tex": "$3pq$"
+    },
+    {
+     "tex": "$3p+q$"
+    },
+    {
+     "tex": "$p^3+q$"
+    },
+    {
+     "tex": "$3+q$"
+    }
+   ],
+   "certa": 1,
+   "verifica": [
+    "ig(ln(40), 3*ln(2)+ln(5))"
+   ],
+   "explicacao": "Como $40=2^3\\times5$, vem $\\ln40=\\ln2^3+\\ln5=3\\ln2+\\ln5=3p+q$. O produto transforma-se em soma, e não em produto ($3pq$); e o 3 multiplica $\\ln 2$, não o eleva ($p^3$). Atenção: $\\log_2 8=3$, mas $\\ln 8=3\\ln2$ e não 3."
+  },
+  {
+   "id": "pro-10",
+   "nivel": 2,
+   "enunciado": "Quanto vale $\\log_{\\sqrt3}\\dfrac{1}{27}$?",
+   "opcoes": [
+    {
+     "tex": "$-3$",
+     "valor": "-3"
+    },
+    {
+     "tex": "$-\\dfrac32$",
+     "valor": "-3/2"
+    },
+    {
+     "tex": "$6$",
+     "valor": "6"
+    },
+    {
+     "tex": "$-6$",
+     "valor": "-6"
+    }
+   ],
+   "certa": 3,
+   "ref": "logb(sqrt(3), 1/27)",
+   "explicacao": "Escreve tudo com base 3: $\\sqrt3=3^{\\frac12}$ e $\\dfrac1{27}=3^{-3}$. Procuras $x$ tal que $\\left(3^{\\frac12}\\right)^x=3^{-3}$, ou seja, $\\dfrac x2=-3$ e $x=-6$. Pela mudança de base: $\\dfrac{\\log_3\\frac1{27}}{\\log_3\\sqrt3}=\\dfrac{-3}{\\frac12}=-6$. O $-3$ ignora a raiz da base, e o $-\\dfrac32$ multiplica por $\\frac12$ em vez de dividir."
+  },
+  {
+   "id": "pro-11",
+   "nivel": 2,
+   "enunciado": "Sabendo que $p=\\ln 3$, quanto vale $\\ln\\left((-3)^2\\right)$?",
+   "opcoes": [
+    {
+     "tex": "$p^2$",
+     "valor": "ln(3)**2"
+    },
+    {
+     "tex": "$2p$",
+     "valor": "2*ln(3)"
+    },
+    {
+     "tex": "$-2p$",
+     "valor": "-2*ln(3)"
+    },
+    {
+     "tex": "$\\dfrac p2$",
+     "valor": "ln(3)/2"
+    }
+   ],
+   "certa": 1,
+   "ref": "ln((-3)**2)",
+   "explicacao": "$(-3)^2=9$, logo $\\ln9=\\ln3^2=2\\ln3=2p$. Cuidado: $\\ln\\left((-3)^2\\right)$ existe, mas não podes escrever $2\\ln(-3)$, porque $\\ln(-3)$ não existe. Em geral, para $x\\neq0$, $\\ln x^2=2\\ln|x|$. A opção $p^2$ seria $(\\ln3)^2$, e $-2p$ vem de fazer $\\ln(-3)=-\\ln3$."
+  },
+  {
+   "id": "pro-12",
+   "nivel": 3,
+   "enunciado": "Para que valores de $x$ é válida a igualdade $\\ln\\big[(x-2)(x-5)\\big]=\\ln(x-2)+\\ln(x-5)$?",
+   "opcoes": [
+    {
+     "tex": "$]2,+\\infty[$"
+    },
+    {
+     "tex": "$]-\\infty,2[\\,\\cup\\,]5,+\\infty[$"
+    },
+    {
+     "tex": "$]5,+\\infty[$"
+    },
+    {
+     "tex": "$\\mathbb{R}\\setminus\\{2,5\\}$"
+    }
+   ],
+   "certa": 2,
+   "verifica": [
+    "((x>5) == (x-2>0 and x-5>0)) and ((x<=5) or ig(ln((x-2)*(x-5)), ln(x-2)+ln(x-5)))",
+    "((t-2)*(t-5)>0) == (t<2 or t>5)"
+   ],
+   "explicacao": "A propriedade do produto exige que cada fator seja positivo, e não apenas o produto. Precisas de $x-2>0$ e de $x-5>0$, isto é, $x>5$. O primeiro membro também existe para $x<2$ (é o seu domínio, $]-\\infty,2[\\,\\cup\\,]5,+\\infty[$), mas aí o segundo membro não existe, e a igualdade não vale."
+  },
+  {
+   "id": "pro-13",
+   "nivel": 3,
+   "enunciado": "Qual é o valor de $\\dfrac{1}{\\log_4 12}+\\dfrac{1}{\\log_3 12}$?",
+   "opcoes": [
+    {
+     "tex": "$\\log_4 12+\\log_3 12$",
+     "valor": "logb(4, 12)+logb(3, 12)"
+    },
+    {
+     "tex": "$\\dfrac{7}{12}$",
+     "valor": "7/12"
+    },
+    {
+     "tex": "$\\dfrac{1}{\\log_4 12+\\log_3 12}$",
+     "valor": "1/(logb(4, 12)+logb(3, 12))"
+    },
+    {
+     "tex": "$1$",
+     "valor": "1"
+    }
+   ],
+   "certa": 3,
+   "ref": "1/logb(4, 12)+1/logb(3, 12)",
+   "explicacao": "Cada fração é o inverso de um logaritmo, por isso troca a base com o argumento: $\\dfrac1{\\log_4 12}=\\log_{12}4$ e $\\dfrac1{\\log_3 12}=\\log_{12}3$. Somando, $\\log_{12}4+\\log_{12}3=\\log_{12}12=1$. O erro $\\dfrac14+\\dfrac13=\\dfrac7{12}$ lê as bases como se não houvesse logaritmos."
+  },
+  {
+   "id": "pro-14",
+   "nivel": 3,
+   "enunciado": "Quanto vale $\\dfrac{2^{\\ln 5}}{5^{\\ln 2}}$?",
+   "opcoes": [
+    {
+     "tex": "$1$",
+     "valor": "1"
+    },
+    {
+     "tex": "$\\dfrac25$",
+     "valor": "2/5"
+    },
+    {
+     "tex": "$\\dfrac{\\ln 5}{\\ln 2}$",
+     "valor": "ln(5)/ln(2)"
+    },
+    {
+     "tex": "$\\ln\\dfrac52$",
+     "valor": "ln(5/2)"
+    }
+   ],
+   "certa": 0,
+   "ref": "2**ln(5)/5**ln(2)",
+   "explicacao": "Escreve as duas potências na base $e$: $2^{\\ln5}=e^{\\ln5\\times\\ln2}$ e $5^{\\ln2}=e^{\\ln2\\times\\ln5}$. Os expoentes são iguais, logo as potências são iguais e o quociente é 1. Em geral, para $a,b>0$, $a^{\\ln b}=b^{\\ln a}$ e, com outra base, $a^{\\log_b c}=c^{\\log_b a}$: trocam-se a base e o argumento. Não é $\\frac25$: o $\\ln$ não desaparece do expoente."
+  }
+ ]
+}

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do avaliador (logaritmos)</title>
+<!-- Testes do avaliador alargado de assets/motor/matematica.js: ln, log, logb, exp, abs, sqrt,
+     e, pi, potências, precedência, criarFuncao e corrigir com logaritmos. Os testes antigos (trigonometria)
+     continuam em /tests.html. Abrir /logaritmos/tests/motor.html ou:
+       msedge --headless=new --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8803/logaritmos/tests/motor.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
+</head>
+<body>
+<h1>Testes do avaliador (logaritmos)</h1>
+<pre id="resultado">A correr...</pre>
+<script type="module">
+import * as M from '../../assets/motor/matematica.js';
+
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const t0 = performance.now();
+
+/** Corre um teste. `fn(ok)` chama ok(condicao, mensagem); a primeira exceção também conta. */
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => {
+    if (!cond) { total++; if (erros.length < 3) erros.push(msg); }
+  };
+  try { await fn(ok); } catch (e) { total++; erros.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+const perto = (a, b, tol = 1e-12) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+const E = Math.E;
+const PI = Math.PI;
+const ln = Math.log;
+
+// ---------- escritas aceites: [texto, valor esperado, variáveis?] ----------
+const ACEITES = [
+  // ln
+  ['ln 2', ln(2)], ['ln2', ln(2)], ['ln(2)', ln(2)], ['LN(2)', ln(2)], ['ln (2)', ln(2)], ['ln e', 1], ['ln(e^3)', 3], ['ln e^2', 2], ['ln(1)', 0],
+  // log decimal e logaritmos com base
+  ['log(100)', 2], ['log 1000', 3], ['log10', 1], ['log 2', Math.log10(2)], ['log100', 2], ['log(0,01)', -2],
+  ['log_2(5)', Math.log2(5)], ['log_2 5', Math.log2(5)], ['log2(5)', Math.log2(5)], ['log2 5', Math.log2(5)],
+  ['log_{2}(5)', Math.log2(5)], ['log₂(5)', Math.log2(5)], ['log_2(8)', 3], ['log_10(1000)', 3], ['log10(1000)', 3],
+  ['log_0,5(4)', -2], ['log_{0,5}(4)', -2], ['log_(1/2)(4)', -2], ['log_3 81', 4], ['log3(9)', 2],
+  ['logb(2, 5)', Math.log2(5)], ['logb(2,5)', Math.log2(5)], ['logb(2,8)', 3], ['logb(0.5, 4)', -2], ['logb(0,5;4)', -2],
+  ['logb(2, 3+5)', 3], ['logb(logb(2,4), 8)', 3], ['logb(10, 1000)', 3],
+  // exp, abs, raízes
+  ['exp(1)', E], ['exp(0)', 1], ['abs(-3)', 3], ['abs(2-5)', 3], ['sqrt(9)', 3], ['√9', 3], ['raiz(9)', 3], ['√(1/4)', 0.5],
+  // constantes
+  ['e', E], ['pi', PI], ['π', PI], ['2e', 2 * E], ['e pi', E * PI],
+  // potências e precedência
+  ['e^2', E * E], ['e^-1', 1 / E], ['e^(-1)', 1 / E], ['e^(1+1)', E * E], ['2^(1+1)', 4], ['2^-1', 0.5], ['2^-2', 0.25],
+  ['2^3^2', 512], ['-2^2', -4], ['(-2)^2', 4], ['-(2)^2', -4], ['1/2^2', 0.25], ['2*3^2', 18], ['2^3*2', 16], ['3-2^2', -1],
+  ['2^0,5', Math.SQRT2], ['8^(1/3)', 2], ['e^ln 2', 2],
+  // funções e operações
+  ['2ln3', 2 * ln(3)], ['2 ln 3', 2 * ln(3)], ['ln 5/ln 2', ln(5) / ln(2)], ['ln(5)/ln(2)', ln(5) / ln(2)], ['ln5/ln2', ln(5) / ln(2)],
+  ['ln(2)ln(3)', ln(2) * ln(3)], ['(ln 2)^2', ln(2) ** 2], ['ln(2)^2', ln(2) ** 2], ['ln 2^2', ln(4)], ['ln sqrt 4', ln(2)],
+  ['log_2 5 - ln 3', Math.log2(5) - ln(3)], ['1+ln(e)', 2], ['−ln 2', -ln(2)], ['ln(2)×3', 3 * ln(2)],
+  // letras coladas
+  ['xlnx', 2 * ln(2), { x: 2 }], ['2lnx', 2 * ln(3), { x: 3 }], ['x e^-x', 2 * Math.exp(-2), { x: 2 }],
+  // variáveis
+  ['e^x', Math.exp(1.5), { x: 1.5 }], ['x^-2', 0.25, { x: 2 }], ['ln(2x)', ln(6), { x: 3 }], ['ln x^2', ln(9), { x: 3 }],
+  ['ln(x)^2', ln(3) ** 2, { x: 3 }], ['ln 2x', ln(2) * 3, { x: 3 }], ['log_a b', 3, { a: 2, b: 8 }], ['logb(a, b)', 4, { a: 3, b: 81 }],
+  ['pi-a', PI - 0.5, { a: 0.5 }],
+];
+await teste('avaliar aceita ' + ACEITES.length + ' escritas com logaritmos, e, potências e variáveis', (ok) => {
+  for (const [txt, esperado, vars] of ACEITES) {
+    const r = M.avaliar(txt, vars || {});
+    ok(r.ok && perto(r.valor, esperado), `«${txt}» devia dar ${esperado}, deu ${r.ok ? r.valor : r.erro}`);
+  }
+});
+
+// ---------- escritas recusadas ----------
+const RECUSADAS = [
+  'ln', 'ln()', 'ln(', 'ln(2', 'log_2', 'log_', 'logb(2)', 'logb 2 8', 'logb(2,8,3)', 'logb()', 'logb(2 8)',
+  'ln(0)', 'ln(-1)', 'log(0)', 'log(-10)', 'logb(1, 5)', 'logb(0, 5)', 'logb(-2, 8)', 'logb(2, -8)', 'logb(2, 0)',
+  'sqrt(-1)', '√-1', 'ln -2', 'abs -3', 'foo(2)', 'seno(1)', '2+', '*3', '1/ln(1)', '1/0', 'x', 'ln x', 'y^2', 'abc', 'e+',
+  '2 3', 'ln 2 3', '1,5,3', '2..3', '(1/2', '1/2)', '@#', 'exp(1000)', 'exp(1000)-exp(1000)', '0^-1', '(-8)^(1/3)', 'log;2',
+];
+await teste('avaliar recusa ' + RECUSADAS.length + ' escritas inválidas ou fora do domínio', (ok) => {
+  for (const txt of RECUSADAS) {
+    const r = M.avaliar(txt);
+    ok(!r.ok, `«${txt}» devia ser inválido mas deu ${r.valor}`);
+  }
+});
+
+await teste('avaliar: precedência e associatividade do «^»', (ok) => {
+  const v = (s, vars) => M.avaliar(s, vars).valor;
+  ok(v('-2^2') === -4, '-2^2 = -4');
+  ok(v('2^3^2') === 512, '2^3^2 = 2^9');
+  ok(v('(2^3)^2') === 64, '(2^3)^2 = 64');
+  ok(v('2^-1^2') === 0.5, '2^-1^2 = 2^(-(1^2))');
+  ok(v('x^-2', { x: 4 }) === 1 / 16, 'x^-2');
+  ok(v('e^-x', { x: 0 }) === 1, 'e^-x em 0');
+  ok(perto(v('e^2x', { x: 3 }), E * E * 3), 'e^2x = (e^2)·x (o expoente acaba antes da multiplicação implícita)');
+  ok(v('2^x+1', { x: 3 }) === 9, '2^x+1 = (2^x)+1');
+  ok(v('ln 2x', { x: 3 }) !== ln(6), 'ln 2x NÃO é ln(2x): é (ln 2)·x');
+  ok(perto(v('ln 2x', { x: 3 }), 3 * ln(2)), 'ln 2x = (ln 2)·x');
+  ok(perto(v('ln x^2', { x: 3 }), ln(9)), 'ln x^2 = ln(x^2)');
+  ok(perto(v('ln(x)^2', { x: 3 }), ln(3) ** 2), 'ln(x)^2 = (ln x)^2');
+  ok(v('1/2x', { x: 4 }) === 2, '1/2x = (1/2)·x, como na escrita antiga: lê-se (1/2) e depois x');
+});
+
+await teste('avaliar: e e pi como constantes, variável com o mesmo nome tem prioridade', (ok) => {
+  ok(M.avaliar('e').valor === E, 'e sem variáveis');
+  ok(M.avaliar('e', { e: 5 }).valor === 5, 'e como variável');
+  ok(M.avaliar('e^2', { e: 3 }).valor === 9, 'e^2 com e = 3');
+  ok(M.avaliar('2e', { e: 3 }).valor === 6, '2e com e = 3');
+  ok(M.avaliar('pi', { pi: 3 }).valor === 3, 'pi como variável');
+  ok(M.avaliar('pi').valor === PI, 'pi sem variáveis');
+  ok(M.avaliar('exp(e)', { e: 0 }).valor === 1, 'exp(e) com e = 0');
+  ok(M.avaliar('E').valor === E, 'E maiúsculo também');
+});
+
+await teste('avaliar: marcas «dec» e «raizDenominador» continuam a funcionar com logaritmos', (ok) => {
+  ok(M.avaliar('0,69').dec === true, '0,69 é decimal');
+  ok(M.avaliar('ln 2').dec === false, 'ln 2 não é decimal');
+  ok(M.avaliar('log_2 0,5').dec === true, 'log_2 0,5 tem decimal');
+  ok(M.avaliar('1/√2').raizDenominador === true, '1/√2 tem raiz no denominador');
+  ok(M.avaliar('ln 2/√2').raizDenominador === true, 'ln 2/√2 tem raiz no denominador');
+  ok(M.avaliar('√2/ln 2').raizDenominador === false, '√2/ln 2 não tem raiz no denominador');
+});
+
+await teste('avaliar: valores exatos de logaritmos de potências (sem erro de arredondamento)', (ok) => {
+  for (let k = -6; k <= 6; k++) {
+    ok(M.avaliar(`log(10^${k < 0 ? `(${k})` : k})`).valor === k, `log(10^${k})`);
+    ok(M.avaliar(`logb(2, 2^${k < 0 ? `(${k})` : k})`).valor === k, `logb(2, 2^${k})`);
+    ok(M.avaliar(`logb(3, 3^${k < 0 ? `(${k})` : k})`).valor === k, `logb(3, 3^${k})`);
+  }
+  ok(M.avaliar('logb(5, 125)').valor === 3, 'logb(5, 125)');
+  ok(M.avaliar('logb(0.25, 16)').valor === -2, 'logb(0.25, 16)');
+});
+
+// ---------- criarFuncao ----------
+await teste('criarFuncao: devolve funções corretas (x ln x, e^-x·x, 2^x, log, logb)', (ok) => {
+  const f = M.criarFuncao('x*ln(x)');
+  ok(f(1) === 0, 'x ln x em 1');
+  ok(perto(f(E), E), 'x ln x em e');
+  ok(perto(f(0.5), 0.5 * ln(0.5)), 'x ln x em 0,5');
+  const g = M.criarFuncao('e^-x * x');
+  ok(g(0) === 0 && perto(g(1), 1 / E) && perto(g(-2), -2 * Math.exp(2)), 'e^-x·x');
+  ok(M.criarFuncao('2^x')(10) === 1024, '2^x em 10');
+  ok(M.criarFuncao('2^(x+1)')(2) === 8, '2^(x+1) em 2');
+  ok(M.criarFuncao('log(x)')(1000) === 3, 'log(1000)');
+  ok(M.criarFuncao('logb(2, x)')(8) === 3, 'logb(2,8)');
+  ok(M.criarFuncao('logb(x, 8)')(2) === 3, 'logb(x,8) em x = 2');
+  ok(perto(M.criarFuncao('ln(x-1)')(1 + E), 1), 'ln(x-1)');
+  ok(M.criarFuncao('x^-2')(2) === 0.25, 'x^-2');
+  ok(M.criarFuncao('abs(x)')(-3) === 3, 'abs');
+  ok(M.criarFuncao('√x')(16) === 4, '√x');
+  ok(M.criarFuncao('exp(x)')(0) === 1, 'exp');
+  ok(M.criarFuncao('ln x^2')(3) === ln(9), 'ln x^2');
+  ok(M.criarFuncao('7')(123) === 7, 'constante');
+  ok(M.criarFuncao('xlnx')(1) === 0, 'xlnx');
+});
+
+await teste('criarFuncao: NaN fora do domínio e nunca lança por causa do valor', (ok) => {
+  const casos = [
+    ['ln(x)', [0, -1, -1e9, -Infinity]], ['log(x)', [0, -5]], ['1/x', [0]], ['sqrt(x)', [-1, -1e-9]], ['logb(2, x)', [0, -3]],
+    ['logb(x, 8)', [1, 0, -2]], ['1/ln(x)', [1, 0]], ['ln(x^2-4)', [0, 1, 2, -2]], ['x^(1/3)', [-8]], ['0^x', [-1]], ['exp(x)', [1e4]],
+    ['e^x*e^x', [1e3]], ['1/(x-1)', [1]], ['ln(1-x)', [1, 2]],
+  ];
+  for (const [expr, xs] of casos) {
+    const f = M.criarFuncao(expr);
+    for (const x of xs) {
+      let r;
+      try { r = f(x); } catch (e) { ok(false, `criarFuncao('${expr}')(${x}) lançou ${e.message}`); continue; }
+      ok(Number.isNaN(r), `criarFuncao('${expr}')(${x}) devia ser NaN, deu ${r}`);
+    }
+  }
+  // entradas esquisitas nunca lançam e dão número finito ou NaN
+  for (const expr of ['ln(x)', 'x^x', '1/x', 'exp(x)', 'sqrt(x)', 'logb(x, x)', 'abs(x)', 'x']) {
+    const f = M.criarFuncao(expr);
+    for (const x of [undefined, null, NaN, Infinity, -Infinity, 0, -0, 1e300, -1e300, 5e-324, '3', {}]) {
+      let r;
+      try { r = f(x); } catch (e) { ok(false, `criarFuncao('${expr}')(${String(x)}) lançou`); continue; }
+      ok(typeof r === 'number' && (Number.isNaN(r) || Number.isFinite(r)), `criarFuncao('${expr}')(${String(x)}) = ${r}`);
+    }
+  }
+});
+
+await teste('criarFuncao: lança no momento da criação se a expressão for ilegível', (ok) => {
+  for (const expr of ['foo(x)', '2+', '', '   ', 'ln(', 'y', '2 3', 'x@', 'logb(2)', '(x', 'x)', 'seno(x)']) {
+    let lancou = false;
+    try { M.criarFuncao(expr); } catch { lancou = true; }
+    ok(lancou, `criarFuncao('${expr}') devia lançar`);
+  }
+});
+
+await teste('criarFuncao: nome da variável, parâmetros e reentrância', (ok) => {
+  ok(M.criarFuncao('2^t', 't')(3) === 8, 'variável t');
+  ok(M.criarFuncao('2^T', 'T')(3) === 8, 'variável T (maiúscula)');
+  ok(M.criarFuncao('a^x', 'x', { a: 3 })(2) === 9, 'parâmetro a');
+  ok(M.criarFuncao('a*x+b', 'x', { a: 2, b: -1 })(5) === 9, 'parâmetros a e b');
+  ok(M.criarFuncao('e^2', 'e')(3) === 9, 'variável com o nome e');
+  ok(M.criarFuncao('x', 'x', { x: 99 })(1) === 1, 'a variável vence um parâmetro com o mesmo nome');
+  const f = M.criarFuncao('x*2');
+  const g = M.criarFuncao('x+1');
+  ok(f(1) === 2 && g(1) === 2 && f(5) === 10 && g(5) === 6, 'duas funções independentes');
+  const h = M.criarFuncao('ln(x)+x');
+  ok(h(1) === 1 && Number.isNaN(h(-1)) && h(1) === 1, 'depois de um NaN volta a funcionar');
+});
+
+await teste('criarFuncao: dá o mesmo que avaliar nos pontos onde avaliar é válido', (ok) => {
+  const exprs = ['x*ln(x)', 'e^-x*x', '2^(x+1)', 'ln(x)/x', 'log(x)+1', 'logb(2, x)', 'sqrt(x)/2', 'x^2-3x+1', '1/x', 'abs(x-2)', 'exp(x)/x'];
+  for (const e of exprs) {
+    const f = M.criarFuncao(e);
+    for (const x of [0.25, 0.5, 1, 1.5, 2, 3, 7.5, 10]) {
+      const r = M.avaliar(e, { x });
+      ok(r.ok && perto(f(x), r.valor), `${e} em ${x}: criarFuncao ${f(x)} vs avaliar ${r.ok ? r.valor : r.erro}`);
+    }
+  }
+});
+
+// ---------- corrigir ----------
+const CORRECAO = [
+  ['ln5/ln2', { expr: 'logb(2,5)' }, 'certo'],
+  ['ln 5/ln 2', { expr: 'logb(2,5)' }, 'certo'],
+  ['log(5)/log(2)', { expr: 'logb(2,5)' }, 'certo'],
+  ['log_2 5', { expr: 'ln(5)/ln(2)' }, 'certo'],
+  ['log2(5)', { expr: 'logb(2,5)' }, 'certo'],
+  ['logb(2, 5)', { expr: 'ln 5 / ln 2' }, 'certo'],
+  ['2,32', { expr: 'logb(2,5)' }, 'decimal'],
+  ['2.3219', { expr: 'logb(2,5)' }, 'decimal'],
+  ['2,5', { expr: 'logb(2,5)' }, 'errado'],
+  ['ln 2/ln 5', { expr: 'logb(2,5)' }, 'errado'],
+  ['ln5-ln2', { expr: 'logb(2,5)' }, 'errado'],
+  ['log(3)+log(4)', { expr: 'log(12)' }, 'certo'],
+  ['ln(e^2)', { expr: '2' }, 'certo'],
+  ['2', { expr: 'ln(e^2)' }, 'certo'],
+  ['2,0', { expr: 'logb(3, 9)' }, 'certo'],
+  ['log_3 9', { expr: '2' }, 'certo'],
+  ['1/2', { expr: 'logb(4, 2)' }, 'certo'],
+  ['-1/2', { expr: 'logb(4, 1/2)' }, 'certo'],
+  ['−3', { expr: 'logb(1/2, 8)' }, 'certo'],
+  ['3', { expr: 'logb(1/2, 8)' }, 'errado'],
+  ['0,693', { expr: 'ln 2' }, 'decimal'],
+  ['0,7', { expr: 'ln 2' }, 'errado'],
+  ['e', { expr: 'exp(1)' }, 'certo'],
+  ['e^2', { expr: 'exp(2)' }, 'certo'],
+  ['1/e', { expr: 'e^-1' }, 'certo'],
+  ['ln(0)', { expr: '1' }, 'invalido'],
+  ['log(-1)', { expr: '1' }, 'invalido'],
+  ['x', { expr: '1' }, 'invalido'],
+  ['n.d.', { naoDefinida: true }, 'certo'],
+  ['ln(-2)', { naoDefinida: true }, 'errado'],
+  // comportamento antigo, que tem de ficar igual
+  ['√3/2', { expr: 'sqrt(3)/2' }, 'certo'],
+  ['1/√3', { expr: 'sqrt(3)/3' }, 'certo-forma'],
+  ['0,866', { expr: 'sqrt(3)/2' }, 'decimal'],
+  ['3π/4', { expr: '3*pi/4' }, 'certo'],
+];
+await teste('corrigir dá o estado certo em ' + CORRECAO.length + ' casos (logaritmos e antigos)', (ok) => {
+  for (const [resp, esp, estado] of CORRECAO) {
+    const r = M.corrigir(resp, esp);
+    ok(r.estado === estado, `corrigir(«${resp}», ${JSON.stringify(esp)}) = ${r.estado}, esperava ${estado}`);
+  }
+});
+
+await teste('corrigir: o esperado ilegível lança, como antes', (ok) => {
+  let lancou = false;
+  try { M.corrigir('1', { expr: 'foo(2)' }); } catch { lancou = true; }
+  ok(lancou, 'esperado ilegível devia lançar');
+});
+
+// ---------- comportamentos antigos (amostra de /tests.html) ----------
+await teste('retrocompatibilidade: escritas antigas aceites e recusadas', (ok) => {
+  for (const [txt, esperado] of [['√3/2', Math.sqrt(3) / 2], ['3π/4', 3 * PI / 4], ['2pi', 2 * PI], ['1,5', 1.5], ['2(3)', 6], ['(1/2)(3)', 1.5], ['3√2', 3 * Math.sqrt(2)],
+    ['2sqrt(3)', 2 * Math.sqrt(3)], ['−1/2', -0.5], ['-√2/2', -Math.sqrt(2) / 2], ['2×3', 6], ['1/2^2', 0.25], ['-(1/2)', -0.5], ['5π/6', 5 * PI / 6]]) {
+    const r = M.avaliar(txt);
+    ok(r.ok && perto(r.valor, esperado), `«${txt}» devia dar ${esperado}`);
+  }
+  for (const txt of ['', '   ', 'abc', '2 3', '1 2', '1,5,3', '1/0', '3+', '(1/2', '1/2)', '@#', '√-1', 'sqrt(', 'x', '2..3', '+', '/2', '3 4/5']) {
+    ok(!M.avaliar(txt).ok, `«${txt}» devia ser inválido`);
+  }
+});
+
+// ---------- resumo ----------
+const ms = Math.round(performance.now() - t0);
+linhas.push('');
+linhas.push(`(${ACEITES.length} escritas aceites, ${RECUSADAS.length} recusadas, ${CORRECAO.length} correções)`);
+linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>
