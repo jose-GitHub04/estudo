@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes dos exercícios de Probabilidades</title>
+<!-- A página probabilidades/exercicios.html real num iframe: os quatro exercícios (ex-tabela k e a, b; ex-urna; ex-normal).
+     Cada exercício é resolvido de forma independente (esperado.json, calculado em Python por tools/verificar_prob.py) e
+     comparado com o enunciado e com TODAS as linhas da resolução passo a passo, lidas do LaTeX que o ecrã mostra;
+     depois testam-se as grafias aceites, as respostas recusadas, os desenhos e a auditoria de layout.
+     Abrir /probabilidades/tests/exercicios.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8830/probabilidades/tests/exercicios.html
+     O resultado fica no elemento com id resultado e em data-testes (ok ou falhou) no elemento html. -->
+<style>
+  body { margin: 0; font: 13px/1.4 monospace; }
+  #resultado { margin: 0; padding: 0.5rem 1rem; white-space: pre-wrap; }
+  #palco { opacity: 0.6; }
+</style>
+</head>
+<body>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import {
+  criarTestes, carregarPagina, auditar, aplicarAuditoria, esperado, esperar, clicar, escrever, tecla, slider,
+  texto, numero, formulas, conferirEquacao, avaliarTex, arrastarSvg, pontosDoCaminho, densidadeNormal,
+} from './base.js';
+import { corrigirResposta } from '../widgets/ex-normal.js';
+
+const t = criarTestes('exercícios');
+const E = await esperado();
+const perto = (a, b, tol) => Math.abs(a - b) <= tol;
+const fracao = (s) => { const [n, d] = String(s).split('/').map(Number); return n / (d || 1); };
+const botaoComTexto = (raiz, txt) => [...raiz.querySelectorAll('button')].find((b) => texto(b) === txt);
+const submeter = (win, form) => form.dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+
+/** Confere todas as fórmulas de `el`; devolve o número de igualdades verificadas e acusa as falhas. */
+function conferirTudo(ok, el, vars, rotulos, nome) {
+  let n = 0;
+  const sem = [];
+  const fs = formulas(el);
+  for (const f of fs) {
+    const r = conferirEquacao(f, vars, rotulos);
+    n += r.verificada;
+    if (!r.verificada) sem.push(f.length > 38 ? `${f.slice(0, 36)}…` : f);
+    for (const m of r.falhas) ok(false, `${nome}: «${f.slice(0, 70)}» -> ${m}`);
+  }
+  t.avisos.push(`${nome}: ${fs.length} fórmulas, ${n} igualdades conferidas; sem igualdade a conferir: ${sem.join('  ;  ') || 'nenhuma'}`);
+  return n;
+}
+
+// ======================================================================
+// Exercício 1: descobrir k e valor médio
+// ======================================================================
+
+await t.teste('ex. 1 (k): enunciado, deslizador, resolução linha a linha e respostas', async (ok) => {
+  const p = await carregarPagina('../exercicios.html', 390);
+  try {
+    const w = p.q('[data-widget="ex-tabela"][data-ex="k"]');
+    const q = (s) => w.querySelector(s);
+    const e1 = E.ex1;
+    // enunciado
+    const filas = w.querySelectorAll('.exa-tabela tr');
+    const xs = [...filas[0].querySelectorAll('td')].map((td) => avaliarTex(formulas(td)[0]));
+    ok(xs.join() === e1.x.join(), `valores de x: ${xs} (esperado ${e1.x})`);
+    const ps = [...filas[1].querySelectorAll('td')].map((td) => formulas(td)[0]);
+    ok(ps.length === 4, `${ps.length} probabilidades no enunciado`);
+    for (const kk of [0, 1, 2, 3.7]) {
+      ps.forEach((tx, i) => ok(perto(avaliarTex(tx, { k: kk }), avaliarTex(e1.enunciado[i], { k: kk }), 1e-12), `enunciado, P${i} com k = ${kk}: «${tx}» vs ${e1.enunciado[i]}`));
+    }
+    ok(/1\.1\. Determina o valor de/.test(texto(w)) && /1\.2\. Calcula o valor médio/.test(texto(w)), 'faltam as alíneas 1.1 e 1.2');
+    // deslizador: k = c·0,05
+    const sl = q('input[type=range]');
+    ok(sl.min === '0' && sl.max === '40', `deslizador ${sl.min}..${sl.max}`);
+    const d = e1.enunciado.map((tx) => avaliarTex(tx, { k: 0 }));
+    const c = e1.enunciado.map((tx, i) => avaliarTex(tx, { k: 1 }) - d[i]);
+    for (let v = 0; v <= 40; v++) {
+      slider(sl, v);
+      const k = v * 0.05;
+      const soma = c.reduce((a, b) => a + b, 0) * k + d.reduce((a, b) => a + b, 0);
+      const l = texto(q('.exa-leitura'));
+      const certa = perto(soma, 1, 1e-9);
+      ok(certa === (l === 'soma = 1, está certo'), `k = ${k.toFixed(2)}: «${l}» com soma ${soma}`);
+      ok(certa === (v === 20), `só k = 1 devia dar soma 1 (k = ${k})`);
+      if (!certa) {
+        const m = /soma = ([\d,]+), (falta|passa) ([\d,]+)/.exec(l);
+        ok(!!m && perto(numero(m[1]), soma, 0.0006) && m[2] === (soma < 1 ? 'falta' : 'passa') && perto(numero(m[3]), Math.abs(1 - soma), 0.0006), `k = ${k.toFixed(2)}: «${l}» soma ${soma.toFixed(4)}`);
+      }
+      const al = q('svg.exa-fig').getAttribute('aria-label');
+      ok(al.includes(`k = ${k.toFixed(2).replace(/0$/, '').replace(/,?$/, '').replace('.', ',')}`) || al.includes(`k = ${String(k).replace('.', ',')}`), `k = ${k}: aria-label «${al.slice(0, 60)}»`);
+      const alturas = [...w.querySelectorAll('rect.exa-barra')].map((r) => Number(r.getAttribute('height')) / 120);
+      c.forEach((cj, i) => ok(perto(alturas[i], Math.min(1.04, cj * k + d[i]), 0.0006), `k = ${k}: barra ${i} com altura ${alturas[i].toFixed(4)} (esperado ${(cj * k + d[i]).toFixed(4)})`));
+    }
+    slider(sl, 20);
+    ok(texto(q('.exa-leitura-extra')).startsWith('Encontraste'), `com k = 1: «${texto(q('.exa-leitura-extra'))}»`);
+    // resolução passo a passo
+    const botao = q('.exa-botao-res');
+    let passos = 0;
+    while (!botao.hidden && passos < 20) {
+      clicar(botao);
+      passos++;
+    }
+    ok(passos === 7, `${passos} passos (esperado 7)`);
+    ok((texto(q('.exa-passos')).match(/Com denominador 12/g) || []).length === 2 && !/denominador 1[^2]/.test(texto(q('.exa-passos'))), 'a prosa da resolução devia falar sempre em denominador 12');
+    ok(!q('.exa-final').hidden, 'a resposta final devia aparecer no fim');
+    const vars = { k: fracao(e1.k), mu: fracao(e1.mu) };
+    const n = conferirTudo(ok, q('.exa-resolucao'), vars, {}, 'resolução do ex. 1');
+    ok(n >= 15, `só ${n} igualdades conferidas na resolução`);
+    const fin = formulas(q('.exa-final'));
+    ok(fin.length === 2 && perto(avaliarTex(fin[0].split('=').pop()), fracao(e1.k), 1e-12) && perto(avaliarTex(fin[1].split('=').pop()), fracao(e1.mu), 1e-12), `resposta final: ${fin}`);
+    ok(texto(q('.exa-passos')).includes('Passo 1 de 7') && texto(q('.exa-passos')).includes('Passo 7 de 7'), 'numeração dos passos');
+    // «probabilidades confirmadas»: 3/12 + 2/12 + 4/12 + 3/12 = 12/12 = 1 corresponde a p = 1/4, 1/6, 1/3, 1/4
+    ok(e1.p.map(fracao).join() === [1 / 4, 1 / 6, 1 / 3, 1 / 4].join(), 'esperado.json: probabilidades do ex. 1');
+    // respostas
+    const campos = [...w.querySelectorAll('input.exa-campo')];
+    const form = q('form.exa-resposta');
+    const tenta = (k, mu) => {
+      campos[0].value = k; campos[1].value = mu;
+      submeter(p.win, form);
+      return [texto(q('.exa-resposta__linha:nth-of-type(1) .exa-fb')), texto(q('.exa-resposta__linha:nth-of-type(2) .exa-fb')), texto(q('.exa-fb--geral'))];
+    };
+    const certo = (s) => /^Certo/.test(s);
+    for (const k of ['1', '1,0', '1.0', '2/2', '100/100', ' 1 ', '3/3']) ok(certo(tenta(k, '')[0]), `k = «${k}» devia ser aceite`);
+    for (const mu of ['7/12', '14/24', '0,5833333333', '0.5833333333', ' 7 / 12 ', '(3+4)/12', '1/4+1/3']) ok(certo(tenta('', mu)[1]), `μ = «${mu}» devia ser aceite`);
+    ok(tenta('1', '7/12')[2] === 'Está tudo certo.', 'devia dizer que está tudo certo');
+    for (const k of ['2', '0,5', '1/2', '-1', '0']) ok(/^Ainda não/.test(tenta(k, '')[0]), `k = «${k}» devia ser recusado (${tenta(k, '')[0]})`);
+    for (const mu of ['7/13', '0,5', '1/2', '7/12 + 1', '-7/12']) ok(/^Ainda não/.test(tenta('', mu)[1]), `μ = «${mu}» devia ser recusado (${tenta('', mu)[1]})`);
+    ok(/aproximação/.test(tenta('', '0,583')[1]), 'μ = 0,583 devia pedir a fração');
+    ok(/aproximação/.test(tenta('', '0,58')[1]), 'μ = 0,58 devia pedir a fração');
+    ok(/Não consegui ler/.test(tenta('abc', '')[0]) && /Não consegui ler/.test(tenta('', 'a/b')[1]), 'texto sem sentido devia dar «Não consegui ler»');
+    ok(/Escreve pelo menos uma resposta/.test(tenta('', '')[2]), 'sem nada escrito');
+    ok(!/Está tudo certo/.test(tenta('1', '1/2')[2]), 'k certo e μ errado não é «tudo certo»');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+// ======================================================================
+// Exercício 2: a e b
+// ======================================================================
+
+await t.teste('ex. 2 (a, b): enunciado, deslizadores (soma e μ), resolução linha a linha e respostas', async (ok) => {
+  const p = await carregarPagina('../exercicios.html', 390);
+  try {
+    const w = p.q('[data-widget="ex-tabela"][data-ex="ab"]');
+    const q = (s) => w.querySelector(s);
+    const e2 = E.ex2;
+    const filas = w.querySelectorAll('.exa-tabela tr');
+    const xs = [...filas[0].querySelectorAll('td')].map((td) => avaliarTex(formulas(td)[0]));
+    ok(xs.join() === e2.x.join(), `x: ${xs}`);
+    const ps = [...filas[1].querySelectorAll('td')].map((td) => formulas(td)[0]);
+    ok(ps.join() === ['a', 'b', '\\dfrac{1}{4}'].join(), `probabilidades do enunciado: ${ps}`);
+    ok(/1{,}9|1,9/.test(texto(w.querySelector('.exa-enunciado p'))) || formulas(w.querySelector('.exa-enunciado p')).some((f) => f.includes('1{,}9')), 'o enunciado devia dizer μ = 1,9');
+    const [sa, sb] = [...w.querySelectorAll('input[type=range]')];
+    const leituras = [...w.querySelectorAll('.exa-leitura')];
+    let combinacoes = 0;
+    for (let a = 0; a <= 75; a += 5) {
+      for (let b = 0; b <= 75; b += 5) {
+        slider(sa, a); slider(sb, b);
+        combinacoes++;
+        const soma = (a + b + 25) / 100;
+        const mu = (a + 2 * b + 75) / 100;
+        const somaOk = a + b === 75;
+        const muOk = a + 2 * b === 115;
+        ok(somaOk === (texto(leituras[0]) === 'soma = 1, está certo'), `a = ${a}, b = ${b}: «${texto(leituras[0])}»`);
+        ok(muOk === (texto(leituras[1]) === 'μ = 1,9, está certo'), `a = ${a}, b = ${b}: «${texto(leituras[1])}»`);
+        if (!muOk) ok(perto(numero(texto(leituras[1]).replace('μ = ', '')), mu, 0.0051), `a = ${a}, b = ${b}: «${texto(leituras[1])}» esperado μ = ${mu}`);
+      }
+    }
+    ok(combinacoes === 256, 'combinações');
+    slider(sa, 35); slider(sb, 40);
+    ok(texto(leituras[0]) === 'soma = 1, está certo' && texto(leituras[1]) === 'μ = 1,9, está certo' && texto(q('.exa-leitura-extra')).startsWith('Encontraste'), 'com a = 0,35 e b = 0,40 as duas condições devem estar certas');
+    // «Mostra outro par com soma 1»
+    const outro = botaoComTexto(w, 'Mostra outro par com soma 1');
+    const pares = new Set();
+    for (let i = 0; i < 9; i++) {
+      clicar(outro);
+      ok(texto(leituras[0]) === 'soma = 1, está certo', `par ${i}: «${texto(leituras[0])}»`);
+      pares.add(`${sa.value},${sb.value}`);
+    }
+    ok(pares.size === 8, `${pares.size} pares diferentes`);
+    // resolução
+    const botao = q('.exa-botao-res');
+    let passos = 0;
+    while (!botao.hidden && passos < 20) { clicar(botao); passos++; }
+    ok(passos === 6, `${passos} passos (esperado 6)`);
+    const vars = { a: fracao(e2.a), b: fracao(e2.b), mu: fracao(e2.muDado) };
+    const n = conferirTudo(ok, q('.exa-resolucao'), vars, {}, 'resolução do ex. 2');
+    ok(n >= 15, `só ${n} igualdades conferidas`);
+    ok(formulas(q('.exa-final')).join('|').includes('a=0{,}35=\\dfrac{7}{20}') && formulas(q('.exa-final')).join('|').includes('b=0{,}4=\\dfrac{2}{5}'), `resposta final: ${formulas(q('.exa-final'))}`);
+    // respostas
+    const campos = [...w.querySelectorAll('input.exa-campo')];
+    const form = q('form.exa-resposta');
+    const tenta = (a, b) => { campos[0].value = a; campos[1].value = b; submeter(p.win, form); return [texto(q('.exa-resposta__linha:nth-of-type(1) .exa-fb')), texto(q('.exa-resposta__linha:nth-of-type(2) .exa-fb')), texto(q('.exa-fb--geral'))]; };
+    for (const a of ['7/20', '0,35', '0.35', '35/100', '0,350', '14/40']) ok(/^Certo/.test(tenta(a, '')[0]), `a = «${a}» devia ser aceite`);
+    for (const b of ['2/5', '0,4', '0.4', '40/100', '0,40', '4/10']) ok(/^Certo/.test(tenta('', b)[1]), `b = «${b}» devia ser aceite`);
+    ok(tenta('0,35', '2/5')[2] === 'Está tudo certo.', 'tudo certo');
+    for (const a of ['0,36', '0,3', '7/21', '1/4', '0,4', '0']) ok(!/^Certo/.test(tenta(a, '')[0]), `a = «${a}» devia ser recusado`);
+    for (const b of ['0,35', '0,41', '1/2', '0,39']) ok(!/^Certo/.test(tenta('', b)[1]), `b = «${b}» devia ser recusado`);
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+// ======================================================================
+// Exercício 3: a caixa (árvore, condicionada, valor médio e desvio-padrão)
+// ======================================================================
+
+/** «3/5 × 2/4 = 3/10» -> [produto dos fatores, valor depois do =] */
+function produtoTexto(s) {
+  const [esq, dir] = s.split('=').map((x) => x.trim());
+  const f = (x) => fracao(x.replace(/\s/g, ''));
+  const fatores = esq.split('×').map(f);
+  return { produto: fatores.reduce((a, b) => a * b, 1), igual: dir === undefined ? null : f(dir) };
+}
+
+await t.teste('ex. 3 (caixa 2V + 3B): enunciado, árvore, tabela, condicionada, μ, σ e resolução', async (ok) => {
+  const p = await carregarPagina('../exercicios.html', 390);
+  try {
+    const w = p.q('[data-widget="ex-urna"]');
+    const q = (s) => w.querySelector(s);
+    const e3 = E.ex3;
+    const enun = texto(q('.exu-enunciado'));
+    ok(enun.includes('5 bolas') && enun.includes('2 vermelhas e 3 brancas') && enun.includes('sem reposição') && enun.includes('até sair uma bola vermelha'), `enunciado «${enun.slice(0, 120)}»`);
+    ok(/3\.1\./.test(enun) && /3\.2\./.test(enun) && /3\.3\./.test(enun), 'faltam as alíneas');
+    // antes de qualquer coisa a tabela tem «?»
+    ok([...w.querySelectorAll('.exu-p')].every((c) => texto(c) === '?'), 'a tabela devia começar com «?»');
+    // árvore toda
+    clicar(q('.exu-toda'));
+    const cel = [...w.querySelectorAll('.exu-p')];
+    cel.forEach((c, i) => ok(perto(avaliarTex(formulas(c)[0]), fracao(e3.tabela[i]), 1e-12), `X = ${i + 1}: célula «${formulas(c)[0]}», esperado ${e3.tabela[i]}`));
+    const soma = formulas(q('.exu-soma'));
+    ok(soma.length === 2 && soma.every((f) => conferirEquacao(f).falhas.length === 0 && perto(avaliarTex(f.split('=').pop()), 1, 1e-12)), `soma «${soma}»`);
+    // folhas: cada ramo mostra a sua conta
+    const folhas = [...w.querySelectorAll('.exu-folha')];
+    ok(folhas.length === 4, `${folhas.length} folhas`);
+    folhas.forEach((g, i) => {
+      const prod = [...g.querySelectorAll('text')].map(texto).find((s) => s.includes('=') || /^\d+\/\d+$/.test(s) && g.querySelectorAll('text').length === 0);
+      const textos = [...g.querySelectorAll('text')].map(texto);
+      const conta = textos.find((s) => /\d\/\d|^\d+\/\d+$/.test(s) && !/^X/.test(s) && s.length > 4) || textos[textos.length - 1];
+      const r = i === 0 ? { produto: fracao(textos[0]), igual: fracao(conta) } : produtoTexto(conta);
+      ok(perto(r.produto, fracao(e3.tabela[i]), 1e-12) && (r.igual === null || perto(r.igual, fracao(e3.tabela[i]), 1e-12)), `ramo X = ${i + 1}: «${conta}»`);
+    });
+    // 3.1: bola a bola (cada passo diz a probabilidade correta)
+    clicar(q('.exu-recomecar'));
+    for (let e = 1; e <= 40; e++) {
+      let n = 0;
+      let est = '';
+      do {
+        clicar(q('.exu-tirar'));
+        n++;
+        est = texto(q('.exu-estado'));
+        const m = /Bola (\d): (vermelha|branca) \(probabilidade (\d)\/(\d)\)/.exec(est);
+        ok(!!m && Number(m[1]) === n, `experiência ${e}: «${est.slice(0, 60)}»`);
+        if (m) {
+          const esperada = m[2] === 'branca' ? [3 - (n - 1), 5 - (n - 1)] : [2, 5 - (n - 1)];
+          ok(Number(m[3]) === esperada[0] && Number(m[4]) === esperada[1], `experiência ${e}, bola ${n}: ${m[2]} com ${m[3]}/${m[4]} (esperado ${esperada.join('/')})`);
+          if (m[2] === 'vermelha') ok(est.includes(`Parou: X = ${n}`), `experiência ${e}: «${est}»`);
+        }
+      } while (!/Parou/.test(est) && n < 5);
+      ok(n <= 4, `experiência ${e}: ${n} bolas (máximo 4)`);
+      const k = Number(/X = (\d)/.exec(est)[1]);
+      const resultado = /P\(X = \d\) = (.*?)\. Tira/.exec(est);
+      ok(k === n && !!resultado, `experiência ${e}: «${est}»`);
+      if (resultado) {
+        const r = produtoTexto(resultado[1].replace(/^[^0-9]*/, ''));
+        ok(perto(r.produto, fracao(e3.tabela[k - 1]), 1e-12), `experiência ${e}: P(X = ${k}) «${resultado[1]}»`);
+      }
+    }
+    // respostas 3.1
+    const resp = (al) => ({ campos: [...w.querySelectorAll(`.exu-resposta[data-al="${al}"] .exu-campo`)] });
+    const tenta = (campo, valor) => {
+      const inp = campo.querySelector('input');
+      inp.value = valor;
+      clicar(campo.querySelector('.exu-ver-resp'));
+      return texto(campo.querySelector('.exu-fb'));
+    };
+    const c31 = resp(1).campos[0];
+    for (const v of ['3/10', '0,3', '0.3', '30/100', '6/20', '0,30', '3 / 10', '(3/5)*(2/4)', '3/5*2/4']) ok(/^Certo/.test(tenta(c31, v)), `P(X=2) = «${v}»: ${tenta(c31, v)}`);
+    for (const v of ['0,31', '1/3', '0,6', '0,4', '3/5', '0', '2/5']) ok(/^Ainda não/.test(tenta(c31, v)), `P(X=2) = «${v}» devia ser recusado (${tenta(c31, v)})`);
+    ok(tenta(c31, '0,6').includes('primeira ser branca') && tenta(c31, '0,4').includes('P(X = 1)'), 'as pistas de 0,6 e 0,4');
+    ok(/Não consegui ler/.test(tenta(c31, 'abc')) && /Escreve primeiro/.test(tenta(c31, '')), 'abc e vazio');
+    // 3.2
+    const c32 = resp(2).campos[0];
+    for (const v of ['1/3', '0,3333333333', '2/6', '1/5/(3/5)', '(1/5)/(3/5)']) ok(/^Certo/.test(tenta(c32, v)), `P(X=3|X≥2) = «${v}»: ${tenta(c32, v)}`);
+    for (const v of ['1/5', '0,2', '3/5', '0,6', '1/2', '1/4']) ok(/^Ainda não/.test(tenta(c32, v)), `P(X=3|X≥2) = «${v}» devia ser recusado (${tenta(c32, v)})`);
+    ok(tenta(c32, '0,33').startsWith('Valor certo (aproximado)'), `0,33 devia ser aproximação (${tenta(c32, '0,33')})`);
+    ok(!q('.exu-conteudo[data-al="2"]').hidden, 'verificar devia abrir o desenho de 3.2');
+    clicar(botaoComTexto(q('.exu-conteudo[data-al="2"]'), 'Só X ≥ 2') || q('.exu-conteudo[data-al="2"] [data-modo="ge2"]'));
+    const lido = formulas(q('.exu-leitura'));
+    ok(lido.length >= 2 && conferirEquacao(lido[0], {}, { 'P(X=3\\midX\\geq2)': 1 / 3 }).falhas.length === 0 && lido.some((f) => f.includes('\\frac{1}{5} \\div \\frac{3}{5}') || f.includes('\\frac{1}{5}\\div')), `leitura 3.2: ${lido}`);
+    ok(lido.map((f) => { try { return avaliarTex(f.split('=').pop()); } catch { return null; } }).includes(1 / 3), `leitura 3.2 devia chegar a 1/3: ${lido}`);
+    const todo = [...w.querySelectorAll('.exu-t--todo')].map(texto);
+    ok(todo.includes('todo: 3/5'), `rótulo do todo: ${todo}`);
+    // 3.3
+    const c33a = resp(3).campos[0];
+    const c33b = resp(3).campos[1];
+    for (const v of ['2', '2,0', '2.0', '4/2', '1*0,4+2*0,3+3*0,2+4*0,1']) ok(/^Certo/.test(tenta(c33a, v)), `μ = «${v}»: ${tenta(c33a, v)}`);
+    for (const v of ['3', '1', '2,5', '1/2', '0']) ok(/^Ainda não/.test(tenta(c33a, v)), `μ = «${v}» devia ser recusado (${tenta(c33a, v)})`);
+    for (const v of ['1', '1,0', '1.00', 'sqrt(1)', '√1']) ok(/^Certo/.test(tenta(c33b, v)), `σ = «${v}»: ${tenta(c33b, v)}`);
+    for (const v of ['2', '1,1', '1/2', '0', '1,2']) ok(!/^Certo/.test(tenta(c33b, v)), `σ = «${v}» devia ser recusado (${tenta(c33b, v)})`);
+    // 3.3: parcelas
+    clicar(q('.exu-t-mu'));
+    clicar(q('.exu-t-parc'));
+    const mu = fracao(e3.mu);
+    const linhasMu = [...w.querySelectorAll('.exu-tab-mu tbody tr[data-k]')];
+    linhasMu.forEach((tr, i) => {
+      const [, pi, quad, parc] = [...tr.children].map((td) => (formulas(td)[0] ? avaliarTex(formulas(td)[0]) : null));
+      const k = i + 1;
+      ok(perto(pi, fracao(e3.tabela[i]), 1e-12) && perto(quad, (k - mu) ** 2, 1e-12) && perto(parc, fracao(e3.tabela[i]) * (k - mu) ** 2, 1e-12), `parcelas de X = ${k}: ${pi}, ${quad}, ${parc}`);
+    });
+    const sigma2 = formulas(w.querySelector('.exu-linha-soma'))[0];
+    ok(perto(avaliarTex(sigma2.split('=').pop()), fracao(e3.var), 1e-12), `σ² da última linha «${sigma2}»`);
+    for (const k of [1, 2, 3, 4]) {
+      const btn = w.querySelectorAll('.exu-tab-mu .exu-btn-x')[k - 1];
+      if (btn.getAttribute('aria-pressed') !== 'true') clicar(btn); // a seleção alterna: só se carrega se ainda não está
+      const l = formulas(q('.exu-leitura-mu'));
+      ok(l.some((f) => perto(avaliarTex(f.split('=').pop()), k - mu, 1e-12)), `desvio de X = ${k}: ${l}`);
+    }
+    // resolução passo a passo
+    const ver = q('.exu-ver');
+    clicar(ver);
+    let n = 0;
+    while (!q('.exu-prox').disabled && n < 30) { clicar(q('.exu-prox')); n++; }
+    const total = w.querySelectorAll('.exu-passo').length;
+    ok(total === 13, `${total} passos na resolução (esperado 13)`);
+    const rotulos = {
+      'P(X=1)': 0.4, 'P(X=2)': 0.3, 'P(X=3)': 0.2, 'P(X=4)': 0.1, 'P(X\\geq2)': 0.6,
+      'P(X=3\\cap X\\geq2)': 0.2, 'P(X=3\\cap X\\geq 2)': 0.2, 'P(X=3\\midX\\geq2)': 1 / 3, '1-P(X=1)': 0.6,
+    };
+    const rot = {};
+    for (const [k, v] of Object.entries(rotulos)) rot[k.replace(/\s+/g, '')] = v;
+    const nIg = conferirTudo(ok, q('.exu-passos'), { mu, sigma: fracao(String(e3.sigma)) }, rot, 'resolução do ex. 3');
+    ok(nIg >= 20, `só ${nIg} igualdades conferidas na resolução do ex. 3`);
+    ok(texto(q('.exu-passos')).includes('probabilidade condicionada'), 'a resolução devia falar de probabilidade condicionada');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+// ======================================================================
+// Exercício 4: Normal
+// ======================================================================
+
+await t.teste('ex. 4 (Normal): correção das respostas (grafias aceites e recusadas)', async (ok) => {
+  const certo = (al, v) => corrigirResposta(al, v).estado === 'certo';
+  const errado = (al, v) => corrigirResposta(al, v).estado === 'errado';
+  for (const v of ['0,6827', '0.6827', '0,683', '0,6826', ' 0,6827 ', '0,68270', '0,6830', '0,6821', '0,6833']) ok(certo('4.1', v), `4.1: «${v}» devia ser aceite`);
+  for (const v of ['0,68', '68%', '0,9545', '0,3173', '0,5', '0,6', '0,69', '1', '0', '1/2']) ok(!certo('4.1', v), `4.1: «${v}» devia ser recusado (${JSON.stringify(corrigirResposta('4.1', v))})`);
+  ok(corrigirResposta('4.1', '0,9545').dica.includes('dois desvios') && corrigirResposta('4.1', '0,3173').dica.includes('fora'), 'pistas de 4.1');
+  for (const v of ['0,02275', '0,0228', '0,023', '0.023', '0,0227', '0,02270', '0,02280', '0,0230', '0.02275']) ok(certo('4.2', v), `4.2: «${v}» devia ser aceite`);
+  for (const v of ['0,0455', '0,9545', '0,02', '0,03', '0,0225', '0,0232', '0,0235', '0,022', '0,5', '0,2275', '2,275', '0,00228']) ok(!certo('4.2', v), `4.2: «${v}» devia ser recusado (${JSON.stringify(corrigirResposta('4.2', v))})`);
+  ok(corrigirResposta('4.2', '0,0455').dica.includes('duas caudas') && corrigirResposta('4.2', '0,9545').dica.includes('centro'), 'pistas de 4.2');
+  for (const v of ['9', '9,1', '9.1', '9,10', '9,12', '400*0,02275', '400*0,0228', '400x0,023', '9,0', '8,96', '9,14']) ok(certo('4.3', v) || v === '400x0,023', `4.3: «${v}» devia ser aceite`);
+  for (const v of ['10', '8', '18,2', '18', '9,3', '8,9', '0,0228', '400', '90', '0,9']) ok(!certo('4.3', v), `4.3: «${v}» devia ser recusado (${JSON.stringify(corrigirResposta('4.3', v))})`);
+  ok(corrigirResposta('4.3', '18,2').dica.includes('duas caudas'), 'pista de 4.3');
+  for (const al of ['4.1', '4.2', '4.3']) {
+    ok(corrigirResposta(al, '').estado === 'vazio' && corrigirResposta(al, '   ').estado === 'vazio', `${al}: vazio`);
+    for (const v of ['abc', '0,5,5', '1/0', 'ln(']) ok(['invalido', 'errado'].includes(corrigirResposta(al, v).estado) && !certo(al, v), `${al}: «${v}» -> ${corrigirResposta(al, v).estado}`);
+  }
+});
+
+await t.teste('ex. 4 (Normal): enunciado, figura (μ, σ, áreas), resolução linha a linha e campos de resposta', async (ok) => {
+  const p = await carregarPagina('../exercicios.html', 390);
+  try {
+    const w = p.q('[data-widget="ex-normal"]');
+    const q = (s) => w.querySelector(s);
+    const e4 = E.ex4;
+    const enun = texto(q('.exn-enunc'));
+    ok(enun.includes('Normal') && enun.includes('400 baterias') && enun.includes('milésimas') && enun.includes('18 e 22') && enun.includes('24 horas'), `enunciado «${enun.slice(0, 140)}»`);
+    ok(formulas(q('.exn-enunc')).join() === 'X,20,2', `valores no enunciado: ${formulas(q('.exn-enunc'))}`);
+    // figura
+    const sMu = q('input[id$="-mu"]');
+    const sSg = q('input[id$="-sg"]');
+    const modo = (m) => w.querySelector(`.exn-modos [data-modo="${m}"]`);
+    const lido = () => numero(texto(q('.exn-lido')).split('≈').pop());
+    for (const [mu, sg, k, esperada] of E.exn.k) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo(`sigma${k}`));
+      ok(perto(lido(), esperada, 0.00006), `μ = ${mu}, σ = ${sg}, ${k}σ: «${texto(q('.exn-lido'))}», esperado ${esperada.toFixed(4)}`);
+    }
+    clicar(modo('livre'));
+    for (const [mu, sg, a, b, esperada] of E.exn.livre) {
+      slider(sMu, mu); slider(sSg, sg);
+      escrever(q('.exn-in-a'), String(a).replace('.', ','));
+      escrever(q('.exn-in-b'), String(b).replace('.', ','));
+      ok(perto(lido(), esperada, 0.00006), `μ = ${mu}, σ = ${sg}, P(${a} < X < ${b}): «${texto(q('.exn-lido'))}», esperado ${esperada.toFixed(4)}`);
+    }
+    // a curva e as áreas desenhadas (eixo de 12 a 28 em 416 px; densidade 0,42 em 164 px)
+    const xDe = (px) => 12 + ((px - 24) / (440 - 24 - 16)) * 16;
+    const pxDe = (x) => 24 + ((x - 12) / 16) * (440 - 24 - 16);
+    for (const [mu, sg] of [[20, 2], [16, 1], [24, 4], [22.5, 3.2]]) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo('sigma1'));
+      const pts = pontosDoCaminho(q('path.exn-curva').getAttribute('d'));
+      let pior = 0;
+      for (const [x, y] of pts) pior = Math.max(pior, Math.abs(((214 - y) / 164) * 0.42 - densidadeNormal(xDe(x), mu, sg)));
+      ok(pior < 0.0007, `μ = ${mu}, σ = ${sg}: a curva afasta-se ${pior.toFixed(4)} da densidade`);
+      for (const k of [1, 2]) {
+        clicar(modo(`sigma${k}`));
+        const a = pontosDoCaminho(q('.exn-area').getAttribute('d'));
+        const de = Math.max(12, mu - k * sg);
+        const ate = Math.min(28, mu + k * sg);
+        ok(perto(a[0][0], pxDe(de), 0.06) && perto(a[a.length - 1][0], pxDe(ate), 0.06), `μ = ${mu}, σ = ${sg}, ${k}σ: a área vai de ${a[0][0]} a ${a[a.length - 1][0]} (esperado ${pxDe(de).toFixed(1)} a ${pxDe(ate).toFixed(1)})`);
+      }
+    }
+    clicar(modo('cauda'));
+    ok(sMu.disabled && sSg.disabled && sMu.value === '20' && sSg.value === '2', 'no modo cauda os sliders ficam parados em 20 e 2');
+    const vs = [...w.querySelectorAll('.exn-tres .leitura__valor')].map((e) => numero(texto(e)));
+    ok(perto(vs[0], E.exn.cauda.esquerda, 0.000006) && perto(vs[1], E.exn.cauda.centro, 0.00006) && perto(vs[2], E.exn.cauda.direita, 0.000006), `cauda: ${vs}`);
+    ok(texto(q('.exn-lido')).includes('às milésimas dá 0,023'), `«${texto(q('.exn-lido'))}»`);
+    const rotulos = [...w.querySelectorAll('.exn-svg text.exn-area-t')].map(texto);
+    ok(rotulos.join() === '0,02275,0,9545,0,02275', `rótulos das áreas: ${rotulos}`);
+    clicar(modo('sigma1'));
+    ok(!sMu.disabled && !sSg.disabled, 'os sliders devem voltar a ficar livres');
+    // bolas (teclado e arrasto)
+    clicar(modo('livre'));
+    slider(sMu, 20); slider(sSg, 2);
+    const pegaA = [...w.querySelectorAll('.exn-pega-g')].find((g) => g.getAttribute('aria-label').startsWith('Valor a'));
+    const pegaB = [...w.querySelectorAll('.exn-pega-g')].find((g) => g.getAttribute('aria-label').startsWith('Valor b'));
+    const va = () => Number(pegaA.getAttribute('aria-valuenow'));
+    const vb = () => Number(pegaB.getAttribute('aria-valuenow'));
+    tecla(pegaA, 'Home'); tecla(pegaB, 'End');
+    ok(va() === 12 && vb() === 28, `Home e End: ${va()}, ${vb()}`);
+    tecla(pegaA, 'ArrowRight'); tecla(pegaB, 'ArrowLeft'); tecla(pegaA, 'PageUp'); tecla(pegaB, 'PageDown');
+    ok(perto(va(), 13.1, 1e-9) && perto(vb(), 26.9, 1e-9), `setas: ${va()}, ${vb()}`);
+    const svg = q('svg.exn-svg');
+    const px = (x) => 24 + ((x - 12) / 16) * (440 - 24 - 16);
+    arrastarSvg(svg, [px(va()), 214], [px(18), 214], pegaA);
+    arrastarSvg(svg, [px(vb()), 214], [px(22), 214], pegaB);
+    ok(perto(va(), 18, 0.051) && perto(vb(), 22, 0.051), `arrasto: ${va()}, ${vb()}`);
+    ok(perto(lido(), E.ex4.p41, 0.004), `P(18 < X < 22) depois de arrastar: «${texto(q('.exn-lido'))}»`);
+    // tocar na faixa do eixo agarra a bola mais próxima; longe do eixo não faz nada
+    arrastarSvg(svg, [px(15), 206], [px(17), 206]);
+    ok(perto(va(), 17, 0.051) && perto(vb(), 22, 0.051), `toque na faixa perto de a: ${va()}, ${vb()}`);
+    arrastarSvg(svg, [px(25), 222], [px(23), 222]);
+    ok(perto(va(), 17, 0.051) && perto(vb(), 23, 0.051), `toque na faixa perto de b: ${va()}, ${vb()}`);
+    arrastarSvg(svg, [px(20), 100], [px(16), 100]);
+    ok(perto(va(), 17, 0.051) && perto(vb(), 23, 0.051), `toque longe do eixo não devia mexer: ${va()}, ${vb()}`);
+    // resolução
+    clicar(q('.exn-ver'));
+    ok(q('.exn-passos').children.length === 1, 'a resolução devia abrir no passo 1');
+    for (let i = 0; i < 12 && !q('.exn-prox').disabled; i++) clicar(q('.exn-prox'));
+    ok(q('.exn-passos').children.length === 9 && q('.exn-prox').disabled, `${q('.exn-passos').children.length} passos (esperado 9)`);
+    const rot = {
+      'P(18<X<22)': e4.p41, 'P(\\mu-\\sigma<X<\\mu+\\sigma)': e4.p41, 'P(16<X<24)': e4.centro, 'P(\\mu-2\\sigma<X<\\mu+2\\sigma)': e4.centro, 'P(X>24)': e4.p42,
+    };
+    // a conta «400 × P(X>24)» no segundo membro: substituir P(X>24) pelo valor exato dentro da fórmula
+    let n = 0;
+    for (const f of formulas(q('.exn-passos'))) {
+      const r = conferirEquacao(f.replace('400 \\times P(X > 24)', `400 \\times ${e4.p42}`), { mu: e4.mu, sigma: e4.sigma }, rot);
+      n += r.verificada;
+      for (const m of r.falhas) ok(false, `resolução do ex. 4: «${f.slice(0, 70)}» -> ${m}`);
+    }
+    ok(n >= 12, `só ${n} igualdades conferidas na resolução do ex. 4`);
+    const todas = formulas(q('.exn-passos')).join(' | ');
+    ok(todas.includes('0{,}6827') && todas.includes('0{,}9545') && todas.includes('0{,}0455') && todas.includes('0{,}02275') && todas.includes('9{,}1'), 'a resolução devia chegar a 0,6827, 0,9545, 0,0455, 0,02275 e 9,1');
+    ok(texto(q('.exn-passos')).includes('0,023') && /Espera-se que cerca de \} 9.*baterias durem mais de 24 horas/.test(todas), 'a resolução devia arredondar a 0,023 e concluir cerca de 9 baterias');
+    // campos de resposta
+    const campos = [...w.querySelectorAll('.exn-resp')];
+    const tenta = (i, v) => {
+      campos[i].querySelector('input').value = v;
+      clicar(campos[i].querySelector('button'));
+      return campos[i].querySelector('.exn-fb');
+    };
+    ok(tenta(0, '0,6827').classList.contains('aviso-ok') && tenta(1, '0,023').classList.contains('aviso-ok') && tenta(2, '9').classList.contains('aviso-ok'), 'respostas certas');
+    ok(tenta(0, '0,9545').classList.contains('aviso-erro') && texto(tenta(0, '0,9545')).includes('dois desvios'), 'resposta errada 4.1');
+    ok(tenta(1, '0,0455').classList.contains('aviso-erro') && tenta(2, '18,2').classList.contains('aviso-erro'), 'respostas erradas 4.2 e 4.3');
+    ok(texto(tenta(0, '')).includes('Escreve primeiro') && texto(tenta(0, 'abc')).includes('Não consegui ler'), 'vazio e inválido');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+// ======================================================================
+// Auditoria de layout em vários estados (390 e 900 px)
+// ======================================================================
+
+for (const largura of [390, 900]) {
+  await t.teste(`exercícios a ${largura} px: auditoria em vários estados`, async (ok) => {
+    const p = await carregarPagina('../exercicios.html', largura);
+    try {
+      const nome = (s) => ({ nome: `${s}@${largura}`, largura });
+      aplicarAuditoria(auditar(p.doc, nome('exercícios inicial')), ok, t);
+      // ex. 1 e 2 com resolução e respostas
+      for (const ex of ['k', 'ab']) {
+        const w = p.q(`[data-widget="ex-tabela"][data-ex="${ex}"]`);
+        const botao = w.querySelector('.exa-botao-res');
+        while (!botao.hidden) clicar(botao);
+        const campos = [...w.querySelectorAll('input.exa-campo')];
+        campos[0].value = '9'; campos[1].value = 'abc';
+        submeter(p.win, w.querySelector('form.exa-resposta'));
+        aplicarAuditoria(auditar(p.doc, nome(`ex-${ex} resolvido`)), ok, t);
+      }
+      const sl = p.q('[data-ex="ab"] input[type=range]');
+      slider(sl, 75);
+      // ex. 3
+      const u = p.q('[data-widget="ex-urna"]');
+      clicar(u.querySelector('.exu-toda'));
+      clicar(u.querySelector('.exu-abrir[data-al="2"]'));
+      clicar(u.querySelector('[data-modo="ge2"]'));
+      clicar(u.querySelector('.exu-abrir[data-al="3"]'));
+      clicar(u.querySelector('.exu-t-mu'));
+      clicar(u.querySelector('.exu-t-parc'));
+      clicar(u.querySelectorAll('.exu-tab-mu .exu-btn-x')[3]);
+      clicar(u.querySelector('.exu-ver'));
+      while (!u.querySelector('.exu-prox').disabled) clicar(u.querySelector('.exu-prox'));
+      aplicarAuditoria(auditar(p.doc, nome('ex-urna completo')), ok, t);
+      // ex. 4
+      const nw = p.q('[data-widget="ex-normal"]');
+      for (const [mu, sg, m] of [[24, 4, 'sigma2'], [16, 1, 'livre'], [20, 2, 'cauda']]) {
+        slider(nw.querySelector('input[id$="-mu"]'), mu); slider(nw.querySelector('input[id$="-sg"]'), sg);
+        clicar(nw.querySelector(`.exn-modos [data-modo="${m}"]`));
+        await esperar(30);
+        aplicarAuditoria(auditar(p.doc, nome(`ex-normal μ=${mu} σ=${sg} ${m}`)), ok, t);
+      }
+      clicar(nw.querySelector('.exn-ver'));
+      while (!nw.querySelector('.exn-prox').disabled) clicar(nw.querySelector('.exn-prox'));
+      aplicarAuditoria(auditar(p.doc, nome('ex-normal com resolução')), ok, t);
+    } finally { p.fechar(); }
+  });
+}
+
+t.fim();
+</script>
+</body>
+</html>

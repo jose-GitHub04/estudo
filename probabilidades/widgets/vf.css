@@ -29,6 +29,10 @@
 
 .vf-enunciado { margin: 1rem 0 1.1rem; font-size: 1.15rem; line-height: 1.75; overflow-wrap: anywhere; }
 .vf-enunciado:focus { outline: none; }
+/* telemóveis estreitos (360 px): uma fórmula comprida no enunciado não quebra e sairia do cartão */
+@media (max-width: 26em) {
+  .vf-enunciado .katex { font-size: 1em; }
+}
 
 .vf-respostas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
 .vf-resp {
@@ -64,7 +68,7 @@
 .vf-resultado--errado .vf-veredito strong, .vf-resultado--errado .vf-veredito__simbolo { color: var(--erro); }
 .vf-expl { margin: 0; overflow-wrap: anywhere; }
 .vf-erro { margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px solid var(--linha); }
-.vf-erro__titulo { margin: 0 0 0.2rem; color: var(--dourado-texto); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.vf-erro__titulo { margin: 0 0 0.2rem; color: var(--castanho); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 .vf-erro__texto { margin: 0; overflow-wrap: anywhere; }
 .vf-rodape { display: flex; margin-top: 0.9rem; }
 .vf-seguinte { flex: 1 1 100%; min-height: 2.9rem; }

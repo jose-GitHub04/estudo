@@ -1,0 +1,9 @@
+/* Probabilidades: ajustes do tema por cima de assets/estilo.css.
+   As ligações do índice «Nesta página» ficam com 35 px de altura no estilo partilhado;
+   aqui sobem a 44 px (alvo de toque). Só a página da Matéria usa este ficheiro. */
+.indice a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+
+/* Em 360 px as três linhas «P(μ−kσ < X < μ+kσ) ≈ …» da regra 68-95-99,7 não cabem no cartão: letra um pouco menor. */
+@media (max-width: 26em) {
+  .resumo .katex-display > .katex { font-size: 1.05em; }
+}

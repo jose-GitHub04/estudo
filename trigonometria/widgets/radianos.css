@@ -1,7 +1,7 @@
 /* radianos: radianos, arco e setor circular. Classes com prefixo .rad- */
 
 .rad [hidden] { display: none !important; }
-.rad .chip { min-height: 2.5rem; }
+.rad .chip { min-height: 2.75rem; }
 
 .rad-corpo { display: grid; gap: 0.2rem; }
 .rad-fig, .rad-info { min-width: 0; }

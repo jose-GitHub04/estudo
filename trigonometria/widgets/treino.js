@@ -43,6 +43,18 @@ function colarPontuacao(raiz) {
   }
 }
 
+/**
+ * Uma fórmula colada à pontuação não quebra (.tre-cola). Se for mais larga do que a linha
+ * (a 390 px, uma expressão comprida), deixa-se partir como qualquer outra, senão o texto
+ * ficava cortado. Só se pode medir depois de o nó estar no ecrã.
+ */
+function soltarColas(no) {
+  for (const cola of no.querySelectorAll('.tre-cola')) {
+    const caixa = cola.closest('p, li, div');
+    if (caixa && cola.getBoundingClientRect().width > caixa.clientWidth) cola.classList.add('tre-cola--livre');
+  }
+}
+
 /** Texto com $...$ já convertido em fórmulas. */
 function comFormulas(tag, classe, texto) {
   const e = h(tag, { class: classe });
@@ -130,6 +142,7 @@ export async function montar(el, dados, extra = {}) {
 
   function mostrar(no, foco) {
     raiz.replaceChildren(no);
+    soltarColas(raiz);
     if (foco) foco.focus();
   }
 
@@ -233,6 +246,7 @@ export async function montar(el, dados, extra = {}) {
       feedback.replaceChildren(...mensagem, h('div', { class: 'tre-explicacao' },
         h('p', { class: 'tre-explicacao__titulo' }, 'Explicação'),
         comFormulas('p', 'tre-explicacao__texto', p.explicacao)));
+      soltarColas(feedback);
       rodape.append(seguinte);
       seguinte.focus();
     }

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes da página Matéria (logaritmos), a 390 e a 900 px</title>
+<!-- Carrega a página real logaritmos/materia.html num <iframe> do mesmo sítio, com a largura de um telemóvel (390 px)
+     e de um ecrã médio (900 px), e percorre os estados dos sete widgets que dela fazem parte (exponencial, logaritmo,
+     inversa, propriedades, derivadas, limites, estudo). Em cada estado confere:
+       - a página ficou pronta, sem avisos de erro nem .katex-error, e sem «$» por desenhar (um «<» dentro de $...$ já
+         comeu texto: o HTML lia «x<e» como uma etiqueta);
+       - sem scroll horizontal da página (scrollWidth <= largura) e nenhum elemento do widget fora do ecrã;
+       - nenhum texto dos gráficos SVG em cima de outro texto;
+       - a escada do logaritmo sem valores cortados;
+       - alvos de toque (botões, sliders, pontos arrastáveis) com pelo menos 44 px (a 390 px).
+     Abrir /logaritmos/tests/materia.html ou:
+       msedge --headless=new --window-size=500,900 --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8826/logaritmos/tests/materia.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<style>
+  body { font: 13px/1.4 monospace; padding: 1rem; }
+  #resultado { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Testes da página Matéria</h1>
+<pre id="resultado">A correr...</pre>
+<script type="module">
+const saida = document.getElementById('resultado');
+const linhas = [];
+let nFalhas = 0;
+const erros = [];
+window.addEventListener('error', (e) => erros.push(e.message));
+window.addEventListener('unhandledrejection', (e) => erros.push(String(e.reason)));
+const espera = (ms = 30) => new Promise((r) => setTimeout(r, ms));
+
+async function teste(nome, fn) {
+  const falhas = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (falhas.length < 5) falhas.push(typeof msg === 'function' ? msg() : msg); } };
+  try { await fn(ok); } catch (e) { total++; falhas.push('exceção: ' + (e && e.message)); }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + falhas.join(' | ') + (total > falhas.length ? ` (+${total - falhas.length} falhas)` : ''));
+  }
+}
+
+async function abrir(largura) {
+  const f = document.createElement('iframe');
+  f.style.cssText = `width:${largura}px;height:900px;border:0;position:absolute;left:-9999px;top:0`;
+  f.src = '../materia.html';
+  document.body.append(f);
+  for (let i = 0; i < 200 && !(f.contentDocument && f.contentDocument.documentElement.dataset.pronto); i++) await espera(50);
+  return f;
+}
+
+// ---------- verificações sobre a página aberta ----------
+
+const visivel = (e) => !!e.getClientRects().length;
+
+/** Textos de um SVG cujas caixas se sobrepõem. */
+function textosQueSeTocam(raiz) {
+  const out = [];
+  for (const svg of raiz.querySelectorAll('svg')) {
+    const caixas = [...svg.querySelectorAll('text')].filter((t) => t.textContent.trim() && visivel(t) && getComputedStyle(t).display !== 'none')
+      .map((t) => ({ s: t.textContent.trim(), r: t.getBoundingClientRect() }));
+    for (let i = 0; i < caixas.length; i++) {
+      for (let j = i + 1; j < caixas.length; j++) {
+        const a = caixas[i].r;
+        const b = caixas[j].r;
+        // as caixas dos textos incluem a entrelinha: conta-se só o miolo (60 % da altura), onde estão as letras
+        const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const oy = Math.min(a.bottom - 0.2 * a.height, b.bottom - 0.2 * b.height) - Math.max(a.top + 0.2 * a.height, b.top + 0.2 * b.height);
+        if (ox > 1.5 && oy > 1) out.push(`«${caixas[i].s}» e «${caixas[j].s}»`);
+      }
+    }
+  }
+  return out;
+}
+
+/** Elementos do widget que passam do limite direito do ecrã sem estarem dentro de uma caixa com scroll. */
+function foraDoEcra(doc, raiz) {
+  const W = doc.documentElement.clientWidth;
+  const out = [];
+  for (const e of raiz.querySelectorAll('*')) {
+    if (e.closest('.katex-mathml') || e.closest('.sr-only') || e.closest('[hidden]') || !visivel(e)) continue;
+    const r = e.getBoundingClientRect();
+    if (r.right <= W + 0.5 && r.left >= -0.5) continue;
+    let a = e.parentElement;
+    let cortado = false;
+    while (a && a !== doc.body) {
+      if (/(auto|scroll|hidden|clip)/.test(getComputedStyle(a).overflowX)) {
+        const ar = a.getBoundingClientRect();
+        if (ar.right <= W + 0.5 && ar.left >= -0.5) { cortado = true; break; }
+      }
+      a = a.parentElement;
+    }
+    if (!cortado) out.push(`${e.tagName}.${e.getAttribute('class') || ''} ${Math.round(r.left)}..${Math.round(r.right)}`);
+  }
+  return out;
+}
+
+/** Nós de texto com «$» (fórmulas por desenhar) dentro do widget. */
+function dolaresSoltos(raiz) {
+  const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+  const out = [];
+  let t;
+  while ((t = w.nextNode())) {
+    if (t.parentElement.closest('.katex-mathml, script, style')) continue;
+    if (t.textContent.includes('$')) out.push(t.textContent.trim().slice(0, 40));
+  }
+  return out;
+}
+
+/** Verificações comuns a qualquer estado de um widget. */
+function conferir(ok, f, id, estado, { svg = true } = {}) {
+  const doc = f.contentDocument;
+  const raiz = doc.getElementById(id);
+  const de = doc.documentElement;
+  const quem = `${id}, ${estado}, ${f.clientWidth}px`;
+  ok(de.scrollWidth <= de.clientWidth + 1, () => `${quem}: scroll horizontal da página (${de.scrollWidth} > ${de.clientWidth})`);
+  const fora = foraDoEcra(doc, raiz);
+  ok(fora.length === 0, () => `${quem}: fora do ecrã: ${fora.slice(0, 3).join('; ')}`);
+  ok(raiz.querySelectorAll('.aviso-erro, .katex-error').length === 0, `${quem}: aviso de erro ou .katex-error`);
+  const d = dolaresSoltos(raiz);
+  ok(d.length === 0, () => `${quem}: fórmulas por desenhar: ${d.slice(0, 2).join(' | ')}`);
+  if (svg) {
+    const t = textosQueSeTocam(raiz);
+    ok(t.length === 0, () => `${quem}: textos do gráfico em cima uns dos outros: ${t.slice(0, 3).join('; ')}`);
+  }
+}
+
+// ---------- ações sobre a página ----------
+
+const clicar = async (f, el) => { el.click(); await espera(40); };
+const botao = (raiz, texto, sel = 'button') => [...raiz.querySelectorAll(sel)].find((b) => b.textContent.trim() === texto);
+async function slider(f, input, v) {
+  input.value = String(v);
+  input.dispatchEvent(new f.contentWindow.Event('input', { bubbles: true }));
+  await espera(40);
+}
+async function escrever(f, campo, texto) {
+  campo.value = texto;
+  campo.dispatchEvent(new f.contentWindow.Event('input', { bubbles: true }));
+  campo.dispatchEvent(new f.contentWindow.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await espera(40);
+}
+
+const cenarios = {
+  async exponencial(f, ok) {
+    const raiz = f.contentDocument.getElementById('exponencial');
+    conferir(ok, f, 'exponencial', 'inicial');
+    const cursor = raiz.querySelector('input[type="range"]');
+    for (const a of [0.2, 0.5, 0.85, 1, 1.5, 2.5, 3.7, 5]) { await slider(f, cursor, a); conferir(ok, f, 'exponencial', `a = ${a}`); }
+    for (const r of ['½', '2', 'e', '3', '10']) { await clicar(f, botao(raiz, r, '.exp-chip')); conferir(ok, f, 'exponencial', `atalho ${r}`); }
+    await clicar(f, raiz.querySelector('.exp-caixa'));
+    for (const r of ['½', '2', '3', '10']) { await clicar(f, botao(raiz, r, '.exp-chip')); conferir(ok, f, 'exponencial', `atalho ${r} com e^x`); }
+    await clicar(f, raiz.querySelector('.exp-caixa'));
+  },
+  async logaritmo(f, ok) {
+    const raiz = f.contentDocument.getElementById('logaritmo');
+    conferir(ok, f, 'logaritmo', 'inicial', { svg: false });
+    const campos = raiz.querySelectorAll('.lg-campo');
+    for (const [b, y] of [['2', '8'], ['e', '100'], ['1/2', '1/8'], ['10', '100'], ['3', '0'], ['2', '−4']]) {
+      await clicar(f, raiz.querySelector(`[data-base="${b}"]`));
+      await clicar(f, raiz.querySelector(`[data-y="${y}"]`));
+      const calc = raiz.querySelector('.lg-calculo-botao');
+      if (!calc.disabled) { await clicar(f, calc); }
+      conferir(ok, f, 'logaritmo', `${b}, ${y}`, { svg: false });
+      const escada = raiz.querySelector('.lg-degraus');
+      ok(!escada || escada.scrollWidth <= escada.clientWidth + 1, `logaritmo, ${b}, ${y}: degraus cortados (${escada && escada.scrollWidth} > ${escada && escada.clientWidth})`);
+      if (!calc.disabled) await clicar(f, calc);
+    }
+    await escrever(f, campos[0], 'e');
+    await escrever(f, campos[1], 'e^3');
+    const calc = raiz.querySelector('.lg-calculo-botao');
+    await clicar(f, calc);
+    conferir(ok, f, 'logaritmo', 'e, e^3', { svg: false });
+    ok(!/Como e3=e3|Como \$e\^3=e\^\{3\}/.test(raiz.querySelector('.lg-resultado').textContent), 'logaritmo: «Como e³ = e³» não devia aparecer');
+    await clicar(f, calc);
+  },
+  async inversa(f, ok) {
+    const raiz = f.contentDocument.getElementById('inversa');
+    conferir(ok, f, 'inversa', 'inicial');
+    const cursor = raiz.querySelector('input[type="range"]');
+    for (const a of [0.25, 0.5, 2, 3, 5]) { await slider(f, cursor, a); conferir(ok, f, 'inversa', `a = ${a}`); }
+    for (const r of ['½', '2', 'e', '3', '10']) { await clicar(f, botao(raiz, r, '.inv-chip')); conferir(ok, f, 'inversa', `base ${r}`); }
+    const ponto = raiz.querySelector('[role="slider"]');
+    for (const k of ['Home', 'End', 'ArrowRight']) {
+      ponto.dispatchEvent(new f.contentWindow.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+      await espera(40);
+      conferir(ok, f, 'inversa', `ponto ${k}`);
+    }
+    await clicar(f, raiz.querySelector('.inv-dobrar'));
+    conferir(ok, f, 'inversa', 'sem dobra');
+  },
+  async propriedades(f, ok) {
+    const raiz = f.contentDocument.getElementById('propriedades');
+    const bases = () => [...raiz.querySelectorAll('.pro-base:not(.pro-base--nova) [data-base]')];
+    for (const aba of ['produto', 'quociente', 'potencia', 'inverso', 'mudanca', 'cuidado']) {
+      await clicar(f, raiz.querySelector(`[data-aba="${aba}"]`));
+      conferir(ok, f, 'propriedades', aba);
+      for (const b of bases()) { await clicar(f, b); conferir(ok, f, 'propriedades', `${aba}, base ${b.dataset.base}`); }
+      const sl = [...raiz.querySelectorAll('.pro-slider')];
+      for (const [ix, iy] of [[0, 35], [35, 0], [10, 10], [19, 13]]) {
+        await slider(f, sl[0], ix);
+        await slider(f, sl[1], iy);
+        conferir(ok, f, 'propriedades', `${aba}, x e y nos índices ${ix} e ${iy}`);
+      }
+    }
+  },
+  async derivadas(f, ok) {
+    const raiz = f.contentDocument.getElementById('derivadas');
+    for (const chip of raiz.querySelectorAll('[data-fn]')) {
+      await clicar(f, chip);
+      conferir(ok, f, 'derivadas', chip.dataset.fn);
+      const ponto = raiz.querySelector('[role="slider"]');
+      for (const k of ['End', 'Home']) {
+        ponto.dispatchEvent(new f.contentWindow.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+        await espera(30);
+      }
+      await clicar(f, raiz.querySelector('.dv-sinal'));
+      conferir(ok, f, 'derivadas', `${chip.dataset.fn} com o sinal de f'`, { svg: false });
+      await clicar(f, raiz.querySelector('.dv-sinal'));
+    }
+  },
+  async limites(f, ok) {
+    const raiz = f.contentDocument.getElementById('limites');
+    for (const aba of raiz.querySelectorAll('.li-abas [data-id]')) {
+      await clicar(f, aba);
+      conferir(ok, f, 'limites', aba.dataset.id);
+    }
+    await clicar(f, raiz.querySelector('.li-abas [data-id="exp"]'));
+    const pExp = raiz.querySelector('.li-aba[data-aba="exp"] .li-extra input[type="range"]');
+    for (const p of [1, 2, 3, 5, 8, 10]) { await slider(f, pExp, p); conferir(ok, f, 'limites', `e^x/x^p com p = ${p}`); }
+    await clicar(f, raiz.querySelector('.li-abas [data-id="ln"]'));
+    for (const c of raiz.querySelectorAll('.li-aba[data-aba="ln"] .li-chips .chip')) { await clicar(f, c); conferir(ok, f, 'limites', `ln x/x^p, ${c.textContent}`); }
+    await clicar(f, raiz.querySelector('.li-abas [data-id="xlnx"]'));
+    for (const c of raiz.querySelectorAll('.li-aba[data-aba="xlnx"] .li-chips .chip')) { await clicar(f, c); conferir(ok, f, 'limites', `x ln x, ${c.textContent}`); }
+    await clicar(f, raiz.querySelector('.li-abas [data-id="assintotas"]'));
+    for (const fn of ['f', 'g']) {
+      await clicar(f, raiz.querySelector(`.li-aba[data-aba="assintotas"] [data-id="${fn}"]`));
+      for (const s of raiz.querySelectorAll('.li-aba[data-aba="assintotas"] .li-sentidos .chip')) { await clicar(f, s); conferir(ok, f, 'limites', `assíntotas de ${fn}, ${s.getAttribute('data-id')}`); }
+    }
+  },
+  async estudo(f, ok) {
+    const raiz = f.contentDocument.getElementById('estudo');
+    const chips = [...raiz.querySelectorAll('.es-chip')];
+    for (let i = 0; i < chips.length; i++) {
+      await clicar(f, chips[i]);
+      for (let passo = 1; passo <= 7; passo++) {
+        await clicar(f, raiz.querySelector('.es-botao--seguinte'));
+        conferir(ok, f, 'estudo', `função ${i + 1}, passo ${passo}`);
+      }
+      await clicar(f, botao(raiz, 'Recomeçar', '.es-botao'));
+      await clicar(f, botao(raiz, 'Mostrar tudo', '.es-botao'));
+      conferir(ok, f, 'estudo', `função ${i + 1}, mostrar tudo`);
+      await clicar(f, botao(raiz, 'Recomeçar', '.es-botao'));
+    }
+  },
+};
+
+// ---------- alvos de toque ----------
+
+function alvosPequenos(f) {
+  const doc = f.contentDocument;
+  const out = [];
+  for (const id of Object.keys(cenarios)) {
+    const raiz = doc.getElementById(id);
+    for (const e of raiz.querySelectorAll('button, input, [role="slider"]')) {
+      if (e.closest('[hidden]') || !visivel(e) || e.disabled || e.type === 'checkbox' || e.closest('.sr-only')) continue;
+      let r = e.getBoundingClientRect();
+      if (e.getAttribute('role') === 'slider') {
+        const alvo = e.querySelector('circle[pointer-events="all"]');
+        if (alvo) r = alvo.getBoundingClientRect();
+      }
+      if (r.width < 43.5 || r.height < 43.5) out.push(`${id}: ${e.tagName}.${e.getAttribute('class') || e.getAttribute('role')} ${Math.round(r.width)}x${Math.round(r.height)}`);
+    }
+    for (const l of raiz.querySelectorAll('label.exp-interruptor')) {
+      const r = l.getBoundingClientRect();
+      if (r.height < 43.5) out.push(`${id}: interruptor ${Math.round(r.height)}`);
+    }
+  }
+  return out;
+}
+
+// ---------- corrida ----------
+
+const t0 = performance.now();
+for (const largura of [390, 900]) {
+  const f = await abrir(largura);
+  await teste(`${largura} px: a página abre pronta, sem avisos de erro nem fórmulas por desenhar`, async (ok) => {
+    const doc = f.contentDocument;
+    ok(doc.documentElement.dataset.pronto === 'sim', 'sem data-pronto');
+    ok(doc.querySelectorAll('.aviso-erro, .katex-error').length === 0, 'aviso de erro ou .katex-error');
+    const d = dolaresSoltos(doc.getElementById('conteudo'));
+    ok(d.length === 0, () => 'fórmulas por desenhar: ' + d.slice(0, 3).join(' | '));
+    ok(doc.documentElement.scrollWidth <= doc.documentElement.clientWidth + 1, 'scroll horizontal ao abrir');
+    for (const id of Object.keys(cenarios)) ok(!!doc.querySelector(`#${id} .widget`), `falta o widget ${id}`);
+  });
+  for (const id of Object.keys(cenarios)) {
+    await teste(`${largura} px: ${id} sem estouros, sem textos sobrepostos e sem fórmulas por desenhar`, (ok) => cenarios[id](f, ok));
+  }
+  if (largura === 390) {
+    await teste('390 px: alvos de toque com pelo menos 44 px (botões, sliders e pontos arrastáveis)', async (ok) => {
+      const pequenos = alvosPequenos(f);
+      ok(pequenos.length === 0, () => pequenos.slice(0, 5).join('; '));
+    });
+  }
+  const de = f.contentDocument.documentElement;
+  await teste(`${largura} px: no fim continua sem scroll horizontal`, async (ok) => {
+    ok(de.scrollWidth <= de.clientWidth + 1, `scrollWidth ${de.scrollWidth} > ${de.clientWidth}`);
+  });
+  f.remove();
+}
+await teste('sem erros de JavaScript durante os testes', (ok) => ok(erros.length === 0, erros.slice(0, 3).join(' | ')));
+
+const ms = Math.round(performance.now() - t0);
+saida.textContent = linhas.join('\n') + `\n\n${nFalhas === 0 ? 'TUDO OK' : nFalhas + ' TESTE(S) FALHARAM'} (${linhas.length} testes, ${ms} ms)`;
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

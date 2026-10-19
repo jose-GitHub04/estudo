@@ -40,6 +40,7 @@ import { criarGrafico, arrastarNaCurva, CORES } from '../../assets/motor/grafico
 import { avaliar, criarFuncao, fmt } from '../../assets/motor/matematica.js';
 import { criar } from '../../assets/motor/svg.js';
 import { renderizar, tex } from '../../assets/motor/katex.js';
+import { amostrarCurva, caixaDoTexto, colocar, posicoesAoRedor, zonasDosEixos } from './colocacao.js';
 
 const N_PASSOS = 7;
 const ALTURA = 270; // do viewBox do gráfico (a largura é 340)
@@ -96,6 +97,35 @@ function plano(t) {
 }
 
 const txt = (t) => t.replace(/\$[^$]*\$/g, '').replace(/<[^>]*>/g, '');
+
+// Os textos dos dados vão para innerHTML. Dentro de $...$ um «<» ou «&» é matemática e não HTML
+// («$x<e$» seria lido como a etiqueta <e>, e o resto do passo desaparecia), por isso escapam-se só aí.
+const FORMULA = /\$\$[\s\S]+?\$\$|\$[^$]+?\$/g;
+const seguro = (texto) => String(texto === undefined || texto === null ? '' : texto).replace(FORMULA, (m) => m
+  .replace(/&(?![a-zA-Z]+;|#\d+;)/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;'));
+/** Cola a pontuação (e o parêntese que abre) a uma fórmula em linha, para não ficarem sozinhos no fim ou no princípio de uma linha. */
+function colarPontuacao(raiz) {
+  for (const k of raiz.querySelectorAll('.katex')) {
+    if (k.closest('.katex-display')) continue;
+    const anot = k.querySelector('annotation');
+    if (anot && anot.textContent.length > 40) continue; // fórmulas compridas podem partir-se
+    // o auto-render põe cada fórmula dentro de um <span> sem classe
+    const nodo = k.parentNode !== raiz && k.parentNode.childNodes.length === 1 ? k.parentNode : k;
+    const prox = nodo.nextSibling;
+    const ant = nodo.previousSibling;
+    const depois = prox && prox.nodeType === 3 ? /^[.,;:!?)]+/.exec(prox.data) : null;
+    const antes = ant && ant.nodeType === 3 ? /\($/.exec(ant.data) : null;
+    if (!depois && !antes) continue;
+    const cola = document.createElement('span');
+    cola.className = 'es-cola';
+    nodo.replaceWith(cola);
+    if (antes) { ant.data = ant.data.slice(0, -1); cola.append(document.createTextNode('(')); }
+    cola.append(nodo);
+    if (depois) { cola.append(document.createTextNode(depois[0])); prox.data = prox.data.slice(depois[0].length); }
+  }
+}
 const reduzido = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- Ícones (SVG): setas ↗ ↘ e concavidades ∪ ∩ ----------
@@ -378,49 +408,116 @@ export async function montar(el, dados) {
     // zona fora do domínio, desde o passo 1
     if (n >= 1) for (const f of F.faixas) g.area(() => j.y[1], f.de, f.ate, { entre: j.y[0], cor: 'zona', id: 'faixa' });
 
-    // assíntotas descobertas (a tracejado)
+    // o que os textos têm de evitar: a curva, os números e os nomes dos eixos e os outros textos
+    const FS = 12;
+    const curvaPx = amostrarCurva(g, F.fn);
+    const ocupado = zonasDosEixos(g, FS);
+    const poeTexto = (x, y, texto, pos, extra = {}) => {
+      g.rotulo(x, y, texto, { ancora: pos.ancora, dx: pos.dx, dy: pos.dy, ...extra });
+      ocupado.push(pos.caixa || caixaDoTexto(texto, g.X(x) + pos.dx, g.Y(y) + pos.dy, pos.ancora, extra.tam || FS));
+    };
+    /** O melhor sítio ao longo de um conjunto de âncoras (cada uma com as suas posições possíveis). */
+    const melhorEntre = (texto, ancoras) => {
+      let melhor = null;
+      for (const a of ancoras) {
+        const r = colocar(g, { texto, px: g.X(a.x), py: g.Y(a.y), tam: FS, opcoes: a.opcoes, curvas: [curvaPx], evitar: ocupado });
+        if (!melhor || r.custo < melhor.r.custo - 1e-9) melhor = { r, x: a.x, y: a.y };
+      }
+      return melhor;
+    };
+
+    // assíntotas descobertas (a tracejado); os textos das retas põem-se no fim, depois dos pontos
+    const textosDeRetas = [];
     for (const e of Object.values(F.elementos)) {
       if (e.tipo !== 'assintota' || e.passo < 1 || e.passo > n) continue;
-      const op = { rotulo: e.rotulo, id: e.nome };
-      if (e.orientacao === 'vertical') g.retaVertical(num(e.x), { ...op, posRotulo: 'baixo' });
-      else if (e.orientacao === 'horizontal') g.retaHorizontal(num(e.y), { ...op, posRotulo: 'dir' });
-      else {
+      if (e.orientacao === 'vertical') {
+        const xv = num(e.x);
+        g.retaVertical(xv, { id: e.nome });
+        if (e.rotulo && xv >= j.x[0] && xv <= j.x[1]) textosDeRetas.push({ e, vertical: true, v: xv });
+      } else if (e.orientacao === 'horizontal') {
+        const yh = num(e.y);
+        g.retaHorizontal(yh, { id: e.nome });
+        if (e.rotulo && yh >= j.y[0] && yh <= j.y[1]) textosDeRetas.push({ e, vertical: false, v: yh });
+      } else {
         const m = num(e.m);
         const b = num(e.b);
         const a = e.sentido === '-inf' ? j.x[0] : (e.de ?? j.x[0]);
         const z = e.sentido === '-inf' ? (e.ate ?? j.x[1]) : j.x[1];
-        g.segmento(a, m * a + b, z, m * z + b, { ...op, cor: 'assint', tracejado: true, espessura: 1.8 });
+        g.segmento(a, m * a + b, z, m * z + b, { rotulo: e.rotulo, id: e.nome, cor: 'assint', tracejado: true, espessura: 1.8 });
       }
     }
 
     // a curva: esbatida até ao passo 6, em destaque no 7
-    if (n >= N_PASSOS) g.curva(F.fn, { cor: 'exp', espessura: 3.2, rotulo: F.nome, id: 'curva' });
+    if (n >= N_PASSOS) g.curva(F.fn, { cor: 'exp', espessura: 3.2, id: 'curva' });
     else g.curva(F.fn, { cor: 'exp', espessura: 2.2, opacidade: 0.3, id: 'curva' });
 
     // troços coloridos: monotonia nos passos 3 e 4, concavidade no 5
     const passoTabela = n === 3 || n === 4 ? 3 : n === 5 ? 5 : 0;
+    const glifos = [];
     if (passoTabela) {
       const T = F.passos[passoTabela - 1].T;
       for (const t of trocosDe(T)) {
         const sd = SENTIDO[T.tipo][t.s];
         g.curva(F.fn, { cor: sd.cor, espessura: 3.6, de: t.de, ate: t.ate, id: `troco-${sd.icone}` });
-        const xm = (t.de + t.ate) / 2;
-        const ym = F.fn(xm);
-        if (Number.isFinite(ym)) {
-          const cima = sd.icone === 'baixo';
-          g.rotulo(xm, ym, sd.glifo, { ancora: 'middle', cor: sd.cor, tam: 17, peso: 700, dy: cima ? 24 : -12, dx: sd.icone === 'cresce' ? -12 : sd.icone === 'decresce' ? 12 : 0, id: `glifo-${sd.icone}` });
-        }
+        glifos.push({ t, sd });
       }
     }
 
-    // pontos descobertos
-    for (const e of Object.values(F.elementos)) {
-      if (e.tipo !== 'ponto' || e.passo < 1 || e.passo > n) continue;
+    // pontos descobertos: o rótulo fica onde os dados dizem, a não ser que aí pise a curva ou outro texto
+    const pontos = Object.values(F.elementos).filter((e) => e.tipo === 'ponto' && e.passo >= 1 && e.passo <= n);
+    for (const e of pontos) {
       g.ponto(e.xn, e.yn, { guias: e.papel !== 'zero', oco: e.papel === 'inflexao', cor: 'ponto', id: e.nome });
-      if (e.rotulo) {
-        const [anc, dx, dy] = POS_ROTULO[e.pos || 'cima'];
-        g.rotulo(e.xn, e.yn, e.rotulo, { ancora: e.ancora || anc, dx: e.dx ?? dx, dy: e.dy ?? dy, id: `${e.nome}-rotulo` });
+      ocupado.push({ x0: g.X(e.xn) - 6, x1: g.X(e.xn) + 6, y0: g.Y(e.yn) - 6, y1: g.Y(e.yn) + 6 });
+    }
+    for (const e of pontos) {
+      if (!e.rotulo) continue;
+      const [anc, dx, dy] = POS_ROTULO[e.pos || 'cima'];
+      const dados = { ancora: e.ancora || anc, dx: e.dx ?? dx, dy: e.dy ?? dy };
+      const alt = posicoesAoRedor(5, FS);
+      const opcoes = [dados, ...['cimaDir', 'baixoDir', 'cimaEsq', 'baixoEsq', 'cima', 'baixo', 'dir', 'esq'].map((k) => alt[k])];
+      const pos = colocar(g, { texto: e.rotulo, px: g.X(e.xn), py: g.Y(e.yn), tam: FS, opcoes, curvas: [curvaPx], evitar: ocupado });
+      poeTexto(e.xn, e.yn, e.rotulo, pos, { id: `${e.nome}-rotulo` });
+    }
+
+    // os símbolos ↗ ↘ ∪ ∩ de cada troço, ao lado da curva e longe dos rótulos
+    for (const { t, sd } of glifos) {
+      const fixo = sd.icone === 'cresce' ? { ancora: 'middle', dx: -12, dy: -12 } : sd.icone === 'decresce' ? { ancora: 'middle', dx: 12, dy: -12 }
+        : sd.icone === 'baixo' ? { ancora: 'middle', dx: 0, dy: 24 } : { ancora: 'middle', dx: 0, dy: -12 };
+      const alternativas = [{ ancora: 'middle', dx: 0, dy: 24 }, { ancora: 'middle', dx: 0, dy: -12 }, { ancora: 'middle', dx: -14, dy: 6 }, { ancora: 'middle', dx: 14, dy: 6 }];
+      const ancoras = [0.5, 0.38, 0.62, 0.26, 0.74].map((f) => {
+        const xm = t.de + f * (t.ate - t.de);
+        return { x: xm, y: F.fn(xm), opcoes: [fixo, ...alternativas] };
+      }).filter((a) => Number.isFinite(a.y));
+      if (!ancoras.length) continue;
+      let melhor = null;
+      for (const a of ancoras) {
+        const r = colocar(g, { texto: sd.glifo, px: g.X(a.x), py: g.Y(a.y), tam: 17, opcoes: a.opcoes, curvas: [curvaPx], evitar: ocupado });
+        if (!melhor || r.custo < melhor.r.custo - 1e-9) melhor = { r, x: a.x, y: a.y };
       }
+      poeTexto(melhor.x, melhor.y, sd.glifo, melhor.r, { ancora: 'middle', cor: sd.cor, tam: 17, peso: 700, id: `glifo-${sd.icone}` });
+    }
+
+    // textos das assíntotas: ao longo da reta, onde não pisem a curva nem outros textos
+    for (const { e, vertical, v } of textosDeRetas) {
+      const ancoras = vertical
+        ? [0.9, 0.72, 0.5, 0.3, 0.1].map((f) => ({
+          x: v, y: j.y[0] + f * (j.y[1] - j.y[0]), opcoes: [{ ancora: 'start', dx: 6, dy: 4 }, { ancora: 'end', dx: -6, dy: 4 }],
+        }))
+        : [0.9, 0.7, 0.5, 0.3].map((f) => ({
+          x: j.x[0] + f * (j.x[1] - j.x[0]), y: v, opcoes: [{ ancora: 'middle', dx: 0, dy: -7 }, { ancora: 'middle', dx: 0, dy: FS + 5 }],
+        }));
+      const m = melhorEntre(e.rotulo, ancoras);
+      poeTexto(m.x, m.y, e.rotulo, m.r, { cor: 'assint', id: `${e.nome}-rotulo` });
+    }
+
+    // o nome da função, na curva (passo 7): num sítio onde não toque no eixo nem nos outros textos
+    if (n >= N_PASSOS) {
+      const ancoras = [0.92, 0.82, 0.7, 0.58, 0.46, 0.34, 0.22].map((f) => {
+        const xc = j.x[0] + f * (j.x[1] - j.x[0]);
+        return { x: xc, y: F.fn(xc), opcoes: [{ ancora: 'middle', dx: 0, dy: -10 }, { ancora: 'middle', dx: 0, dy: FS + 8 }, { ancora: 'start', dx: 8, dy: -8 }, { ancora: 'end', dx: -8, dy: -8 }] };
+      }).filter((a) => Number.isFinite(a.y) && a.y > j.y[0] && a.y < j.y[1]);
+      const m = ancoras.length ? melhorEntre(F.nome, ancoras) : null;
+      if (m) poeTexto(m.x, m.y, F.nome, m.r, { cor: 'exp', peso: 700, id: 'curva-rotulo' });
     }
 
     const d = n === 0
@@ -436,27 +533,27 @@ export async function montar(el, dados) {
     const r = roteiro[n - 1];
     const id = `${uid}-p${n}`;
     const resumo = h('span', { class: 'es-passo__res' });
-    resumo.innerHTML = p.resumo;
+    resumo.innerHTML = seguro(p.resumo);
     const cab = h('button', { type: 'button', class: 'es-passo__cab', 'aria-expanded': 'false', 'aria-controls': `${id}-c` },
       h('span', { class: 'es-passo__num', 'aria-hidden': 'true' }, String(n)),
       h('span', { class: 'es-passo__txt' },
         h('span', { class: 'es-passo__nome' }, h('span', { class: 'sr-only' }, `Passo ${n}: `), r.titulo),
         resumo));
     const porque = h('p', { class: 'es-passo__porque' });
-    porque.innerHTML = r.porque;
+    porque.innerHTML = seguro(r.porque);
     const texto = h('div', { class: 'es-passo__texto' });
-    texto.innerHTML = p.texto;
+    texto.innerHTML = seguro(p.texto);
     const corpoEl = h('div', { class: 'es-passo__corpo', id: `${id}-c`, hidden: true }, porque, texto);
     if (p.T) corpoEl.append(criarTabela(p.T, F.nome));
     if (p.depois) {
       const dep = h('div', { class: 'es-passo__texto es-passo__depois' });
-      dep.innerHTML = p.depois;
+      dep.innerHTML = seguro(p.depois);
       corpoEl.append(dep);
     }
     if (p.cuidado) {
       const c = h('p', { class: 'es-cuidado' }, h('strong', {}, 'Atenção. '));
       const t = h('span');
-      t.innerHTML = p.cuidado;
+      t.innerHTML = seguro(p.cuidado);
       c.append(t);
       corpoEl.append(c);
     }
@@ -468,6 +565,7 @@ export async function montar(el, dados) {
     corpoEl.append(voltar);
     const li = h('li', { class: 'es-passo', 'data-n': String(n) }, h('h4', { class: 'es-passo__titulo' }, cab), corpoEl);
     renderizar(li);
+    colarPontuacao(li);
     cab.addEventListener('click', () => {
       const abrir = corpoEl.hidden;
       if (abrir) ir(n, false);

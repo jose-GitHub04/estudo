@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes da matéria de Probabilidades</title>
+<!-- A página probabilidades/materia.html real, num iframe a 390 px, com os quatro desenhos para mexer:
+     soma de dados, tabela de distribuição (e «Descobre o k»), urna e jogo, curva Normal.
+     Os números esperados vêm de esperado.json (calculados em Python, tools/verificar_prob.py).
+     Abrir /probabilidades/tests/materia.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8830/probabilidades/tests/materia.html
+     O resultado fica no elemento com id resultado e em data-testes (ok ou falhou) no elemento html. -->
+<style>
+  body { margin: 0; font: 13px/1.4 monospace; }
+  #resultado { margin: 0; padding: 0.5rem 1rem; white-space: pre-wrap; }
+  #palco { opacity: 0.6; }
+</style>
+</head>
+<body>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import {
+  criarTestes, carregarPagina, auditar, aplicarAuditoria, esperado, esperar, clicar, escrever, tecla, slider,
+  texto, numero, formulas, conferirEquacao, avaliarTex, arrastarSvg, pontosDoCaminho, densidadeNormal,
+} from './base.js';
+
+const t = criarTestes('matéria');
+const E = await esperado();
+const perto = (a, b, tol) => Math.abs(a - b) <= tol;
+const fracao = (s) => { const [n, d] = String(s).split('/').map(Number); return n / (d || 1); };
+const botaoComTexto = (raiz, txt) => [...raiz.querySelectorAll('button')].find((b) => texto(b) === txt);
+
+// ======================================================================
+// Soma de dados
+// ======================================================================
+
+await t.teste('dados: n = 1 a 12 (soma): valores médios, σ, proporções, barras e texto', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="dados"]');
+    const q = (s) => w.querySelector(s);
+    ok(texto(q('.dad-out-n')) === '6', 'n inicial devia ser 6');
+    for (let n = 1; n <= 12; n++) {
+      slider(q('input[type=range]'), n);
+      const e = E.dados[String(n)];
+      ok(texto(q('.dad-out-n')) === String(n), `n = ${n}: saída «${texto(q('.dad-out-n'))}»`);
+      ok(perto(numero(texto(q('.dad-mu')).split('=').pop()), e.mu, 0.051), `n = ${n}: μ mostrado «${texto(q('.dad-mu'))}», esperado ${e.mu}`);
+      ok(perto(numero(texto(q('.dad-sg')).split('≈').pop()), e.sigma, 0.0051), `n = ${n}: σ mostrado «${texto(q('.dad-sg'))}», esperado ${e.sigma.toFixed(3)}`);
+      for (const k of [1, 2]) {
+        ok(perto(numero(texto(q(`.dad-e${k}`))), e[`dentro${k}`], 0.00006), `n = ${n}: proporção exata a ${k}σ «${texto(q(`.dad-e${k}`))}», esperado ${e[`dentro${k}`].toFixed(4)}`);
+        ok(perto(numero(texto(q(`.dad-n${k}`))), E.regra[`k${k}`], 0.00006), `n = ${n}: proporção Normal a ${k}σ «${texto(q(`.dad-n${k}`))}»`);
+      }
+      const barras = [...w.querySelectorAll('.dad-lugar-svg rect.dad-barra')];
+      ok(barras.length === 5 * n + 1, `n = ${n}: ${barras.length} barras (esperava ${5 * n + 1})`);
+      const h = barras.map((b) => Number(b.getAttribute('height')));
+      ok(h.every((v, i) => perto(v, h[h.length - 1 - i], 0.01)), `n = ${n}: as barras não são simétricas`);
+      const topo = h.indexOf(Math.max(...h));
+      ok(h.slice(0, topo + 1).every((v, i, a) => i === 0 || v >= a[i - 1] - 1e-9), `n = ${n}: a distribuição não sobe até ao máximo`);
+      ok(texto(q('.dad-b1')) === (n === 1 ? 'Lançar o dado' : `Lançar os ${n} dados`), `n = ${n}: botão «${texto(q('.dad-b1'))}»`);
+      const aria = q('.dad-svg').getAttribute('aria-label');
+      ok(aria.includes(`de ${n} ${n === 1 ? 'dado' : 'dados'}`) && aria.includes(`${n} a ${6 * n}`), `n = ${n}: aria-label «${aria.slice(0, 90)}»`);
+      if (n === 1) ok(texto(q('.dad-frase')).includes('plana'), 'n = 1: devia dizer que a tabela é plana');
+      if (n === 2) ok(texto(q('.dad-frase')).includes('7') && texto(q('.dad-frase')).includes('6 maneiras em 36'), `n = 2: frase «${texto(q('.dad-frase'))}»`);
+      if (n === 2) {
+        // 1,2,3,4,5,6,5,4,3,2,1 em 36: alturas proporcionais
+        const c = [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
+        const mx = Math.max(...h);
+        ok(c.every((v, i) => perto(h[i] / mx, v / 6, 0.005)), `n = 2: alturas ${h.map((v) => (v / mx).toFixed(3)).join(' ')}`);
+        ok(aria.includes('o mais provável é 7 com probabilidade 0,1667'), `n = 2: aria-label «${aria.slice(60, 160)}»`);
+        ok(Object.keys(E.dadosDois).join() === '2,3,4,5,6,7,8,9,10,11,12' && E.dadosDois['7'] === '1/6', 'esperado.json: soma de dois dados');
+      }
+    }
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('dados: a curva Normal assenta no topo das barras (n = 6, 10, 12) e acompanha a média', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="dados"]');
+    const q = (s) => w.querySelector(s);
+    for (const modo of ['Soma', 'Média']) {
+      clicar(botaoComTexto(w, modo));
+      for (const n of [6, 10, 12]) {
+        slider(q('input[type=range]'), n);
+        const pts = pontosDoCaminho(q('.dad-lugar-svg path.dad-curva').getAttribute('d'));
+        const barras = [...w.querySelectorAll('.dad-lugar-svg rect.dad-barra')];
+        ok(pts.length === 161 && barras.length === 5 * n + 1, `${modo}, n = ${n}: ${pts.length} pontos e ${barras.length} barras`);
+        const yNa = (x) => { // y da curva em x, por interpolação
+          for (let i = 1; i < pts.length; i++) if (pts[i][0] >= x) return pts[i - 1][1] + ((pts[i][1] - pts[i - 1][1]) * (x - pts[i - 1][0])) / (pts[i][0] - pts[i - 1][0]);
+          return pts[pts.length - 1][1];
+        };
+        let pior = 0;
+        for (const b of barras) {
+          const xc = Number(b.getAttribute('x')) + Number(b.getAttribute('width')) / 2;
+          const topo = Number(b.getAttribute('y'));
+          const alt = Number(b.getAttribute('height'));
+          if (alt < 8) continue; // nas caudas a diferença relativa é grande e não se vê
+          pior = Math.max(pior, Math.abs(yNa(xc) - topo) / alt);
+        }
+        ok(pior < 0.09, `${modo}, n = ${n}: a curva afasta-se ${(100 * pior).toFixed(1)} % da altura de uma barra`);
+        // a reta de μ passa pelo centro da distribuição (simetria das barras)
+        const mu = Number(q('.dad-lugar-svg line.dad-mu-linha').getAttribute('x1'));
+        const xs = barras.map((b) => Number(b.getAttribute('x')) + Number(b.getAttribute('width')) / 2);
+        ok(perto(mu, (xs[0] + xs[xs.length - 1]) / 2, 0.2), `${modo}, n = ${n}: a reta de μ em ${mu} e o centro das barras em ${(xs[0] + xs[xs.length - 1]) / 2}`);
+      }
+    }
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('dados: modo «Média», curva e lançamentos (faces, soma, médias e proporções)', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="dados"]');
+    const q = (s) => w.querySelector(s);
+    const e6 = E.dados['6'];
+    // média
+    clicar(botaoComTexto(w, 'Média'));
+    ok(!q('.dad-l-media').hidden, 'a leitura da média devia aparecer');
+    ok(perto(numero(texto(q('.dad-mm')).split('≈').pop()), e6.sigma / 6, 0.0051), `σ da média «${texto(q('.dad-mm'))}», esperado ${(e6.sigma / 6).toFixed(3)}`);
+    const rot = [...w.querySelectorAll('.dad-svg text')].map(texto);
+    ok(rot.includes('Média dos n dados (S ÷ n)'), 'eixo da média sem rótulo');
+    ok([1, 2, 3, 4, 5, 6].every((v) => rot.includes(String(v))), `marcas do eixo da média: ${rot.join(' ')}`);
+    clicar(botaoComTexto(w, 'Soma'));
+    ok(q('.dad-l-media').hidden, 'a leitura da média devia esconder-se');
+    // lançar
+    clicar(q('.dad-b1'));
+    ok(texto(q('.dad-nlanc')) === '1', `lançamentos «${texto(q('.dad-nlanc'))}»`);
+    const faces = q('.dad-faces').dataset.faces.split(',').map(Number);
+    ok(faces.length === 6 && faces.every((f) => f >= 1 && f <= 6), `faces ${faces}`);
+    ok(texto(q('.dad-ultimo')) === `soma ${faces.reduce((a, b) => a + b, 0)}`, `último «${texto(q('.dad-ultimo'))}» e faces ${faces}`);
+    const dados = [...q('.dad-faces').querySelectorAll('svg.dad-dado')];
+    ok(dados.length === 6, `${dados.length} dados desenhados`);
+    ok(dados.every((d, i) => d.querySelectorAll('.dad-pip').length === faces[i]), 'o número de pintas não é o da face');
+    clicar(q('.dad-b100'));
+    clicar(q('.dad-b1000'));
+    ok(texto(q('.dad-nlanc')) === '1101', `lançamentos «${texto(q('.dad-nlanc'))}»`);
+    ok(perto(numero(texto(q('.dad-obs-media'))), 21, 0.8), `soma média observada «${texto(q('.dad-obs-media'))}»`);
+    ok(perto(numero(texto(q('.dad-o1'))), e6.dentro1, 0.08), `observada a 1σ «${texto(q('.dad-o1'))}» vs ${e6.dentro1.toFixed(4)}`);
+    ok(perto(numero(texto(q('.dad-o2'))), e6.dentro2, 0.05), `observada a 2σ «${texto(q('.dad-o2'))}» vs ${e6.dentro2.toFixed(4)}`);
+    const nObs = w.querySelectorAll('.dad-svg path.dad-obs').length;
+    ok(nObs >= 15 && nObs <= 31, `${nObs} losangos (somas de 6 a 36)`);
+    ok(q('.dad-svg').getAttribute('aria-label').includes('de 1101 lançamentos'), 'aria-label sem o número de lançamentos');
+    // a curva
+    const chk = q('.dad-chk');
+    ok(chk.checked && q('.dad-svg path.dad-curva').style.display !== 'none', 'a curva devia estar visível');
+    chk.checked = false;
+    chk.dispatchEvent(new p.win.Event('change', { bubbles: true }));
+    ok(q('.dad-svg path.dad-curva').style.display === 'none' && q('.dad-leg-curva').hidden, 'a curva devia esconder-se');
+    // mudar n apaga
+    slider(q('input[type=range]'), 5);
+    ok(texto(q('.dad-nlanc')) === '0' && texto(q('.dad-estado')).includes('apagados'), `mudar n: «${texto(q('.dad-nlanc'))}» «${texto(q('.dad-estado'))}»`);
+    clicar(q('.dad-b100'));
+    clicar(q('.dad-limpar'));
+    ok(texto(q('.dad-nlanc')) === '0' && texto(q('.dad-obs-media')) === 'sem dados', 'Limpar não limpou');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`dados a ${largura} px: auditoria em vários estados (n = 1, 2, 12, média com 1000 lançamentos)`, async (ok) => {
+    const p = await carregarPagina('../materia.html', largura);
+    try {
+      const w = p.q('[data-widget="dados"]');
+      const q = (s) => w.querySelector(s);
+      for (const [n, modo, vezes] of [[1, 'Soma', 0], [2, 'Soma', 100], [12, 'Média', 1000], [12, 'Soma', 0]]) {
+        slider(q('input[type=range]'), n);
+        clicar(botaoComTexto(w, modo));
+        if (vezes === 100) clicar(q('.dad-b100'));
+        if (vezes === 1000) clicar(q('.dad-b1000'));
+        await esperar(50);
+        aplicarAuditoria(auditar(p.doc, { nome: `dados n=${n} ${modo}@${largura}`, largura }), ok, t);
+      }
+    } finally { p.fechar(); }
+  });
+}
+
+// ======================================================================
+// Tabela de distribuição
+// ======================================================================
+
+const centesimas = (v) => (v / 100).toFixed(2).replace('.', ',');
+
+function ligarTabela(p) {
+  const w = p.q('[data-widget="tabela"]');
+  const q = (s) => w.querySelector(s);
+  const campos = [...w.querySelectorAll('input.tab-campo')];
+  const pegas = [...w.querySelectorAll('.tab-pega')];
+  const definirTudo = (c) => c.forEach((v, i) => escrever(campos[i], centesimas(v), true));
+  return { w, q, campos, pegas, definirTudo, svg: q('svg.tab-fig') };
+}
+
+await t.teste('tabela: 60 tabelas, μ, variância e desvio-padrão passo a passo', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { q, definirTudo } = ligarTabela(p);
+    let verificadas = 0;
+    for (const caso of E.tabelas) {
+      definirTudo(caso.c);
+      ok(texto(q('.tab-soma')) === 'soma = 1, está certo', `${caso.c}: «${texto(q('.tab-soma'))}»`);
+      const vars = { mu: caso.mu, sigma: caso.sigma };
+      const linhas = [...formulas(q('.tab-calculo--media')), ...formulas(q('.tab-calculo--var'))];
+      ok(linhas.length === 3 + caso.c.length + 2, `${caso.c}: ${linhas.length} linhas de cálculo`);
+      for (const l of linhas) {
+        const r = conferirEquacao(l, vars);
+        verificadas += r.verificada;
+        for (const f of r.falhas) ok(false, `${caso.c}: ${l.slice(0, 60)} -> ${f}`);
+      }
+      const finalMu = formulas(q('.tab-calculo--media')).pop();
+      ok(finalMu === `\\mu=${caso.mu.toString().replace('.', '{,}')}`, `${caso.c}: μ final «${finalMu}» (esperado ${caso.mu})`);
+      const ultimaVar = formulas(q('.tab-calculo--var')).pop();
+      ok(perto(avaliarTex(ultimaVar.split(/=|\\approx/).pop().replace(/^\s*/, ''), {}), caso.sigma, 0.00501), `${caso.c}: σ final «${ultimaVar}» (esperado ${caso.sigma.toFixed(4)})`);
+      const mu = q('text.tab-mu-texto');
+      ok(perto(numero(texto(mu)), caso.mu, 0.00006), `${caso.c}: μ no desenho «${texto(mu)}»`);
+    }
+    ok(verificadas >= 60 * 6, `só ${verificadas} igualdades conferidas`);
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('tabela: soma diferente de 1, Normalizar, Repor, campos inválidos', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { w, q, campos, definirTudo } = ligarTabela(p);
+    const muEscondido = () => q('g.tab-mu').getAttribute('visibility') === 'hidden';
+    ok(texto(q('.tab-soma')) === 'soma = 1, está certo' && !muEscondido(), 'estado inicial');
+    ok(botaoComTexto(w, 'Normalizar').disabled, 'Normalizar devia estar desligado com soma 1');
+    escrever(campos[0], '0,11', true);
+    ok(texto(q('.tab-soma')) === 'soma = 1,01, passa 0,01', `«${texto(q('.tab-soma'))}»`);
+    ok(texto(q('.tab-aviso')).includes('soma tem de dar 1'), `aviso «${texto(q('.tab-aviso'))}»`);
+    ok(texto(q('.tab-calculo--media')).includes('Primeiro faz a soma dar 1.') && muEscondido(), 'devia esperar pela soma 1');
+    ok(!botaoComTexto(w, 'Normalizar').disabled, 'Normalizar devia estar ligado');
+    clicar(botaoComTexto(w, 'Normalizar'));
+    ok(texto(q('.tab-soma')) === 'soma = 1, está certo', `depois de normalizar «${texto(q('.tab-soma'))}»`);
+    const cs = campos.map((c) => numero(c.value));
+    ok(cs.every((v, i) => perto(v, [0.11, 0.4, 0.3, 0.2][i] / 1.01, 0.0101)), `normalizado: ${cs}`);
+    definirTudo([10, 30, 30, 20]);
+    ok(texto(q('.tab-soma')) === 'soma = 0,9, falta 0,1', `«${texto(q('.tab-soma'))}»`);
+    definirTudo([0, 0, 0, 0]);
+    ok(botaoComTexto(w, 'Normalizar').disabled, 'Normalizar devia estar desligado com tudo a 0');
+    // campos inválidos
+    for (const mau of ['abc', '1,5', '-0,1', '', '0,1,2']) {
+      escrever(campos[1], mau);
+      if (mau !== '') ok(campos[1].getAttribute('aria-invalid') === 'true', `«${mau}» devia ser inválido`);
+    }
+    escrever(campos[1], '0.25');
+    ok(campos[1].getAttribute('aria-invalid') === null && texto(q('.tab-msg')) === '', 'ponto decimal devia ser aceite');
+    clicar(botaoComTexto(w, 'Repor'));
+    ok(campos.map((c) => numero(c.value)).join() === '0.1,0.4,0.3,0.2', `Repor: ${campos.map((c) => c.value).join(' ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('tabela: teclado nas barras (setas, PageUp/PageDown, Home, End) e arrasto', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { q, pegas, campos, svg } = ligarTabela(p);
+    const val = (i) => Number(pegas[i].getAttribute('aria-valuenow'));
+    ok(pegas.length === 4 && pegas.every((g) => g.getAttribute('role') === 'slider' && g.tabIndex === 0), 'as 4 barras devem ser sliders com tabindex 0');
+    tecla(pegas[0], 'ArrowUp');
+    ok(perto(val(0), 0.11, 1e-9), `ArrowUp: ${val(0)}`);
+    tecla(pegas[0], 'ArrowDown'); tecla(pegas[0], 'ArrowDown');
+    ok(perto(val(0), 0.09, 1e-9), `ArrowDown x2: ${val(0)}`);
+    tecla(pegas[1], 'PageUp');
+    ok(perto(val(1), 0.5, 1e-9), `PageUp: ${val(1)}`);
+    tecla(pegas[1], 'PageDown'); tecla(pegas[1], 'PageDown');
+    ok(perto(val(1), 0.3, 1e-9), `PageDown x2: ${val(1)}`);
+    tecla(pegas[2], 'Home');
+    ok(val(2) === 0, `Home: ${val(2)}`);
+    tecla(pegas[2], 'ArrowDown');
+    ok(val(2) === 0, 'não devia passar de 0');
+    tecla(pegas[3], 'End');
+    ok(val(3) === 1, `End: ${val(3)}`);
+    tecla(pegas[3], 'ArrowUp');
+    ok(val(3) === 1, 'não devia passar de 1');
+    ok(pegas.every((g) => g.getAttribute('aria-valuetext') && g.getAttribute('aria-label')), 'faltam aria-valuetext/aria-label');
+    ok(campos[3].value === '1', `campo da barra 3: ${campos[3].value}`);
+    // arrasto: barra x=2 para p = 0,5 (centro da barra em x = 80 + 2·88; chão em y = 190, altura 160 para p = 1)
+    arrastarSvg(svg, [80 + 2 * 88, 190 - 0.3 * 160], [80 + 2 * 88, 190 - 0.5 * 160]);
+    ok(perto(val(2), 0.5, 0.0101), `arrasto: barra 2 em ${val(2)} (esperava 0,5)`);
+    arrastarSvg(svg, [80 + 88, 190 - 0.4 * 160], [80 + 88, 190 - 1.5 * 160]);
+    ok(val(1) === 1, `arrasto acima do topo: ${val(1)} (esperava 1)`);
+    arrastarSvg(svg, [80, 190 - 0.1 * 160], [80, 190 + 40]);
+    ok(val(0) === 0, `arrasto abaixo do chão: ${val(0)} (esperava 0)`);
+    ok(texto(q('.tab-soma')).startsWith('soma ='), 'soma sem texto');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('tabela, «Descobre o k»: 40 exercícios (enunciado, equação, resposta, resolução)', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="tabela"]');
+    clicar(botaoComTexto(w, 'Descobre o k'));
+    const painel = w.querySelector('.tab-k');
+    ok(!painel.hidden, 'o painel de «Descobre o k» devia abrir');
+    const vistos = new Set();
+    let aprox = 0;
+    let linhasRes = 0;
+    for (let i = 0; i < 40; i++) {
+      const filas = painel.querySelectorAll('.tab-enunciado tr');
+      const ps = [...filas[1].querySelectorAll('td')].map((td) => formulas(td)[0]);
+      const xs = [...filas[0].querySelectorAll('td')].map((td) => numero(texto(td)));
+      ok(ps.length === 3 && xs.length === 3 && new Set(xs).size === 3, `exercício ${i}: ${ps.length} colunas, x = ${xs}`);
+      // enunciado -> k por conta própria: p = c·k + d (afins em k)
+      const d = ps.map((tx) => avaliarTex(tx, { k: 0 }));
+      const c = ps.map((tx, j) => avaliarTex(tx, { k: 1 }) - d[j]);
+      const C = c.reduce((a, b) => a + b, 0);
+      const D = d.reduce((a, b) => a + b, 0);
+      const kv = (1 - D) / C;
+      vistos.add(ps.join('|'));
+      ok(kv > 0 && c.every((cj, j) => cj * kv + d[j] >= -1e-12 && cj * kv + d[j] <= 1 + 1e-12), `exercício ${i}: k = ${kv} dá probabilidades fora de [0,1]: ${ps}`);
+      ok(ps.filter((tx) => tx.includes('k')).length >= 2, `exercício ${i}: devia ter pelo menos 2 termos em k`);
+      // opções: só uma é a equação certa
+      const opcoes = [...painel.querySelectorAll('.tab-opcao')];
+      ok(opcoes.length === 3, `exercício ${i}: ${opcoes.length} opções`);
+      const certas = opcoes.filter((b) => b.dataset.certa === 'sim');
+      ok(certas.length === 1, `exercício ${i}: ${certas.length} opções certas`);
+      for (const b of opcoes) {
+        const r = conferirEquacao(formulas(b)[0], { k: kv });
+        const verdadeira = r.falhas.length === 0 && !r.ignorada;
+        ok(verdadeira === (b.dataset.certa === 'sim'), `exercício ${i}: opção «${formulas(b)[0].slice(0, 50)}» marcada ${b.dataset.certa} mas a conta dá ${verdadeira}`);
+      }
+      // escolher uma errada (se houver) mostra a explicação e a certa fica destacada
+      const errada = opcoes.find((b) => b.dataset.certa === 'nao');
+      clicar(i % 2 ? certas[0] : errada);
+      ok(opcoes.every((b) => b.disabled) && certas[0].classList.contains('tab-opcao--certa'), `exercício ${i}: depois de escolher, a certa devia ficar marcada`);
+      const passoB = painel.querySelector('.tab-passo--b');
+      ok(!passoB.hidden, `exercício ${i}: o passo 2 devia abrir`);
+      const campoK = painel.querySelector('.tab-campo-k');
+      const fb = painel.querySelector('.tab-passo--b .tab-feedback');
+      const enviar = (txt) => { campoK.value = txt; passoB.querySelector('form').dispatchEvent(new p.win.Event('submit', { bubbles: true, cancelable: true })); };
+      // respostas erradas
+      enviar(String(kv + 1));
+      ok(/Ainda não/.test(texto(fb)) && !painel.querySelector('.tab-resolucao'), `exercício ${i}: k + 1 devia ser recusado («${texto(fb).slice(0, 40)}»)`);
+      enviar('');
+      ok(texto(fb).includes('Escreve o valor de k'), `exercício ${i}: campo vazio «${texto(fb).slice(0, 40)}»`);
+      enviar('abc');
+      ok(texto(fb).includes('Não consegui ler'), `exercício ${i}: «abc» «${texto(fb).slice(0, 40)}»`);
+      const dec = Number(kv.toFixed(2));
+      if (Math.abs(dec - kv) > 1e-9 && Math.abs(dec - kv) <= 0.006 * Math.max(1, kv)) {
+        aprox++;
+        enviar(String(dec).replace('.', ','));
+        ok(/aproximação/.test(texto(fb)) && !painel.querySelector('.tab-resolucao'), `exercício ${i}: ${dec} (aproximação) devia pedir a fração («${texto(fb).slice(0, 50)}»)`);
+      }
+      // resposta certa: fração reduzida, fração por reduzir, decimal exato (se houver)
+      let n = 1;
+      let dd = 1;
+      for (; dd <= 400; dd++) { n = Math.round(kv * dd); if (Math.abs(n / dd - kv) < 1e-12) break; }
+      ok(Math.abs(n / dd - kv) < 1e-12, `exercício ${i}: k = ${kv} não é fração pequena`);
+      enviar(`${2 * n} / ${2 * dd}`);
+      const res = painel.querySelector('.tab-resolucao');
+      ok(!!res && /Certo/.test(texto(fb)), `exercício ${i}: ${2 * n}/${2 * dd} devia ser aceite («${texto(fb).slice(0, 60)}»)`);
+      if (res) {
+        const eqs = formulas(res);
+        for (const tx of eqs) {
+          const r = conferirEquacao(tx, { k: kv });
+          linhasRes += r.verificada;
+          for (const f of r.falhas) ok(false, `exercício ${i}: resolução «${tx.slice(0, 60)}» -> ${f}`);
+        }
+        ok(eqs.some((tx) => /^k=/.test(tx)), `exercício ${i}: a resolução não tem «k = …»`);
+      }
+      ok(!!res && texto(res).includes('Confirmação'), `exercício ${i}: sem confirmação`);
+      clicar(botaoComTexto(painel, 'Outro exercício'));
+    }
+    ok(vistos.size >= 25, `só ${vistos.size} exercícios diferentes em 40`);
+    ok(linhasRes >= 40 * 3, `só ${linhasRes} igualdades das resoluções conferidas`);
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+    t.avisos.push(`tabela «Descobre o k»: ${vistos.size} exercícios diferentes em 40, ${aprox} com resposta aproximada testada, ${linhasRes} igualdades conferidas`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`tabela a ${largura} px: auditoria (mexer, soma errada, «Descobre o k» com resolução)`, async (ok) => {
+    const p = await carregarPagina('../materia.html', largura);
+    try {
+      const { w, definirTudo } = ligarTabela(p);
+      aplicarAuditoria(auditar(p.doc, { nome: `tabela inicial@${largura}`, largura }), ok, t);
+      definirTudo([0, 0, 0, 100]);
+      aplicarAuditoria(auditar(p.doc, { nome: `tabela 0,0,0,1@${largura}`, largura }), ok, t);
+      definirTudo([33, 33, 33, 33]);
+      aplicarAuditoria(auditar(p.doc, { nome: `tabela soma 0,99@${largura}`, largura }), ok, t);
+      clicar(botaoComTexto(w, 'Descobre o k'));
+      const painel = w.querySelector('.tab-k');
+      clicar(painel.querySelector('.tab-opcao'));
+      const campoK = painel.querySelector('.tab-campo-k');
+      const f = painel.querySelector('.tab-passo--b form');
+      const filas = painel.querySelectorAll('.tab-enunciado tr');
+      const ps = [...filas[1].querySelectorAll('td')].map((td) => formulas(td)[0]);
+      const d = ps.map((tx) => avaliarTex(tx, { k: 0 }));
+      const c = ps.map((tx, j) => avaliarTex(tx, { k: 1 }) - d[j]);
+      const kv = (1 - d.reduce((a, b) => a + b, 0)) / c.reduce((a, b) => a + b, 0);
+      campoK.value = String(kv * 7 + 3);
+      f.dispatchEvent(new p.win.Event('submit', { bubbles: true, cancelable: true }));
+      aplicarAuditoria(auditar(p.doc, { nome: `k errado@${largura}`, largura }), ok, t);
+      let n = 1; let dd = 1;
+      for (; dd <= 400; dd++) { n = Math.round(kv * dd); if (Math.abs(n / dd - kv) < 1e-12) break; }
+      campoK.value = `${n}/${dd}`;
+      f.dispatchEvent(new p.win.Event('submit', { bubbles: true, cancelable: true }));
+      aplicarAuditoria(auditar(p.doc, { nome: `k certo com resolução@${largura}`, largura }), ok, t);
+    } finally { p.fechar(); }
+  });
+}
+
+// ======================================================================
+// Urna e jogo
+// ======================================================================
+
+await t.teste('urna 3V + 4A: tabela, caminhos, μ, σ e seleção', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="urna"]');
+    const q = (s) => w.querySelector(s);
+    const filas = [...w.querySelectorAll('.urn-fila')];
+    ok(filas.length === 5, `${filas.length} linhas na tabela (esperava 5)`);
+    filas.forEach((tr, i) => {
+      const caminho = formulas(tr.querySelector('.urn-caminho'))[0];
+      const res = formulas(tr.querySelector('.urn-res'))[0];
+      const esperada = fracao(E.urna.tabela[i]);
+      ok(perto(avaliarTex(res), esperada, 1e-12), `X = ${i + 1}: resultado «${res}», esperado ${E.urna.tabela[i]}`);
+      const r = conferirEquacao(caminho, {}, { [`P(X=${i + 1})`]: esperada });
+      ok(r.falhas.length === 0 && r.verificada >= 1, `X = ${i + 1}: caminho «${caminho}»: ${r.falhas.join('; ')}`);
+    });
+    const soma = formulas(q('.urn-soma'))[0];
+    ok(conferirEquacao(soma).falhas.length === 0 && avaliarTex(soma.split('=').pop()) === 1, `soma «${soma}»`);
+    const mu = formulas(q('[data-l="mu"]'))[0];
+    ok(perto(avaliarTex(mu.split('=').pop()), fracao(E.urna.mu), 1e-12), `μ «${mu}»`);
+    const sg = formulas(q('[data-l="sigma"]'))[0];
+    ok(sg.includes('\\frac{6}{5}') && perto(avaliarTex(sg.split('\\approx').pop().replace(/^\s*/, '')), E.urna.sigma, 0.00501), `σ «${sg}», esperado σ² = ${E.urna.var} e σ ≈ ${E.urna.sigma.toFixed(3)}`);
+    // selecionar uma linha
+    clicar(filas[1].querySelector('button'));
+    ok(texto(q('.urn-sel')).startsWith('X = 2: Ainda não fizeste experiências. Teoria: 2/7, cerca de 28,6 %'), `seleção «${texto(q('.urn-sel'))}»`);
+    clicar(filas[1].querySelector('button'));
+    ok(texto(q('.urn-sel')) === '', 'segundo toque devia desselecionar');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('urna: tirar bolas (sem repor, até sair vermelha), histograma e frequências', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="urna"]');
+    const q = (s) => w.querySelector(s);
+    const botTirar = q('.urn-tirar');
+    // 30 experiências bola a bola
+    for (let e = 1; e <= 30; e++) {
+      let passos = 0;
+      let msg = '';
+      do {
+        clicar(botTirar);
+        passos++;
+        msg = texto(q('.urn-resultado'));
+        ok(passos <= 5, `experiência ${e}: mais de 5 bolas`);
+        if (passos > 5) break;
+      } while (!/Parou aqui/.test(msg));
+      const x = Number(/X = (\d)/.exec(msg)[1]);
+      ok(x === passos, `experiência ${e}: X = ${x} mas tiraste ${passos} bolas`);
+      const saiu = msg.match(/Saiu (vermelha|azul)\./g) || [];
+      ok(saiu.length === x && saiu.slice(0, -1).every((s) => s.includes('azul')) && saiu[x - 1].includes('vermelha'), `experiência ${e}: «${msg}»`);
+      ok(texto(botTirar) === 'Nova experiência', 'depois de parar o botão devia dizer «Nova experiência»');
+      ok(texto(q('[data-l="n"]')) === String(e), `experiência ${e}: contador «${texto(q('[data-l="n"]'))}»`);
+      clicar(botTirar); // nova experiência (não tira bola)
+    }
+    // "Fazer a experiência toda"
+    clicar(q('.urn-toda'));
+    ok(texto(q('[data-l="n"]')) === '31', 'a experiência toda devia contar uma');
+    // ×100 e ×1000: frequências relativas perto das teóricas, e a média perto de 2
+    const rep = (n) => clicar(w.querySelector(`[data-rep="${n}"]`));
+    rep(100); rep(1000);
+    ok(texto(q('[data-l="n"]')) === '1131', `n «${texto(q('[data-l="n"]'))}»`);
+    ok(perto(numero(texto(q('[data-l="media"]'))), 2, 0.25), `média «${texto(q('[data-l="media"]'))}»`);
+    // frequências a partir das barras e dos traços teóricos: f_i = p_i · altura_i / (chão − y_traço_i)
+    const chao = Number(q('line.urn-eixo').getAttribute('y1'));
+    const barras = [...w.querySelectorAll('rect.urn-barra')];
+    const tracos = [...w.querySelectorAll('line.urn-traco')];
+    const teor = E.urna.tabela.map(fracao);
+    const freq = barras.map((b, i) => teor[i] * Number(b.getAttribute('height')) / (chao - Number(tracos[i].getAttribute('y1'))));
+    ok(perto(freq.reduce((a, b) => a + b, 0), 1, 0.001), `as frequências somam ${freq.reduce((a, b) => a + b, 0).toFixed(4)}`);
+    freq.forEach((f, i) => ok(perto(f, teor[i], 0.08), `X = ${i + 1}: frequência ${f.toFixed(3)} vs ${teor[i].toFixed(3)}`));
+    // seleção com dados: Observaste N em M
+    clicar(w.querySelectorAll('.urn-fila')[0].querySelector('button'));
+    const m = /Observaste (\d+) em (\d+) \(([\d,]+) %\)/.exec(texto(q('.urn-sel')));
+    ok(!!m && Number(m[2]) === 1131 && perto(numero(m[3]) / 100, Number(m[1]) / 1131, 0.0006), `seleção «${texto(q('.urn-sel'))}»`);
+    // limpar
+    clicar(q('.urn-limpar'));
+    ok(texto(q('[data-l="n"]')) === '0' && texto(q('[data-l="media"]')) === 'sem dados', 'Limpar não limpou');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('jogo do saco: tabela, valor médio para cada prémio, equitativo, 1 jogada e 100 jogadas', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const w = p.q('[data-widget="urna"]');
+    const q = (s) => w.querySelector(s);
+    clicar(botaoComTexto(w, 'Jogo'));
+    ok(!q('[data-painel="jogo"]').hidden && q('[data-painel="urna"]').hidden, 'o separador Jogo devia abrir');
+    const sl = q('.urn-premio');
+    for (let premio = -10; premio <= 0; premio++) {
+      slider(sl, premio);
+      const mu = fracao(E.jogo[String(premio)]);
+      const tab = q('.urn-tab-jogo');
+      const xs = [...tab.querySelectorAll('tr')[0].querySelectorAll('td')].map((td) => numero(texto(td)));
+      const ps = [...tab.querySelectorAll('tr')[1].querySelectorAll('td')].map((td) => avaliarTex(formulas(td)[0]));
+      ok(xs.every((v, i) => i === 0 || v > xs[i - 1]), `prémio ${premio}: valores fora de ordem ${xs}`);
+      ok(perto(ps.reduce((a, b) => a + b, 0), 1, 1e-12), `prémio ${premio}: probabilidades somam ${ps.reduce((a, b) => a + b, 0)}`);
+      ok(perto(xs.reduce((a, x, i) => a + x * ps[i], 0), mu, 1e-12), `prémio ${premio}: μ da tabela ${xs.reduce((a, x, i) => a + x * ps[i], 0)}, esperado ${mu}`);
+      ok(xs.includes(2) && xs.includes(premio) && (premio === 0 ? xs.length === 2 : xs.includes(0) && xs.length === 3), `prémio ${premio}: valores ${xs}`);
+      const f = formulas(q('.urn-formula'))[0];
+      const r = conferirEquacao(f, {});
+      ok(r.falhas.length === 0 && perto(avaliarTex(f.split('=')[1].includes('\\times') ? f.split('=').slice(-1)[0].split('\\approx')[0] : '0'), mu, 1e-12), `prémio ${premio}: «${f}» -> ${r.falhas.join('; ')}`);
+      ok(perto(numero(texto(q('[data-j="teorico"]'))), mu, 0.0051), `prémio ${premio}: valor teórico «${texto(q('[data-j="teorico"]'))}»`);
+      ok(texto(q('.urn-sp')) === (premio < 0 ? `−${-premio} €` : '0 €'), `prémio ${premio}: saída «${texto(q('.urn-sp'))}»`);
+      // equitativo?
+      for (const r2 of ['sim', 'nao']) {
+        clicar(w.querySelector(`[data-r="${r2}"]`));
+        const fb = q('.urn-feedback');
+        const certo = (r2 === 'sim') === (premio === -5);
+        ok(fb.classList.contains(certo ? 'aviso-ok' : 'aviso-erro'), `prémio ${premio}, resposta ${r2}: devia ser ${certo ? 'certo' : 'errado'} («${texto(fb).slice(0, 50)}»)`);
+        if (premio !== -5) ok(texto(fb).includes(`${mu > 0 ? 'ganhas' : 'perdes'} ${String(Math.abs(mu).toFixed(2)).replace('.', ',')} €`), `prémio ${premio}: «${texto(fb)}»`);
+      }
+    }
+    // jogar uma vez
+    slider(sl, -5);
+    const cor = { vermelha: 2, azul: 0, amarela: -5 };
+    for (let i = 0; i < 25; i++) {
+      clicar(q('.urn-uma'));
+      const m = /Saiu (vermelha|azul|amarela): ganho de (\+2 €|0 €|−5 €)/.exec(texto(q('.urn-resultado-jogo')));
+      ok(!!m && (m[1] === 'vermelha' ? '+2 €' : m[1] === 'azul' ? '0 €' : '−5 €') === m[2], `jogada ${i}: «${texto(q('.urn-resultado-jogo'))}»`);
+    }
+    // 100 jogadas
+    clicar(q('.urn-cem'));
+    const m = /ganho total foi (−?[\d ]+) € e o ganho médio (−?[\d,]+) €/.exec(texto(q('.urn-resultado-jogo')).replace(/\u00a0/g, ' '));
+    ok(!!m, `100 jogadas: «${texto(q('.urn-resultado-jogo'))}»`);
+    if (m) {
+      const total = numero(m[1]);
+      ok(perto(numero(m[2]), total / 100, 0.0051), `média ${m[2]} != total ${total} / 100`);
+      let possivel = false;
+      for (let a = 0; a <= 100 && !possivel; a++) for (let b = 0; a + b <= 100; b++) if (2 * a - 5 * b === total) { possivel = true; break; }
+      ok(possivel, `total ${total} impossível com +2, −5 e 0 em 100 jogadas`);
+      ok(texto(q('[data-j="media"]')) === `${m[2]} €`, `leitura «${texto(q('[data-j="media"]'))}»`);
+      ok(perto(numero(m[2]), 0, 1.5), 'a média de 100 jogadas num jogo equitativo devia ficar perto de 0');
+    }
+    slider(sl, -3);
+    ok(texto(q('[data-j="media"]')) === 'ainda sem jogadas', 'mudar o prémio devia apagar as 100 jogadas');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`urna e jogo a ${largura} px: auditoria em vários estados`, async (ok) => {
+    const p = await carregarPagina('../materia.html', largura);
+    try {
+      const w = p.q('[data-widget="urna"]');
+      const q = (s) => w.querySelector(s);
+      aplicarAuditoria(auditar(p.doc, { nome: `urna inicial@${largura}`, largura }), ok, t);
+      clicar(q('.urn-tirar')); clicar(q('.urn-tirar'));
+      clicar(w.querySelector('[data-rep="1000"]'));
+      clicar(w.querySelectorAll('.urn-fila')[2].querySelector('button'));
+      aplicarAuditoria(auditar(p.doc, { nome: `urna 1000 experiências@${largura}`, largura }), ok, t);
+      clicar(botaoComTexto(w, 'Jogo'));
+      slider(q('.urn-premio'), -7);
+      clicar(w.querySelector('[data-r="sim"]'));
+      clicar(q('.urn-cem'));
+      aplicarAuditoria(auditar(p.doc, { nome: `jogo prémio -7@${largura}`, largura }), ok, t);
+      slider(q('.urn-premio'), 0);
+      clicar(q('.urn-uma'));
+      aplicarAuditoria(auditar(p.doc, { nome: `jogo prémio 0@${largura}`, largura }), ok, t);
+    } finally { p.fechar(); }
+  });
+}
+
+// ======================================================================
+// Curva Normal
+// ======================================================================
+
+function ligarNormal(p) {
+  const w = p.q('[data-widget="normal"]');
+  const q = (s) => w.querySelector(s);
+  const sMu = q('input[id$="-mu"]');
+  const sSg = q('input[id$="-sg"]');
+  const modo = (id) => w.querySelector(`.nor-modos [data-modo="${id}"]`);
+  return { w, q, sMu, sSg, modo };
+}
+const lidoNormal = (q) => numero(texto(q('.nor-lido')).split('≈').pop());
+
+await t.teste('Normal: regra 68-95-99,7 e P entre dois valores/cauda para muitos (μ, σ)', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { w, q, sMu, sSg, modo } = ligarNormal(p);
+    let conferidas = 0;
+    // k = 1, 2, 3
+    for (const [mu, sg, k, esperada] of E.normal.k) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo(`s${k}`));
+      const v = lidoNormal(q);
+      conferidas++;
+      ok(perto(v, esperada, 0.00006), `μ = ${mu}, σ = ${sg}, k = ${k}: «${texto(q('.nor-lido'))}», esperado ${esperada.toFixed(4)}`);
+      ok(perto(v, E.regra[`k${k}`], 0.00006), `μ = ${mu}, σ = ${sg}, k = ${k}: devia ser a regra ${E.regra[`k${k}`].toFixed(4)}`);
+      ok(texto(q('.nor-lido')).startsWith(`P(μ−${k === 1 ? '' : k}σ < X < μ+${k === 1 ? '' : k}σ)`), `texto «${texto(q('.nor-lido'))}»`);
+    }
+    // cauda à direita de c
+    clicar(modo('cauda'));
+    for (const [mu, sg, c, esperada] of E.normal.cauda) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo('cauda'));
+      escrever(q('.nor-in-c'), String(c).replace('.', ','));
+      const v = lidoNormal(q);
+      conferidas++;
+      ok(perto(v, esperada, 0.00006), `μ = ${mu}, σ = ${sg}, P(X > ${c}): «${texto(q('.nor-lido'))}», esperado ${esperada.toFixed(4)}`);
+    }
+    // entre a e b
+    for (const [mu, sg, a, b, esperada] of E.normal.entre) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo('entre'));
+      escrever(q('.nor-in-a'), String(a).replace('.', ','));
+      escrever(q('.nor-in-b'), String(b).replace('.', ','));
+      const v = lidoNormal(q);
+      conferidas++;
+      ok(perto(v, esperada, 0.00006), `μ = ${mu}, σ = ${sg}, P(${a} < X < ${b}): «${texto(q('.nor-lido'))}», esperado ${esperada.toFixed(4)}`);
+    }
+    ok(conferidas === E.normal.k.length + E.normal.cauda.length + E.normal.entre.length && conferidas > 200, `${conferidas} leituras conferidas`);
+    t.avisos.push(`Normal: ${conferidas} leituras conferidas com Φ de math.erf`);
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('Normal: μ, σ, altura máxima, área total, marcas e simetria', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { w, q, sMu, sSg, modo } = ligarNormal(p);
+    for (const mu of [-10, -3.5, 0, 6, 10]) {
+      for (const sg of [0.5, 1, 2.3, 4]) {
+        slider(sMu, mu); slider(sSg, sg);
+        ok(perto(numero(texto(q('.nor-out-mu'))), mu, 1e-9) && perto(numero(texto(q('.nor-out-sg'))), sg, 1e-9), `saídas μ «${texto(q('.nor-out-mu'))}» σ «${texto(q('.nor-out-sg'))}» para ${mu}, ${sg}`);
+        ok(perto(numero(texto(q('.nor-altura'))), 1 / (sg * Math.sqrt(2 * Math.PI)), 0.00006), `μ = ${mu}, σ = ${sg}: altura «${texto(q('.nor-altura'))}»`);
+        ok(texto(q('.nor-total')) === '= 1,0000', `área total «${texto(q('.nor-total'))}»`);
+        const marcas = texto(q('.nor-marcas'));
+        for (const k of [-3, -2, -1, 0, 1, 2, 3]) {
+          const nome = k === 0 ? 'μ' : `μ${k < 0 ? '−' : '+'}${Math.abs(k) === 1 ? '' : Math.abs(k)}σ`;
+          const m = new RegExp(`${nome.replace('+', '\\+')} = (−?[\\d,]+)`).exec(marcas);
+          ok(!!m && perto(numero(m[1]), mu + k * sg, 0.0051), `${nome} para μ = ${mu}, σ = ${sg}: «${m && m[1]}»`);
+        }
+        // o ponto mais alto da curva está no eixo de simetria x = μ
+        const centro = Number(w.querySelector('line.nor-marca--mu').getAttribute('x1'));
+        const px = (x) => 48 + (x - (mu - 13)) * ((420 - 48 - 12) / 26);
+        ok(perto(centro, px(mu), 0.01), `μ = ${mu}: a reta de simetria devia estar em ${px(mu)} e está em ${centro}`);
+      }
+    }
+    // simetria
+    slider(sMu, 3); slider(sSg, 2.5);
+    clicar(w.querySelector('.nor-simetria'));
+    ok(w.querySelector('.nor-simetria').getAttribute('aria-pressed') === 'true', 'o botão devia ficar premido');
+    const vs = [...w.querySelectorAll('.nor-tres .leitura__valor')].map((e) => numero(texto(e)));
+    const esp = E.simetria.find((s) => s[0] === 3 && s[1] === 2.5);
+    ok(vs.length === 3 && perto(vs[0], esp[2], 0.000006) && perto(vs[2], esp[3], 0.000006) && perto(vs[0] + vs[1] + vs[2], 1, 0.0002), `simetria: ${vs}, esperado ${esp[2].toFixed(5)}, ${esp[3].toFixed(5)}`);
+    ok(vs[0] === vs[2], 'as duas caudas devem ser iguais');
+    const soma = texto(q('.nor-soma'));
+    ok(/= 1,0000$/.test(soma), `soma «${soma}»`);
+    clicar(w.querySelector('.nor-simetria'));
+    ok(w.querySelector('.nor-simetria').getAttribute('aria-pressed') === 'false' && !q('.nor-tres'), 'segundo clique devia sair da simetria');
+    // «Sem área»
+    clicar(modo('nenhuma'));
+    ok(texto(q('.nor-lido')) === 'Escolhe uma área para ver a sua probabilidade.', `sem área: «${texto(q('.nor-leitura'))}»`);
+    // comparar com N(0,1)
+    slider(sMu, 4); slider(sSg, 2);
+    clicar(modo('s2'));
+    clicar(w.querySelector('.nor-comparar'));
+    ok(!q('.nor-legenda').hidden && texto(q('.nor-leg-a')) === 'N(4, 2)', `legenda «${texto(q('.nor-leg-a'))}»`);
+    ok(!!w.querySelector('path.nor-curva--padrao') && w.querySelectorAll('.nor-padrao-area').length === 1, 'devia haver a curva padrão e a área correspondente');
+    ok(texto(q('.nor-lido--sec')).includes('N(0, 1)'), 'sem frase da curva padrão');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('Normal: a curva desenhada é a densidade N(μ, σ) e as áreas sombreadas começam e acabam onde diz o texto', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { w, q, sMu, sSg, modo } = ligarNormal(p);
+    const UNID = (420 - 48 - 12) / 26;
+    const px = (mu, x) => 48 + (x - (mu - 13)) * UNID;
+    for (const [mu, sg] of [[0, 1], [0, 0.5], [3.5, 2.3], [-10, 4], [10, 1.7], [-6, 0.5]]) {
+      slider(sMu, mu); slider(sSg, sg);
+      clicar(modo('s1'));
+      const pts = pontosDoCaminho(q('path.nor-curva:not(.nor-curva--padrao)').getAttribute('d'));
+      ok(pts.length === 201, `μ = ${mu}, σ = ${sg}: ${pts.length} pontos na curva`);
+      let pior = 0;
+      for (const [x, y] of pts) {
+        const xv = mu - 13 + (x - 48) / UNID;
+        const dens = ((232 - y) / (232 - 54)) * 0.85;
+        pior = Math.max(pior, Math.abs(dens - densidadeNormal(xv, mu, sg)));
+      }
+      ok(pior < 0.0007, `μ = ${mu}, σ = ${sg}: a curva afasta-se ${pior.toFixed(4)} da densidade`);
+      // áreas: o caminho sombreado vai de px(μ−kσ) a px(μ+kσ)
+      for (const k of [1, 2, 3]) {
+        clicar(modo(`s${k}`));
+        const a = pontosDoCaminho(q('.nor-area').getAttribute('d'));
+        ok(perto(a[0][0], px(mu, mu - k * sg), 0.06) && perto(a[a.length - 1][0], px(mu, mu + k * sg), 0.06), `μ = ${mu}, σ = ${sg}, k = ${k}: a área vai de ${a[0][0]} a ${a[a.length - 1][0]} (esperado ${px(mu, mu - k * sg).toFixed(1)} a ${px(mu, mu + k * sg).toFixed(1)})`);
+      }
+    }
+    slider(sMu, 2); slider(sSg, 1.5);
+    clicar(modo('cauda')); escrever(q('.nor-in-c'), '3,5');
+    let a = pontosDoCaminho(q('.nor-area').getAttribute('d'));
+    ok(perto(a[0][0], px(2, 3.5), 0.06) && perto(a[a.length - 1][0], 48 + 26 * UNID, 0.06), `cauda a partir de 3,5: ${a[0][0]} a ${a[a.length - 1][0]}`);
+    clicar(modo('entre')); escrever(q('.nor-in-a'), '-1,5'); escrever(q('.nor-in-b'), '4');
+    a = pontosDoCaminho(q('.nor-area').getAttribute('d'));
+    ok(perto(a[0][0], px(2, -1.5), 0.06) && perto(a[a.length - 1][0], px(2, 4), 0.06), `entre −1,5 e 4: ${a[0][0]} a ${a[a.length - 1][0]}`);
+    // simetria: as duas caudas e o centro
+    clicar(w.querySelector('.nor-simetria'));
+    const caudas = [...w.querySelectorAll('path.nor-cauda')].map((e) => pontosDoCaminho(e.getAttribute('d')));
+    const centro = pontosDoCaminho(q('path.nor-area').getAttribute('d'));
+    ok(caudas.length === 2 && perto(centro[0][0], px(2, 2 - 3), 0.06) && perto(centro[centro.length - 1][0], px(2, 2 + 3), 0.06), 'a simetria devia sombrear o centro entre μ−2σ e μ+2σ');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('Normal: teclado e arrasto nas bolas (cauda e entre a e b), limites do eixo', async (ok) => {
+  const p = await carregarPagina('../materia.html', 390);
+  try {
+    const { w, q, sMu, sSg, modo } = ligarNormal(p);
+    clicar(modo('entre'));
+    const pegaA = [...w.querySelectorAll('.nor-pega-g')].find((g) => g.getAttribute('aria-label').startsWith('Valor a'));
+    const pegaB = [...w.querySelectorAll('.nor-pega-g')].find((g) => g.getAttribute('aria-label').startsWith('Valor b'));
+    ok(pegaA.style.display !== 'none' && pegaB.style.display !== 'none', 'as duas bolas devem aparecer em «Entre dois valores»');
+    const va = () => Number(pegaA.getAttribute('aria-valuenow'));
+    const vb = () => Number(pegaB.getAttribute('aria-valuenow'));
+    ok(va() === -1 && vb() === 1, `começa em ${va()} e ${vb()}`);
+    tecla(pegaA, 'ArrowLeft'); ok(perto(va(), -1.1, 1e-9), `ArrowLeft: ${va()}`);
+    tecla(pegaA, 'PageDown'); ok(perto(va(), -2.1, 1e-9), `PageDown: ${va()}`);
+    tecla(pegaB, 'ArrowRight'); ok(perto(vb(), 1.1, 1e-9), `ArrowRight: ${vb()}`);
+    tecla(pegaB, 'PageUp'); ok(perto(vb(), 2.1, 1e-9), `PageUp: ${vb()}`);
+    tecla(pegaA, 'Home'); ok(perto(va(), -13, 1e-9), `Home: ${va()}`);
+    tecla(pegaB, 'End'); ok(perto(vb(), 13, 1e-9), `End: ${vb()}`);
+    ok(perto(lidoNormal(q), 1, 0.0001), `P(−13 < X < 13) = ${texto(q('.nor-lido'))}`);
+    tecla(pegaA, 'ArrowRight');
+    ok(perto(va(), -12.9, 1e-9), `ArrowRight: ${va()}`);
+    // a não passa de b e b não passa de a
+    tecla(pegaB, 'Home');
+    ok(vb() > va() && perto(vb() - va(), 0.1, 1e-9), `a = ${va()}, b = ${vb()} (b tem de ficar 0,1 acima de a)`);
+    tecla(pegaA, 'End');
+    ok(va() < vb() && perto(vb() - va(), 0.1, 1e-9), `a = ${va()}, b = ${vb()} (a tem de ficar 0,1 abaixo de b)`);
+    // arrasto do ponto a até x = -2 (VB 420×278; μ = 0: eixo de -13 a 13, ML 48, MR 12)
+    const svg = q('svg.nor-svg');
+    const unidade = (420 - 48 - 12) / 26;
+    const px = (x) => 48 + (x + 13) * unidade;
+    tecla(pegaB, 'End');
+    tecla(pegaA, 'Home');
+    arrastarSvg(svg, [px(-13), 232], [px(-2), 232], pegaA);
+    ok(perto(va(), -2, 0.051), `arrasto de a: ${va()} (esperava -2)`);
+    arrastarSvg(svg, [px(13), 232], [px(1.5), 232], pegaB);
+    ok(perto(vb(), 1.5, 0.051), `arrasto de b: ${vb()} (esperava 1,5)`);
+    // tocar na faixa do eixo agarra a bola mais próxima (alvo maior do que a bola); longe do eixo não faz nada
+    tecla(pegaA, 'Home'); tecla(pegaB, 'End');
+    arrastarSvg(svg, [px(-8), 232], [px(-5), 232]);
+    ok(perto(va(), -5, 0.051) && vb() === 13, `toque na faixa perto de a: a = ${va()}, b = ${vb()}`);
+    arrastarSvg(svg, [px(9), 224], [px(7), 224]);
+    ok(perto(vb(), 7, 0.051) && perto(va(), -5, 0.051), `toque na faixa perto de b: a = ${va()}, b = ${vb()}`);
+    arrastarSvg(svg, [px(2), 120], [px(0), 120]);
+    ok(perto(va(), -5, 0.051) && perto(vb(), 7, 0.051), `toque longe do eixo não devia mexer: a = ${va()}, b = ${vb()}`);
+    // cauda: mover μ desloca o eixo e mantém os valores dentro
+    clicar(modo('cauda'));
+    const pegaC = [...w.querySelectorAll('.nor-pega-g')].find((g) => g.getAttribute('aria-label').startsWith('Valor da cauda'));
+    ok(pegaC.style.display !== 'none', 'a bola da cauda devia aparecer');
+    slider(sMu, 10);
+    tecla(pegaC, 'End');
+    ok(perto(Number(pegaC.getAttribute('aria-valuenow')), 23, 1e-9), `End com μ = 10: ${pegaC.getAttribute('aria-valuenow')}`);
+    slider(sMu, -10);
+    ok(perto(Number(pegaC.getAttribute('aria-valuenow')), -10, 1e-9) || Number(pegaC.getAttribute('aria-valuenow')) <= 3, `depois de mover μ para −10, c = ${pegaC.getAttribute('aria-valuenow')} (devia estar no eixo)`);
+    const c = Number(pegaC.getAttribute('aria-valuenow'));
+    ok(c >= -23 && c <= 3, `c = ${c} fora do eixo`);
+    // entradas de texto fora do eixo são recusadas
+    escrever(q('.nor-in-c'), '99');
+    ok(q('.nor-in-c').getAttribute('aria-invalid') === 'true', '99 devia ser inválido (fora do eixo)');
+    escrever(q('.nor-in-c'), 'abc');
+    ok(q('.nor-in-c').getAttribute('aria-invalid') === 'true', '«abc» devia ser inválido');
+    clicar(modo('entre'));
+    const a0 = Number(pegaA.getAttribute('aria-valuenow'));
+    escrever(q('.nor-in-b'), String(a0 - 1).replace('.', ','));
+    ok(q('.nor-in-b').getAttribute('aria-invalid') === 'true', 'b menor do que a devia ser inválido');
+    escrever(q('.nor-in-a'), String(Number(pegaB.getAttribute('aria-valuenow')) + 1).replace('.', ','));
+    ok(q('.nor-in-a').getAttribute('aria-invalid') === 'true', 'a maior do que b devia ser inválido');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`Normal a ${largura} px: auditoria em vários estados (σ = 0,5 e 4, caudas, simetria, comparar)`, async (ok) => {
+    const p = await carregarPagina('../materia.html', largura);
+    try {
+      const { w, sMu, sSg, modo } = ligarNormal(p);
+      for (const [mu, sg, m, extra] of [[0, 1, 's1', ''], [0, 0.5, 's3', ''], [10, 4, 's3', ''], [-10, 4, 'cauda', ''], [7.5, 1.7, 'entre', ''], [0, 1, 's2', 'simetria'], [0, 2.5, 's1', 'comparar'], [-5, 4, 'nenhuma', '']]) {
+        slider(sMu, mu); slider(sSg, sg);
+        clicar(modo(m));
+        if (extra === 'simetria') clicar(w.querySelector('.nor-simetria'));
+        if (extra === 'comparar') clicar(w.querySelector('.nor-comparar'));
+        await esperar(30);
+        aplicarAuditoria(auditar(p.doc, { nome: `Normal μ=${mu} σ=${sg} ${m}${extra ? ' ' + extra : ''}@${largura}`, largura }), ok, t);
+        if (extra === 'simetria') clicar(w.querySelector('.nor-simetria'));
+        if (extra === 'comparar') clicar(w.querySelector('.nor-comparar'));
+      }
+    } finally { p.fechar(); }
+  });
+}
+
+t.fim();
+</script>
+</body>
+</html>

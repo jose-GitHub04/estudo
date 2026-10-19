@@ -1,7 +1,7 @@
 /* ex-tabela: exercícios 1 e 2 (tabela de distribuição) */
 
 .exa [hidden] { display: none !important; }
-.exa .botao, .exa .campo { min-height: 2.5rem; }
+.exa .botao, .exa .campo { min-height: 2.75rem; }
 .exa * { animation: none !important; transition: none !important; }
 
 .exa-enunciado p { margin: 0 0 0.6rem; }
@@ -44,7 +44,7 @@
 .exa-slider__topo { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
 .exa-slider__rotulo { font-weight: 600; }
 .exa-slider__valor { font-variant-numeric: tabular-nums; color: var(--tinta-suave); }
-.exa-range { width: 100%; min-height: 2.5rem; margin: 0; accent-color: var(--c-seno); }
+.exa-range { width: 100%; min-height: 2.75rem; margin: 0; accent-color: var(--c-seno); }
 .exa-range:focus-visible { outline: 3px solid var(--c-destaque); outline-offset: 2px; }
 
 .exa-leitura {

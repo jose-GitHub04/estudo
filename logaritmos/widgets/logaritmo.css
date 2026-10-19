@@ -96,7 +96,7 @@
   position: relative; width: max-content; min-width: 100%; padding: 2.7rem var(--lg-pad) 0.9rem;
 }
 .lg-degraus {
-  display: flex; margin: 0; padding: 0; list-style: none;
+  display: flex; width: max-content; margin: 0; padding: 0; list-style: none;
   border-radius: 0.4rem; background: var(--papel); box-shadow: 0 0 0 1px #cdbfae; overflow: hidden;
 }
 .lg-degrau {
@@ -162,3 +162,5 @@
 @media (min-width: 52em) {
   .lg-calculo--exato { grid-template-columns: 1fr 1fr; align-items: start; }
 }
+
+.lg-junto { white-space: nowrap; }

@@ -48,7 +48,7 @@
 
     /* ---------- barra do ecrã (não se imprime) ---------- */
     .barra {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem;
       max-width: 210mm; margin: 0 auto; padding: 0.75rem 1rem;
     }
     .barra a, .barra button {
@@ -121,6 +121,7 @@
     .grupo li { margin: 0 0 1.2mm; break-inside: avoid; page-break-inside: avoid; line-height: 1.35; }
     .grupo .fr { color: var(--castanho); font-weight: 600; }
     .grupo .seta { color: var(--dourado-texto); padding: 0 0.3em; }
+    .grupo .porque { color: var(--tinta-suave); }
 
     .aviso { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 0.4rem; background: #f8e4df; color: var(--erro); }
 
@@ -206,9 +207,12 @@
         if (g.id === 'valores' || g.id === 'reducao') continue; // já têm tabelas
         const lista = porGrupo.get(g.id);
         if (!lista.length) continue;
+        // o «porquê» dos outros cartões fica de fora, para a folha caber em duas páginas; mas
+        // onde a tangente não existe, a folha diz sempre porquê (o cosseno é o denominador)
+        const porque = (c) => (c.porque && /denominador/.test(c.porque) ? ` <span class="porque">${c.porque}</span>` : '');
         const itens = lista.map((c) =>
           `<li><span class="fr">${c.frente}</span><span class="seta" aria-hidden="true">→</span>`
-          + `<span class="sr-only"> Resposta: </span><span class="vs">${c.verso}</span></li>`);
+          + `<span class="sr-only"> Resposta: </span><span class="vs">${c.verso}</span>${porque(c)}</li>`);
         partes.push(`<div class="grupo"><h3>${g.titulo}</h3><ul>${itens.join('')}</ul></div>`);
       }
       if (!partes.length) return;
@@ -241,6 +245,7 @@
 <body>
   <div class="barra nao-imprimir">
     <a class="nao-imprimir" href="index.html">Voltar</a>
+    <a class="nao-imprimir" href="../">Todos os temas</a>
     <button class="nao-imprimir" type="button" onclick="window.print()">Imprimir</button>
   </div>
 

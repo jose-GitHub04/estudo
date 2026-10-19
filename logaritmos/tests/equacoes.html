@@ -35,6 +35,7 @@
 import * as W from '../widgets/equacoes.js';
 import { criarFuncao } from '../../assets/motor/matematica.js';
 import { renderizar } from '../../assets/motor/katex.js';
+import { analisarSvg, descrever } from './etiquetas.js';
 
 const q = new URLSearchParams(location.search);
 const alvo = document.getElementById('alvo');
@@ -75,6 +76,55 @@ const btnRec = () => $$('.eq-btn')[2];
 const passos = () => $$('.eq-passo');
 const clicar = async (b) => { b.click(); await esperar(); };
 
+/**
+ * Percorre o widget por todos os estados do gráfico (cada predefinida, cada passo, cada vista e, nas que têm
+ * slider, cada valor) e devolve, em texto, as etiquetas tapadas por curvas, eixos, pontos ou outras etiquetas
+ * ou que saiam do desenho. Cada estado só conta uma vez (o mesmo desenho repetido não duplica avisos).
+ */
+async function etiquetasMaus() {
+  const maus = [];
+  const vistos = new Set();
+  const analisar = (onde) => {
+    const svg = $('.eq-figura svg');
+    if (!svg) return;
+    for (const d of descrever(analisarSvg(svg))) {
+      const linha = `${onde}: ${d}`;
+      const chave = linha.replace(/^[^:]*:/, '');
+      if (vistos.has(chave)) continue;
+      vistos.add(chave);
+      maus.push(linha);
+    }
+  };
+  for (let i = 0; i < preds.length; i++) {
+    const p = preds[i];
+    const valores = [null];
+    if (p.param) {
+      valores.length = 0;
+      const { min, max, passo } = p.param;
+      for (let k = 0; k <= Math.round((max - min) / passo); k++) valores.push(min + k * passo);
+    }
+    await clicar(chipsPred()[i]);
+    for (let n = 0; n <= p.passos.length; n++) {
+      if (n > 0) await clicar(btnSeg());
+      const vistas = $$('.eq-vistas .eq-chip');
+      const nVistas = p.vistas.length > 1 ? vistas.length : 1;
+      for (let vi = 0; vi < nVistas; vi++) {
+        if (p.vistas.length > 1) await clicar($$('.eq-vistas .eq-chip')[vi]);
+        for (const v of valores) {
+          if (v !== null) {
+            const r = $('.eq-range');
+            r.value = String(v);
+            r.dispatchEvent(new Event('input'));
+          }
+          analisar(`${p.id}, passo ${n}, vista ${p.vistas[vi].id}${v !== null ? `, ${p.param.nome} = ${v}` : ''}`);
+        }
+      }
+    }
+    await clicar(btnRec());
+  }
+  return maus;
+}
+
 // ---------- modo de vista (capturas) ----------
 if (q.has('p')) {
   const i = Number(q.get('p'));
@@ -92,6 +142,27 @@ if (q.has('p')) {
   }
   renderizar(document.body);
   document.documentElement.dataset.pronto = erros.length ? 'erro' : 'sim';
+} else if (q.has('larguras')) {
+  // ?larguras=1: as linhas e fórmulas a menos de 8 px de passar da caixa (a 358 px a caixa é estreita), em cada predefinida
+  const apertadas = [];
+  for (let i = 0; i < preds.length; i++) {
+    await clicar(chipsPred()[i]);
+    await clicar(btnTudo());
+    for (const e of $$('.eq-formula, .eq-linha, .eq-leitura, .eq-resposta__formula, .eq-legenda, .eq-passo, .eq-param, .eq-enunciado')) {
+      const folga = e.clientWidth - e.scrollWidth;
+      if (folga < 8) apertadas.push(`${preds[i].id}: ${e.className} tem ${e.scrollWidth} px numa caixa de ${e.clientWidth} (folga ${folga})`);
+    }
+    await clicar(btnRec());
+  }
+  saida.textContent = apertadas.length ? apertadas.join(String.fromCharCode(10)) : 'Todas com folga de 8 px ou mais.';
+  document.documentElement.dataset.testes = 'ok';
+  document.documentElement.dataset.pronto = 'sim';
+} else if (q.has('etiquetas')) {
+  // ?etiquetas=1: lista completa das etiquetas mal postas, em todos os estados do gráfico
+  const maus = await etiquetasMaus();
+  saida.textContent = maus.length ? maus.join(String.fromCharCode(10)) : 'Sem problemas de etiquetas.';
+  document.documentElement.dataset.testes = maus.length ? 'falhou' : 'ok';
+  document.documentElement.dataset.pronto = 'sim';
 } else {
 
 // ---------- (a) a matemática dos dados, com o avaliador do site ----------
@@ -298,10 +369,13 @@ await teste('widget: durante os passos o gráfico muda de vista com os passos (s
   const rot = () => [...$('.eq-figura svg').querySelectorAll('text')].map((t) => t.textContent);
   for (let k = 0; k < 3; k++) await clicar(btnSeg());
   ok(!rot().some((t) => t.includes('rejeitada')), 'antes de decidir não devia haver «rejeitada»');
-  ok(rot().some((t) => t.includes('−2')), 'a candidata −2 devia aparecer no passo 3');
+  ok(!rot().includes('u = −2'), 'os pontos só aparecem depois do passo 3');
   await clicar(btnSeg());
+  ok(rot().includes('u = −2'), 'a candidata u = −2 devia aparecer no passo 4: ' + rot().join('|'));
+  ok(!rot().some((t) => t.includes('rejeitada')), 'a candidata ainda não está decidida');
   await clicar(btnSeg());
-  ok(rot().some((t) => t.includes('−2') && t.includes('rejeitada')), 'a −2 devia ficar rejeitada');
+  // o rótulo da rejeitada tem duas linhas («u = −2» e «(rejeitada)»), cada uma no seu <text>
+  ok(rot().some((t) => t.includes('−2')) && rot().some((t) => t.includes('rejeitada')), 'a −2 devia ficar rejeitada');
   await clicar(btnRec());
 });
 
@@ -350,6 +424,11 @@ await teste('a 358 px: nada passa da largura e os alvos têm >= 44 px', async (o
     }
     await clicar(btnRec());
   }
+});
+
+await teste('gráficos: nenhuma etiqueta tapada por curvas, eixos, pontos ou outras etiquetas, nem fora do desenho (todos os passos, vistas e valores dos sliders)', async (ok) => {
+  const maus = await etiquetasMaus();
+  ok(maus.length === 0, `${maus.length} problema(s): ` + maus.slice(0, 5).join(' | '));
 });
 
 await teste('sem erros de consola nem de módulos durante os testes', (ok) => {

@@ -4,10 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Testes dos geradores do treino (logaritmos)</title>
-<!-- Abrir /logaritmos/tests/geradores.html ou: msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8819/logaritmos/tests/geradores.html
-     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. -->
+<!-- Abrir /logaritmos/tests/geradores.html ou: msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8819/logaritmos/tests/geradores.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     ?n=300 corre só 300 sementes por tipo (por omissão 2000; abaixo de 500 não se mede a cobertura das variantes).
+     ?ver=eq-log,inequacao&de=1&nver=8 acrescenta ao resultado perguntas de exemplo (enunciado, opções, explicação).
+     Nas equações e inequações (exp-mesma-base, eq-log, substituicao, inequacao) a resposta certa é recalculada sem usar
+     o gerador: o teste lê o LaTeX do enunciado, resolve a equação por varrimento e bisseção (fora do domínio não há valor)
+     e compara com a resposta, com as opções e com M.corrigir; as inequações testam-se ponto a ponto contra cada opção. -->
 <style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
 <script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
 </head>
 <body>
 <h1>Testes dos geradores (logaritmos)</h1>
@@ -15,6 +21,8 @@
 <script type="module">
 import * as M from '../../assets/motor/matematica.js';
 import { TIPOS, gerarPergunta } from '../geradores.js';
+
+const gerarT = (id, s) => gerarPergunta(id, M.criarRng(s), {});
 
 const SEMENTES = Number(new URLSearchParams(location.search).get('n')) || 2000;
 const TRACO = new RegExp('[' + String.fromCharCode(0x2014, 0x2013) + ']');
@@ -72,7 +80,7 @@ for (const tipo of TIPOS) {
   await teste(`${tipo.id}: estrutura, opções, texto, KaTeX, determinismo (${SEMENTES} sementes)`, (ok) => {
     for (let s = 1; s <= SEMENTES; s++) {
       let p;
-      try { p = gerarPergunta(tipo.id, M.criarRng(s), {}); } catch (e) { ok(false, `semente ${s}: exceção ${e.message}`); continue; }
+      try { p = gerarT(tipo.id, s); } catch (e) { ok(false, `semente ${s}: exceção ${e.message}`); continue; }
       const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 80)}]`);
       vistos[tipo.id].add(p.enunciado);
       aqui(p.tipo === tipo.id && (p.modo === 'escolha' || p.modo === 'escrita'), 'tipo ou modo');
@@ -100,7 +108,7 @@ for (const tipo of TIPOS) {
         aqui(M.corrigir('abc', p.esperado).estado === 'invalido', 'abc devia ser inválido');
         renderiza(p.esperado.tex);
       }
-      if (s <= 100) aqui(JSON.stringify(gerarPergunta(tipo.id, M.criarRng(s), {})) === JSON.stringify(p), 'mesma semente, perguntas diferentes');
+      if (s <= 100) aqui(JSON.stringify(gerarT(tipo.id, s)) === JSON.stringify(p), 'mesma semente, perguntas diferentes');
     }
   });
   await teste(`${tipo.id}: variedade de enunciados (>= 30 em ${SEMENTES} sementes)`, (ok) => {
@@ -114,11 +122,14 @@ await teste('KaTeX sem erros em ' + jaRenderizadas.size + ' fórmulas distintas'
 });
 
 // ---------- recálculo independente por tipo ----------
-const porTipo = (id, fn) => teste(id + ': recálculo independente', (ok) => {
+const porTipo = (id, fn, depois) => teste(id + ': recálculo independente', (ok) => {
+  const cob = {}; // contadores de cobertura das variantes de cada tipo
   for (let s = 1; s <= SEMENTES; s++) {
-    const p = gerarPergunta(id, M.criarRng(s), {});
-    fn(p, (c, m) => ok(c, `semente ${s}: ${m} [${p.enunciado.slice(0, 80)}]`));
+    const p = gerarT(id, s);
+    const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${p.enunciado.slice(0, 80)}]`);
+    try { fn(p, aqui, cob, s); } catch (e) { aqui(false, 'exceção: ' + e.message); }
   }
+  if (depois) depois(ok, cob);
 });
 
 const valorCerto = (p) => (p.modo === 'escrita' ? M.avaliar(p.esperado.expr).valor : M.avaliar(p.opcoes.find((o) => o.correta).expr).valor);
@@ -174,6 +185,485 @@ await porTipo('mudanca-base', (p, ok) => {
   ok(p.enunciado.includes(v.expressao), 'o enunciado não traz a expressão');
 });
 
+// ---------- equações e inequações: leitor de LaTeX e resolução numérica ----------
+// Nada disto usa os geradores. Lê o LaTeX que o aluno vê no enunciado, transforma-o em
+// funções de x e resolve por varrimento e bisseção sobre a equação (ou inequação) ORIGINAL.
+// Fora do domínio as funções dão NaN, por isso uma solução que o domínio rejeita nunca
+// conta como solução.
+
+function simbolos(src) {
+  const toks = [];
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === ' ') { i++; continue; }
+    if (c === '\\') {
+      const m = /^\\([a-zA-Z]+)/.exec(src.slice(i));
+      if (!m) throw new Error('barra solta em ' + src);
+      i += m[0].length;
+      if (m[1] !== 'left' && m[1] !== 'right') toks.push('\\' + m[1]); // o parêntese vem a seguir
+      continue;
+    }
+    const n = /^\d+(\{,\}\d+)?/.exec(src.slice(i));
+    if (n) { toks.push(Number(n[0].replace('{,}', '.'))); i += n[0].length; continue; }
+    if ('xe+-^_(){}[]=<>'.includes(c)) { toks.push(c); i++; continue; }
+    throw new Error(`símbolo "${c}" em ${src}`);
+  }
+  return toks;
+}
+
+/** Devolve { relacao() -> {esq, dir, op}, valor() -> f(x) } para um texto LaTeX. */
+function lerTex(src) {
+  const toks = simbolos(src);
+  let i = 0;
+  const ver = () => toks[i];
+  const tomar = () => toks[i++];
+  const espera = (s) => { if (toks[i++] !== s) throw new Error(`esperava ${s} em ${src}`); };
+  const comecaFator = (t) => typeof t === 'number' || t === 'x' || t === 'e' || t === '(' || ['\\frac', '\\sqrt', '\\ln', '\\log'].includes(t);
+  const finito = (f) => (x) => { const v = f(x); return Number.isFinite(v) ? v : NaN; };
+
+  function expr() {
+    let f = termo();
+    while (ver() === '+' || ver() === '-') {
+      const op = tomar();
+      const a = f;
+      const b = termo();
+      f = op === '+' ? (x) => a(x) + b(x) : (x) => a(x) - b(x);
+    }
+    return f;
+  }
+  function termo() {
+    let f = unario();
+    for (;;) {
+      const t = ver();
+      if (t === '\\times') {
+        tomar();
+        const a = f;
+        const b = unario();
+        f = (x) => a(x) * b(x);
+      } else if (comecaFator(t)) { // multiplicação implícita: 2x, 5e^{x}, 2\ln x
+        const a = f;
+        const b = potencia();
+        f = (x) => a(x) * b(x);
+      } else break;
+    }
+    return f;
+  }
+  function unario() {
+    if (ver() === '-') { tomar(); const a = unario(); return (x) => -a(x); }
+    return potencia();
+  }
+  function potencia() {
+    const b = atomo();
+    if (ver() === '^') { tomar(); const e = grupo(); return (x) => Math.pow(b(x), e(x)); }
+    return b;
+  }
+  function grupo() {
+    if (ver() === '{') { tomar(); const f = expr(); espera('}'); return f; }
+    return atomo();
+  }
+  function argumento() { return ver() === '(' ? atomo() : potencia(); }
+  function atomo() {
+    const t = tomar();
+    if (typeof t === 'number') return () => t;
+    if (t === 'x') return (x) => x;
+    if (t === 'e') return () => Math.E;
+    if (t === '(') { const f = expr(); espera(')'); return f; }
+    if (t === '\\frac') { const a = grupo(); const b = grupo(); return (x) => a(x) / b(x); }
+    if (t === '\\sqrt') {
+      let n = 2;
+      if (ver() === '[') { tomar(); n = tomar(); espera(']'); }
+      const a = grupo();
+      return (x) => { const v = a(x); return v < 0 ? NaN : Math.pow(v, 1 / n); };
+    }
+    if (t === '\\ln') {
+      const a = argumento();
+      return (x) => { const v = a(x); return v > 0 ? Math.log(v) : NaN; };
+    }
+    if (t === '\\log') {
+      let base = () => 10;
+      if (ver() === '_') { tomar(); base = grupo(); }
+      const a = argumento();
+      return (x) => { const b = base(x); const v = a(x); return b > 0 && b !== 1 && v > 0 ? Math.log(v) / Math.log(b) : NaN; };
+    }
+    throw new Error(`símbolo inesperado ${t} em ${src}`);
+  }
+  const fim = () => { if (i !== toks.length) throw new Error(`sobrou "${toks.slice(i).join(' ')}" em ${src}`); };
+  return {
+    relacao() {
+      const esq = finito(expr());
+      const op = tomar();
+      if (!['=', '<', '>', '\\le', '\\ge'].includes(op)) throw new Error(`relação "${op}" em ${src}`);
+      const dir = finito(expr());
+      fim();
+      return { esq, dir, op };
+    },
+    valor() { const f = finito(expr()); fim(); return f; },
+  };
+}
+const lerRelacao = (src) => lerTex(src).relacao();
+const valorTex = (src) => lerTex(src).valor()(0);
+
+/** A fórmula do enunciado que é uma equação ou inequação (as outras, como $\mathbb{R}$, não contam). */
+function formula(p) {
+  const fs = [...p.enunciado.matchAll(/\$([^$]+)\$/g)].map((m) => m[1]).filter((f) => /[=<>]|\\le|\\ge/.test(f));
+  if (fs.length !== 1) throw new Error(`o enunciado tem ${fs.length} equações/inequações`);
+  return fs[0];
+}
+
+/** Verdadeiro se a relação vale em x (fora do domínio, não vale). Igualdade com folga de 1e-12. */
+function vale(r, x) {
+  const a = r.esq(x);
+  const b = r.dir(x);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  const igual = Math.abs(a - b) <= 1e-12 * Math.max(1, Math.abs(a), Math.abs(b));
+  if (r.op === '=') return igual;
+  if (r.op === '<') return a < b && !igual;
+  if (r.op === '>') return a > b && !igual;
+  if (r.op === '\\le') return a < b || igual;
+  return a > b || igual;
+}
+
+// grelha do varrimento: fina perto de 0, larga ao longe
+const GRELHA = (() => {
+  const g = new Set([0]);
+  for (let k = -3000; k <= 3000; k++) g.add(k / 100);
+  for (let k = -4000; k <= 4000; k++) g.add(k / 10);
+  for (let e = -9; e <= -2; e += 0.05) { g.add(Math.pow(10, e)); g.add(-Math.pow(10, e)); }
+  return [...g].sort((a, b) => a - b);
+})();
+
+/** Todas as soluções reais de esq(x) = dir(x), onde ambos os lados existem. */
+function resolver(r) {
+  const g = (x) => r.esq(x) - r.dir(x);
+  const esc = (x) => Math.max(1, Math.abs(r.esq(x)), Math.abs(r.dir(x)));
+  const res = [];
+  const junta = (x) => { if (!res.some((s) => Math.abs(s - x) < 1e-7 * Math.max(1, Math.abs(x)))) res.push(x); };
+  let ant = null;
+  for (const x of GRELHA) {
+    const y = g(x);
+    if (!Number.isFinite(y)) { ant = null; continue; }
+    if (Math.abs(y) <= 1e-12 * esc(x)) junta(x);
+    else if (ant && ant.y * y < 0) {
+      let a = ant.x;
+      let b = x;
+      const ya = ant.y;
+      for (let k = 0; k < 200; k++) {
+        const m = (a + b) / 2;
+        const ym = g(m);
+        if (!Number.isFinite(ym) || ym === 0) { a = b = m; break; }
+        if ((ym < 0) === (ya < 0)) a = m; else b = m;
+      }
+      const raiz = (a + b) / 2;
+      if (Math.abs(g(raiz)) <= 1e-9 * esc(raiz)) junta(raiz);
+    }
+    ant = { x, y };
+  }
+  return res.sort((a, b) => a - b);
+}
+
+/** Pontos onde a inequação passa de falsa a verdadeira (ou o contrário), por bisseção. */
+function fronteiras(r) {
+  const out = [];
+  let ant = null;
+  for (const x of GRELHA) {
+    const v = vale(r, x);
+    if (ant && ant.v !== v) {
+      let a = ant.x;
+      let b = x;
+      for (let k = 0; k < 100; k++) {
+        const m = (a + b) / 2;
+        if (vale(r, m) === ant.v) a = m; else b = m;
+      }
+      out.push((a + b) / 2);
+    }
+    ant = { x, v };
+  }
+  return out;
+}
+
+const AMOSTRA_BASE = (() => {
+  const g = new Set([100, -100, 200, -200]);
+  for (let k = -160; k <= 160; k++) g.add(k / 4);
+  for (let e = -9; e <= -2; e++) { g.add(Math.pow(10, e)); g.add(-Math.pow(10, e)); }
+  return [...g];
+})();
+
+// ---------- correção: formas de escrever a resposta certa e respostas erradas ----------
+
+/** [p, q] com q <= 24 se v for racional, senão null. */
+function racional(v) {
+  for (let q = 1; q <= 24; q++) {
+    const n = Math.round(v * q);
+    if (Math.abs(v * q - n) < 1e-9) return [n, q];
+  }
+  return null;
+}
+/** Número escrito como o aluno o escreveria: fração se for racional, senão decimal longo. */
+function textoNum(x) {
+  const r = racional(x);
+  if (!r) return x.toPrecision(12);
+  return r[1] === 1 ? String(r[0]) : `${r[0]}/${r[1]}`;
+}
+const MENOS = String.fromCharCode(0x2212);
+
+/**
+ * Confere o que M.corrigir faz com uma resposta escrita: aceita várias escritas da certa
+ * (frações, parênteses, espaços, sinal de menos unicode, ln N como ln N / logb(e,N) / soma
+ * de logs), aceita um decimal (certo ou «escreve o valor exato») e recusa respostas erradas.
+ * Confere também que `esperado.tex` (a resposta mostrada ao aluno) vale o mesmo que `esperado.expr`.
+ */
+function verificarCorrecao(p, ok, { certas = [], erradas = [] } = {}) {
+  const v = valorCerto(p);
+  const exatas = [p.esperado.expr, ` ${p.esperado.expr} `, ...certas];
+  const decimais = [];
+  const rac = racional(v);
+  if (rac) {
+    const [n, q] = rac;
+    if (q === 1) {
+      exatas.push(String(n), String(n).replace('-', MENOS), `${n}/1`, `(${n})`, `${2 * n}/2`, `${n},0`, `${n}.0`);
+    } else {
+      exatas.push(`${n}/${q}`, `${n}/${q}`.replace('-', MENOS), `${n} / ${q}`, `(${n})/(${q})`, `${2 * n}/${2 * q}`, `${-n}/${-q}`, `{${n}}/{${q}}`);
+      decimais.push(String(n / q).replace('.', ','), String(n / q));
+    }
+  } else {
+    decimais.push(v.toPrecision(12));
+    const N = Math.round(Math.exp(v));
+    if (N >= 2 && Math.abs(Math.exp(v) - N) < 1e-9) {
+      exatas.push(`ln ${N}`, `ln(${N})`, `ln${N}`, `logb(e,${N})`, `log_e(${N})`);
+      for (let a = 2; a * a <= N; a++) if (N % a === 0) { exatas.push(`ln ${a}+ln ${N / a}`, `ln(${a})+ln(${N / a})`); break; }
+    }
+  }
+  for (const f of exatas) {
+    const c = M.corrigir(f, p.esperado);
+    ok(c.estado === 'certo', `«${f}» devia ser certo e deu ${c.estado}`);
+  }
+  for (const f of decimais) {
+    const c = M.corrigir(f, p.esperado);
+    ok(c.estado === 'certo' || c.estado === 'decimal', `«${f}» devia ser certo ou pedir a forma exata e deu ${c.estado}`);
+  }
+  const errados = [v + 1, v - 1, 2 * v + 3, -v, 2 * v, v / 2].map(textoNum);
+  for (const w of [...errados, ...erradas]) {
+    const valorW = M.avaliar(w);
+    ok(valorW.ok, `erro do teste: «${w}» não se lê`);
+    // coincide com a certa (por exemplo -v quando v = 0) ou está dentro da tolerância dos decimais de M.corrigir
+    if (!valorW.ok || Math.abs(valorW.valor - v) <= 0.01 * Math.max(1, Math.abs(v))) continue;
+    const c = M.corrigir(w, p.esperado);
+    ok(c.estado === 'errado', `«${w}» devia ser errado e deu ${c.estado}`);
+  }
+  ok(perto(valorTex(p.esperado.tex), v, 1e-9), `esperado.tex (${p.esperado.tex}) vale ${valorTex(p.esperado.tex)} e não ${v}`);
+  ok(p.explicacao.includes(p.esperado.tex), 'a explicação não traz a resposta certa em LaTeX');
+}
+
+const MIN_COB = Math.max(2, Math.floor(SEMENTES / 100));
+const cobrir = (ok, cob, ...chaves) => { if (SEMENTES < 500) return; for (const k of chaves) ok((cob[k] || 0) >= MIN_COB, `cobertura: só ${cob[k] || 0} perguntas «${k}» (mínimo ${MIN_COB})`); };
+const conta = (cob, k) => { cob[k] = (cob[k] || 0) + 1; };
+
+// ---------- 6. exp-mesma-base ----------
+
+await porTipo('exp-mesma-base', (p, ok, cob) => {
+  const v = p.verificacao;
+  ok(p.modo === 'escrita', 'devia ser de resposta escrita');
+  const r = lerRelacao(formula(p));
+  ok(r.op === '=', 'o enunciado não é uma equação');
+  const raizes = resolver(r);
+  ok(raizes.length === 1, `${raizes.length} soluções reais em vez de 1 (${raizes.join(', ')})`);
+  const x = valorCerto(p);
+  ok(raizes.length === 1 && perto(x, raizes[0], 1e-9), `resposta ${x} != solução numérica ${raizes[0]}`);
+  ok(perto(r.esq(x), r.dir(x), 1e-9), 'a resposta não verifica a equação original');
+  // o que o aluno lê tem de ser o que verificacao diz
+  ok(v.base > 0 && Math.abs(v.base - 1) > 1e-9, 'base inválida (não é uma função exponencial)');
+  ok(perto(r.esq(0), Math.pow(v.base, v.h), 1e-9), `o enunciado dá ${r.esq(0)} em x=0 e verificacao.base^h = ${Math.pow(v.base, v.h)}`);
+  ok(perto(r.esq(1), Math.pow(v.base, v.p + v.h), 1e-9), 'o coeficiente de x no enunciado não é verificacao.p');
+  ok(perto(r.dir(0), v.rhs, 1e-9), 'o segundo membro do enunciado não é verificacao.rhs');
+  ok(perto(Math.pow(v.base, v.p * x + v.h), v.rhs, 1e-9), 'verificacao: base^(p x + h) != segundo membro');
+  ok(perto(v.x[0] / v.x[1], x, 1e-9), 'verificacao.x != resposta');
+  ok(v.x[1] <= 6 && Math.abs(x) <= 10, `solução pouco amigável ${v.x}`);
+  ok(Math.abs(Math.log(v.rhs)) > 1e-9, 'segundo membro igual a 1 (equação degenerada)');
+  // erros típicos: esquecer o termo h, esquecer de dividir por p
+  const lg = Math.log(v.rhs) / Math.log(v.base);
+  const tipicos = [lg / v.p, lg - v.h].filter((w) => Math.abs(w - x) > 1e-6).map(textoNum);
+  verificarCorrecao(p, ok, { erradas: tipicos });
+  if (v.base < 1) conta(cob, 'base entre 0 e 1');
+  if (!racional(v.base)) conta(cob, 'base com raiz');
+  if (v.p === 2) conta(cob, 'p=2');
+  if (v.p === -1) conta(cob, 'p=-1');
+  if (v.h !== 0) conta(cob, 'h diferente de 0');
+  if (v.x[1] > 1) conta(cob, 'solução fracionária');
+  if (x < 0) conta(cob, 'solução negativa');
+  if (!racional(v.rhs)) conta(cob, 'segundo membro com raiz');
+}, (ok, cob) => cobrir(ok, cob, 'base entre 0 e 1', 'base com raiz', 'p=2', 'p=-1', 'h diferente de 0', 'solução fracionária', 'solução negativa', 'segundo membro com raiz'));
+
+// ---------- 7. eq-log ----------
+
+await porTipo('eq-log', (p, ok, cob) => {
+  const v = p.verificacao;
+  const r = lerRelacao(formula(p));
+  ok(r.op === '=', 'o enunciado não é uma equação');
+  const raizes = resolver(r);
+  const quantas = /[Qq]uantas soluções/.test(p.enunciado);
+  const maior = /maior solução/.test(p.enunciado);
+  conta(cob, v.forma);
+  if (quantas) {
+    conta(cob, `quantas ${raizes.length}`);
+    ok(p.modo === 'escolha', 'a pergunta «quantas» devia ser de escolha');
+    const vals = p.opcoes.map((o) => M.avaliar(o.expr).valor).sort((a, b) => a - b);
+    ok(JSON.stringify(vals) === '[0,1,2,3]', `opções ${vals}`);
+    const c = p.opcoes.find((o) => o.correta);
+    ok(M.avaliar(c.expr).valor === raizes.length, `diz ${c.tex} mas há ${raizes.length} soluções (${raizes.join(', ')})`);
+  } else {
+    ok(p.modo === 'escrita', 'devia ser de resposta escrita');
+    const x = valorCerto(p);
+    if (maior) {
+      conta(cob, 'maior');
+      ok(raizes.length === 2, `«maior solução» mas há ${raizes.length} soluções`);
+      ok(raizes.length > 0 && perto(x, raizes[raizes.length - 1], 1e-9), `maior solução ${x} != ${raizes[raizes.length - 1]}`);
+    } else {
+      conta(cob, 'solução única');
+      ok(raizes.length === 1, `${raizes.length} soluções em vez de 1 (${raizes.join(', ')})`);
+      ok(raizes.length === 1 && perto(x, raizes[0], 1e-9), `resposta ${x} != solução numérica ${raizes[0]}`);
+    }
+    ok(Number.isFinite(r.esq(x)) && Number.isFinite(r.dir(x)) && perto(r.esq(x), r.dir(x), 1e-9), 'a resposta não verifica a equação (ou está fora do domínio)');
+    const certas = [];
+    if (v.b === Math.E && v.forma === 'simples' && v.k > 0) {
+      const sinal = v.h > 0 ? '-' : '+';
+      certas.push(`(e^${v.k}${sinal}${Math.abs(v.h)})/${v.p}`, `(exp(${v.k})${sinal}${Math.abs(v.h)})/${v.p}`, `(e^${v.k} ${sinal} ${Math.abs(v.h)}) / ${v.p}`);
+    }
+    verificarCorrecao(p, ok, { certas, erradas: (v.rejeitadas || []).map(textoNum) });
+  }
+  // o que verificacao afirma bate com a resolução numérica
+  const sol = v.solucoes.slice().sort((a, b) => a - b);
+  ok(sol.length === raizes.length && sol.every((s, i) => perto(s, raizes[i], 1e-9)), `verificacao.solucoes ${sol} != ${raizes}`);
+  for (const rj of v.rejeitadas || []) {
+    conta(cob, 'com solução rejeitada');
+    ok(raizes.every((s) => Math.abs(s - rj) > 1e-6), `a «rejeitada» ${rj} é solução da equação`);
+    ok(!Number.isFinite(r.esq(rj)) || !Number.isFinite(r.dir(rj)), `a «rejeitada» ${rj} devia estar fora do domínio`);
+    ok(p.explicacao.includes(String(rj)) && p.explicacao.includes('rejeitada'), 'a explicação não diz que a solução é rejeitada');
+    const N = Math.pow(v.b, v.k);
+    const prod = (x) => (v.orient === 'menos' ? x * (x - v.h) : (x + v.h) * x);
+    ok(perto(prod(rj), N, 1e-9) && perto(prod(sol[0]), N, 1e-9), 'as duas raízes do trinómio não dão o produto b^k');
+  }
+  if (v.forma === 'simples') {
+    const x = sol[0];
+    ok(perto(v.p * x + v.h, Math.pow(v.b, v.k), 1e-9), 'o argumento na solução não vale b^k');
+    ok(v.p * x + v.h > 0, 'o argumento na solução não é positivo');
+  }
+  if (v.forma === 'iguais') {
+    const x0 = (v.j - v.h) / (v.p - v.q); // a solução «algébrica», antes de ver o domínio
+    ok(v.p !== v.q, 'p = q (equação degenerada)');
+    ok(perto(v.p * x0 + v.h, v.q * x0 + v.j, 1e-9), 'x0 não iguala os argumentos');
+    if (v.solucoes.length === 0) {
+      conta(cob, 'iguais impossível');
+      ok(v.p * x0 + v.h <= 1e-12, 'dizem que é impossível mas o argumento em x0 é positivo');
+      ok(raizes.length === 0, 'devia ser impossível');
+      ok(p.explicacao.includes('impossível'), 'a explicação não diz que é impossível');
+    } else {
+      conta(cob, 'iguais possível');
+      ok(v.p * x0 + v.h > 1e-12, 'dizem que serve mas o argumento em x0 não é positivo');
+      ok(!p.explicacao.includes('impossível'), 'a explicação diz «impossível» numa equação possível');
+    }
+  }
+  ok(/condição de existência/i.test(p.explicacao), 'a explicação não fala da condição de existência');
+}, (ok, cob) => cobrir(ok, cob, 'simples', 'soma', 'quadrado', 'dobro', 'iguais', 'quantas 0', 'quantas 1', 'quantas 2', 'maior', 'solução única', 'com solução rejeitada', 'iguais impossível', 'iguais possível'));
+
+// ---------- 8. substituicao ----------
+
+await porTipo('substituicao', (p, ok, cob) => {
+  const v = p.verificacao;
+  ok(p.modo === 'escrita', 'devia ser de resposta escrita');
+  const r = lerRelacao(formula(p));
+  ok(r.op === '=', 'o enunciado não é uma equação');
+  const raizes = resolver(r);
+  const x = valorCerto(p);
+  const quantas = /[Qq]uantas soluções/.test(p.enunciado);
+  const soma = /soma das soluções/.test(p.enunciado);
+  const maior = /maior solução/.test(p.enunciado);
+  let esperado;
+  if (quantas) { esperado = raizes.length; conta(cob, 'quantas'); }
+  else if (soma) { ok(raizes.length === 2, `«soma» mas há ${raizes.length} soluções`); esperado = raizes.reduce((a, b) => a + b, 0); conta(cob, 'soma'); }
+  else if (maior) { ok(raizes.length === 2, `«maior» mas há ${raizes.length} soluções`); esperado = Math.max(...raizes); conta(cob, 'maior'); }
+  else { ok(raizes.length === 1, `${raizes.length} soluções em vez de 1 (${raizes.join(', ')})`); esperado = raizes[0]; conta(cob, 'solução única'); }
+  ok(perto(x, esperado, 1e-9), `resposta ${x} != ${esperado} (soluções ${raizes.join(', ')})`);
+  ok(perto(v.valor, esperado, 1e-9), `verificacao.valor ${v.valor} != ${esperado}`);
+  // o que o aluno lê tem de ser u^2 + B u + C com u = c^x (o coeficiente de x e as constantes)
+  const c = v.c;
+  ok(perto(r.esq(0), 1 + v.B + v.C, 1e-9), `em x=0 o enunciado dá ${r.esq(0)} e 1+B+C = ${1 + v.B + v.C}`);
+  ok(perto(r.esq(1), c * c + v.B * c + v.C, 1e-9), `em x=1 o enunciado dá ${r.esq(1)} e c^2+Bc+C = ${c * c + v.B * c + v.C}`);
+  ok(perto(r.dir(0), 0, 1e-9), 'o segundo membro devia ser 0');
+  // as raízes do trinómio em u, e só as positivas dão soluções
+  const disc = v.B * v.B - 4 * v.C;
+  ok(disc > 0, 'discriminante não positivo');
+  const us = [(-v.B - Math.sqrt(disc)) / 2, (-v.B + Math.sqrt(disc)) / 2];
+  const positivas = us.filter((u) => u > 0);
+  for (const u of us) ok(Number.isInteger(Math.round(u)) && Math.abs(u - Math.round(u)) < 1e-9 && p.explicacao.includes(`u=${Math.round(u)}`), `a explicação não traz a raiz u=${u}`);
+  ok(positivas.length === raizes.length, `${positivas.length} raízes positivas em u mas ${raizes.length} soluções em x`);
+  for (const u of positivas) ok(raizes.some((s) => perto(Math.pow(c, s), u, 1e-9)), `u=${u} não corresponde a nenhuma solução`);
+  if (positivas.length < 2) {
+    conta(cob, 'raiz negativa em u');
+    ok(p.explicacao.includes('não serve'), 'a explicação não rejeita a raiz negativa de u');
+  } else {
+    ok(!p.explicacao.includes('não serve'), 'a explicação rejeita uma raiz que serve');
+  }
+  ok(p.explicacao.includes('u>0'), 'a explicação não diz que u>0');
+  if (c === Math.E) conta(cob, 'base e'); else conta(cob, 'base inteira');
+  // erros típicos: dar o u em vez do x, a soma/produto dos u, esquecer o ln
+  const tipicos = [];
+  const somaU = positivas.reduce((a, b) => a + b, 0);
+  const prodU = positivas.reduce((a, b) => a * b, 1);
+  tipicos.push(textoNum(somaU), textoNum(prodU), textoNum(Math.max(...positivas)), textoNum(Math.log(somaU) / Math.log(c)));
+  verificarCorrecao(p, ok, { erradas: tipicos.filter((w) => Math.abs(M.avaliar(w).valor - x) > 1e-6) });
+}, (ok, cob) => cobrir(ok, cob, 'quantas', 'soma', 'maior', 'solução única', 'raiz negativa em u', 'base e', 'base inteira'));
+
+// ---------- 9. inequacao ----------
+
+await porTipo('inequacao', (p, ok, cob) => {
+  const v = p.verificacao;
+  ok(p.modo === 'escolha', 'devia ser de escolha');
+  const r = lerRelacao(formula(p));
+  ok(['<', '>', '\\le', '\\ge'].includes(r.op), 'o enunciado não é uma inequação');
+  const fr = fronteiras(r);
+  ok(fr.length >= 1, 'o conjunto-solução é vazio ou todo o domínio (inequação degenerada)');
+  // pontos de teste: grelha, extremos de todas as opções (exatos e à volta) e fronteiras reais
+  const crit = new Set();
+  for (const o of p.opcoes) for (const [lo, hi] of o.intervalos) for (const e of [lo, hi]) if (Number.isFinite(e)) crit.add(e);
+  const pts = new Set(AMOSTRA_BASE);
+  const em1 = (c) => 1e-6 * Math.max(1, Math.abs(c));
+  for (const c of crit) { pts.add(c); pts.add(c - em1(c)); pts.add(c + em1(c)); }
+  for (const c of fr) { pts.add(c - em1(c)); pts.add(c + em1(c)); }
+  const ordem = [];
+  for (const c of [...crit, ...fr].sort((a, b) => a - b)) { // junta pontos quase iguais (extremo e fronteira)
+    if (ordem.length === 0 || c - ordem[ordem.length - 1] > 1e-5 * Math.max(1, Math.abs(c))) ordem.push(c);
+  }
+  for (let i = 0; i + 1 < ordem.length; i++) pts.add((ordem[i] + ordem[i + 1]) / 2);
+  const xs = [...pts];
+  const verdade = xs.map((x) => vale(r, x));
+  ok(verdade.some(Boolean) && verdade.some((b) => !b), 'conjunto-solução vazio ou tudo');
+  const assinaturas = new Set();
+  let certas = 0;
+  for (const o of p.opcoes) {
+    for (const [lo, hi] of o.intervalos) ok(lo < hi, `opção ${o.tex}: intervalo vazio ou ao contrário`);
+    const memb = xs.map((x) => em(x, o.intervalos));
+    const igual = memb.every((b, i) => b === verdade[i]);
+    const ondeFalha = igual ? null : xs.find((x, i) => memb[i] !== verdade[i]);
+    ok(igual === o.correta, `opção ${o.tex}: coincide com o conjunto-solução=${igual}, correta=${o.correta}${ondeFalha === null ? '' : ` (difere em x=${ondeFalha})`}`);
+    if (igual) certas++;
+    assinaturas.add(memb.map(Number).join(''));
+  }
+  ok(certas === 1, `${certas} opções coincidem com o conjunto-solução`);
+  ok(assinaturas.size === 4, 'duas opções representam o mesmo conjunto');
+  // o sentido: a explicação tem de dizer se se mantém ou se inverte, conforme a função é crescente ou decrescente
+  const cresc = r.esq(2) > r.esq(1);
+  const corre = p.opcoes.find((o) => o.correta);
+  ok(p.explicacao.includes(cresc ? 'mantém-se' : 'inverte-se') && !p.explicacao.includes(cresc ? 'inverte-se' : 'mantém-se'), `função ${cresc ? 'crescente' : 'decrescente'} mas a explicação diz outra coisa`);
+  ok(p.explicacao.includes(corre.tex), 'a explicação não traz o conjunto-solução certo');
+  ok(cresc === (v.base > 1), 'verificacao.base não bate com o crescimento da função do enunciado');
+  conta(cob, v.forma);
+  conta(cob, cresc ? 'crescente' : 'decrescente');
+  conta(cob, `op ${r.op}`);
+  if (v.forma === 'log' && v.base === Math.E) conta(cob, 'ln');
+  if (v.forma === 'log') conta(cob, 'domínio x>0 limita a solução');
+}, (ok, cob) => cobrir(ok, cob, 'exp', 'log', 'crescente', 'decrescente', 'op <', 'op >', 'op \\le', 'op \\ge', 'ln'));
+
 await teste('gerarPergunta rejeita tipo desconhecido; tipos completos', (ok) => {
   let deu = false;
   try { gerarPergunta('nao-existe', M.criarRng(1), {}); } catch (e) { deu = true; }
@@ -194,9 +684,74 @@ await teste('treino.js monta com estes tipos', async (ok) => {
   ok(el.querySelector('.tre-enunciado') !== null, 'não apareceu a primeira pergunta');
 });
 
+// o treino a sério: sessões completas de cada tipo de equação, a acertar e a errar, pelo DOM do widget
+await teste('treino.js: sessões completas com os tipos de equações (acertar e errar)', async (ok) => {
+  const treino = await import('../widgets/treino.js');
+  const progresso = await import('../../assets/motor/progresso.js');
+  const antes = progresso.ler('log-treino', null); // o treino regista as respostas: repõe-se no fim
+  try {
+  for (const id of ['exp-mesma-base', 'eq-log', 'substituicao', 'inequacao']) {
+    const tipo = TIPOS.find((t) => t.id === id);
+    for (const [certas, semente] of [[true, 11], [false, 12], [true, 13], [false, 14]]) {
+      const registo = [];
+      const espia = { ...tipo, gerar: (rng, d) => { const q = tipo.gerar(rng, d); registo.push(q); return q; } };
+      const el = document.createElement('div');
+      document.body.append(el);
+      await treino.montar(el, {}, { tipos: [espia], semente });
+      el.querySelector('.tre-comecar').click();
+      const usadas = [...new Map(registo.map((q) => [q.enunciado, q])).values()].slice(0, 10);
+      const onde = `${id} (${certas ? 'a acertar' : 'a errar'}, semente ${semente})`;
+      ok(usadas.length === 10, `${onde}: ${usadas.length} perguntas distintas na sessão`);
+      for (let i = 0; i < usadas.length; i++) {
+        const q = usadas[i];
+        const aqui = (c, m) => ok(c, `${onde}, pergunta ${i + 1}: ${m} [${q.enunciado.slice(0, 70)}]`);
+        aqui(el.querySelector('.tre-enunciado .katex') !== null, 'enunciado sem fórmula renderizada');
+        if (q.modo === 'escolha') {
+          const botoes = [...el.querySelectorAll('.tre-opcao')];
+          aqui(botoes.length === 4 && botoes.every((b) => b.querySelector('.katex')), 'opções por renderizar');
+          botoes[q.opcoes.findIndex((o) => o.correta === certas)].click();
+        } else {
+          el.querySelector('.tre-campo').value = certas ? q.esperado.expr : String(M.avaliar(q.esperado.expr).valor + 1);
+          el.querySelector('form.tre-escrita').dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+        const fb = el.querySelector('.tre-feedback');
+        if (certas) aqui(fb.querySelector('.aviso-ok') !== null && !fb.textContent.includes('Errado'), 'a resposta certa não foi aceite: ' + fb.textContent.slice(0, 80));
+        else {
+          aqui(fb.querySelector('.aviso-erro') !== null && fb.textContent.includes('Errado'), 'a resposta errada não foi recusada: ' + fb.textContent.slice(0, 80));
+          aqui(fb.querySelector('.tre-certa') !== null && (q.modo === 'escolha' ? fb.querySelector('.tre-certa .katex') !== null : true), 'não mostra a resposta certa');
+        }
+        aqui(fb.querySelector('.tre-explicacao__texto .katex') !== null, 'explicação sem fórmulas renderizadas');
+        aqui(el.querySelector('.katex-error') === null, 'KaTeX com erro no ecrã');
+        el.querySelector('.tre-seguinte').click();
+      }
+      const pont = el.querySelector('.tre-pontuacao');
+      ok(pont !== null && pont.textContent.includes(certas ? 'Acertaste 10 de 10' : 'Acertaste 0 de 10'), `${onde}: pontuação final «${pont && pont.textContent}»`);
+      el.remove();
+    }
+  }
+  } finally {
+    progresso.guardar('log-treino', antes === null ? {} : antes);
+  }
+});
+
 const ms = Math.round(performance.now() - t0);
 linhas.push('');
 linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+// ?ver=id1,id2&de=1&nver=8 junta ao resultado perguntas de exemplo (para ler os enunciados e as explicações)
+{
+  const q = new URLSearchParams(location.search);
+  const de = Number(q.get('de')) || 1;
+  const nver = Number(q.get('nver')) || 8;
+  for (const id of (q.get('ver') || '').split(',').filter(Boolean)) {
+    for (let s = de; s < de + nver; s++) {
+      const p = gerarT(id, s);
+      linhas.push('', `[${id} #${s}] ${p.enunciado}`);
+      if (p.modo === 'escolha') p.opcoes.forEach((o, i) => linhas.push(`   ${'ABCD'[i]}${o.correta ? '*' : ' '} ${o.tex}`));
+      else linhas.push(`   resposta: ${p.esperado.tex}   (${p.esperado.expr})`);
+      linhas.push(`   explicação: ${p.explicacao}`);
+    }
+  }
+}
 saida.textContent = linhas.join('\n');
 document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
 </script>

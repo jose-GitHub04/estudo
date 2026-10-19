@@ -17,6 +17,7 @@
 import * as M from '../../assets/motor/matematica.js';
 import { criarGrafico, arrastarNaCurva } from '../../assets/motor/grafico.js';
 import { tex } from '../../assets/motor/katex.js';
+import { amostrarCurva, colocar, posicoesAoRedor, zonasDosEixos } from './colocacao.js';
 
 // ======================================================================
 // Números: formatação à portuguesa
@@ -205,7 +206,9 @@ function h(tag, props = {}, ...filhos) {
   return n;
 }
 /** Texto com $...$ -> HTML com as fórmulas desenhadas. */
-const T = (s) => s.replace(/\$([^$]+)\$/g, (_, m) => tex(m));
+// a pontuação e o parêntese que abre ficam colados à fórmula (não passam sozinhos para outra linha)
+const T = (s) => s.replace(/(\()?\$([^$]+)\$([.,;:!?)]*)/g, (_, ab, m, fim) => (m.length <= 40 && (ab || fim)
+  ? `<span class="li-junto">${ab || ''}${tex(m)}${fim}</span>` : `${ab || ''}${tex(m)}${fim}`));
 const comTex = (el, latex) => { el.innerHTML = tex(latex); return el; };
 const comT = (el, texto) => { el.innerHTML = T(texto); return el; };
 
@@ -331,6 +334,25 @@ function marcasPot(k0, k1, passo = 1, desloca = 0) {
   return r;
 }
 
+/**
+ * Põe o rótulo de um ponto (de um gráfico já com as curvas) no sítio onde menos pisa as curvas, os números e os nomes dos eixos.
+ * `textos`: do mais completo ao mais curto (o curto só entra se o completo não tiver sítio limpo).
+ * `curvas`: [{ fn, de, ate }]. `preferencia`: lados por ordem de gosto.
+ */
+function rotuloDe(g, x, y, textos, { curvas, preferencia = ['cimaDir', 'baixoDir', 'cimaEsq', 'baixoEsq', 'cima', 'baixo', 'dir', 'esq'], cor, tam = 12 }) {
+  const alt = posicoesAoRedor(5, tam);
+  const pontos = curvas.map((c) => amostrarCurva(g, c.fn, c.de, c.ate));
+  const evitar = zonasDosEixos(g, tam);
+  let melhor = null;
+  textos.forEach((texto, i) => {
+    const r = colocar(g, { texto, px: g.X(x), py: g.Y(y), tam, opcoes: preferencia.map((k) => alt[k]), curvas: pontos, evitar });
+    const custo = r.custo + i * 3;
+    if (!melhor || custo < melhor.custo - 1e-9) melhor = { ...r, custo, texto };
+  });
+  g.rotulo(x, y, melhor.texto, { ancora: melhor.ancora, dx: melhor.dx, dy: melhor.dy, cor });
+  return melhor;
+}
+
 const caixaConclusao = (el, titulo, texto) => {
   el.replaceChildren(h('p', { class: 'li-rotulo' }, titulo), comT(h('p', { class: 'li-texto' }), texto));
 };
@@ -425,7 +447,8 @@ function fabricaExp() {
       camadas(g) {
         g.curva((u) => log10QuocExp(p, u), { cor: 'exp' });
         g.rotulo(jx[0], 0, '1', { ancora: 'end', dx: -6, dy: 4 }); // a marca do eixo (o motor não a escreve onde passa o eixo)
-        g.ponto(p, log10QuocExp(p, p), { rotulo: `mínimo, x = ${P}`, posRotulo: 'baixo' });
+        g.ponto(p, log10QuocExp(p, p));
+        rotuloDe(g, p, log10QuocExp(p, p), [`mínimo, x = ${P}`, 'mínimo'], { curvas: [{ fn: (u) => log10QuocExp(p, u) }], preferencia: ['baixoDir', 'baixoEsq', 'baixo', 'cimaDir', 'cimaEsq', 'cima', 'dir', 'esq'] });
         if (!c.sempre) {
           g.ponto(c.x1, 0, { cor: 'tg', raio: 3.5 });
           g.ponto(c.x2, 0, { cor: 'tg' });
@@ -522,7 +545,8 @@ function fabricaLn() {
       aria: `Gráfico de logaritmo neperiano de x a dividir por x elevado a ${numTxt(p)}, para x entre 1 e 10 elevado a 12, com o eixo horizontal em escala logarítmica. Sobe até ao máximo em x igual a ${numFalado(mx.x)} e depois desce para zero.`,
       camadas(g) {
         g.curva((u) => quocienteLnT(p, u - D), { cor: 'log' });
-        g.ponto(D + tm, mx.y, { rotulo: 'máximo', posRotulo: 'cima' });
+        g.ponto(D + tm, mx.y);
+        rotuloDe(g, D + tm, mx.y, ['máximo'], { curvas: [{ fn: (u) => quocienteLnT(p, u - D) }], preferencia: ['cimaDir', 'cima', 'cimaEsq', 'dir', 'esq', 'baixoDir', 'baixoEsq', 'baixo'] });
       },
       cursor: {
         fn: (u) => quocienteLnT(p, u - D), x0: D + est.t, min: D, max: D + 12, passo: 0.1,
@@ -575,7 +599,7 @@ function fabricaXlnx() {
     String.raw`Quando $x\to0^+$, $\ln x\to-\infty$, mas $x\to0$ mais depressa, por isso o produto $x\ln x$ tende para $0$, por valores negativos (em $]0,1[$ o logaritmo é negativo).`);
   caixaConclusao(E.regra, 'Regra dos cartões',
     String.raw`Com $y=\dfrac1x$ (e $y\to+\infty$): $x\ln x=-\dfrac{\ln y}{y}\to0$. É outra vez «a potência vence o logaritmo».`);
-  comT(E.mais, String.raw`<strong>E o mínimo?</strong> O produto desce até ao mínimo em $x=\dfrac1e\approx${numTex(minimoXlnx.x)}$, onde vale $-\dfrac1e\approx${numTex(minimoXlnx.y)}$, e depois sobe para $0$ à medida que $x$ se aproxima de $0$.`);
+  comT(E.mais, String.raw`<strong>E o mínimo?</strong> O produto tem o mínimo em $x=\dfrac1e\approx${numTex(minimoXlnx.x)}$, onde vale $-\dfrac1e\approx${numTex(minimoXlnx.y)}$. À esquerda do mínimo, à medida que $x$ se aproxima de $0$, o produto volta a subir para $0$.`);
 
   const uDeS = (s) => (est.log ? D + s : Math.pow(10, s));
   const sDeU = (u) => (est.log ? u - D : Math.log10(Math.max(u, 1e-6)));
@@ -594,7 +618,7 @@ function fabricaXlnx() {
     vChips.marcar(est.log ? 'log' : 'normal');
     const f = (u) => (est.log ? xlnx(Math.pow(10, u - D)) : xlnx(u));
     vista.desenhar({
-      x: est.log ? [D - 6.6, D + 0.15] : [0, 1.1], y: [-0.45, 0.15],
+      x: est.log ? [D - 6.6, D + 0.02] : [0, 1.1], y: [-0.45, 0.15],
       marcasX: est.log ? marcasPot(-6, 0, 1, D) : undefined,
       aria: est.log
         ? 'Gráfico de x vezes logaritmo neperiano de x, com o eixo horizontal em escala logarítmica, de x igual a 10 elevado a menos 6 até 1. A curva desce até ao mínimo, menos 0,37, e depois sobe para zero.'
@@ -602,7 +626,9 @@ function fabricaXlnx() {
       camadas(g) {
         g.curva(f, { cor: 'log' });
         if (!est.log) g.ponto(0, 0, { oco: true });
-        g.ponto(est.log ? D + Math.log10(minimoXlnx.x) : minimoXlnx.x, minimoXlnx.y, { rotulo: 'mínimo', posRotulo: 'baixo' });
+        const xm = est.log ? D + Math.log10(minimoXlnx.x) : minimoXlnx.x;
+        g.ponto(xm, minimoXlnx.y);
+        rotuloDe(g, xm, minimoXlnx.y, ['mínimo'], { curvas: [{ fn: f }], preferencia: ['baixo', 'baixoDir', 'baixoEsq', 'dir', 'esq', 'cimaDir', 'cimaEsq', 'cima'] });
       },
       cursor: {
         fn: f, x0: uDeS(est.s), min: est.log ? D - 6 : 1e-6, max: est.log ? D : 1, passo: est.log ? 0.1 : 0.01,
@@ -680,7 +706,7 @@ function fabricaNotaveis() {
       x: [-1.2, 1.5], y: [0, 3], rotuloY: 'y',
       aria: 'Gráfico de duas curvas, e elevado a x menos 1 sobre x, a azul, e logaritmo de 1 mais x sobre x, a vermelho, para x entre menos 1,2 e 1,5. As duas passam muito perto do ponto (0, 1), assinalado a aberto, e a reta tracejada y igual a 1 mostra o valor do limite.',
       camadas(g) {
-        g.retaHorizontal(1, { rotulo: 'y = 1', posRotulo: 'esq' });
+        g.retaHorizontal(1, { rotulo: 'y = 1', posRotulo: 'dir' }); // à direita: à esquerda o texto cruza a reta x = −1
         g.retaVertical(-1, { rotulo: 'x = −1', posRotulo: 'baixo' });
         g.curva((x) => (x === 0 ? 1 : expm1X(x)), { cor: 'exp' });
         g.curva((x) => (x === 0 ? 1 : log1pX(x)), { cor: 'log' });
@@ -761,13 +787,17 @@ export const FUNCOES5 = {
   },
   g: {
     chip: String.raw`g(x)=\ln x/x`, falado: 'g de x igual a logaritmo de x a dividir por x',
-    cor: 'log', fn: G5, janela: { x: [-1, 12], y: [-3, 1] },
+    cor: 'log', fn: G5, janela: { x: [-2.5, 12], y: [-3, 1] }, // com espaço à esquerda do eixo dos yy para o texto «y = 0»
     slider: { min: -2, max: 1.08, step: 0.02, x0: 2, log: true },
     cursor: { min: 0.01, max: 12, passo: 0.1 },
     camadas(g) {
-      g.retaVertical(0, { rotulo: 'x = 0', posRotulo: 'baixo' });
-      g.retaHorizontal(0, { rotulo: 'y = 0', posRotulo: 'dir' });
-      g.ponto(Math.E, 1 / Math.E, { rotulo: 'máximo', posRotulo: 'cima' });
+      // os textos das retas ficam à esquerda do eixo dos yy, onde a curva não existe (à direita ela cola-se às duas retas)
+      g.retaVertical(0);
+      g.retaHorizontal(0);
+      g.rotulo(0, 0.55, 'x = 0', { ancora: 'end', dx: -8, dy: 4, cor: 'assint' });
+      g.rotulo(0, 0, 'y = 0', { ancora: 'end', dx: -8, dy: -6, cor: 'assint' });
+      g.ponto(Math.E, 1 / Math.E);
+      rotuloDe(g, Math.E, 1 / Math.E, ['máximo'], { curvas: [{ fn: G5 }], preferencia: ['cima', 'cimaDir', 'cimaEsq', 'dir', 'esq', 'baixoDir', 'baixoEsq', 'baixo'] });
     },
     aria: 'Gráfico de g de x igual a logaritmo de x sobre x, para x entre menos 1 e 12. Só existe para x positivo: desce sem limite junto da reta x igual a 0, tem o máximo 1 sobre e em x igual a e, e depois desce lentamente para a reta y igual a 0.',
     leituras: [

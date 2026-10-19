@@ -14,6 +14,8 @@ const K = BRAN + 1; // X = 1 … 4
 
 const T = (s) => tex(s);
 const D = (s) => tex(s, true);
+// uma fórmula comprida em várias linhas (num telemóvel uma linha só ficava cortada)
+const D2 = (...linhas) => tex('\\begin{gathered}' + linhas.join(' \\\\ ') + '\\end{gathered}', true);
 const ft = (f) => (f.d === 1 ? String(f.n) : `${f.n}/${f.d}`); // fração em texto simples
 const fx = (n, d) => `\\frac{${n}}{${d}}`; // fração sem reduzir, em LaTeX
 const fp = (f) => P.fracTexF(f);
@@ -191,10 +193,10 @@ export async function montar(el) {
       criar('circle', { class: 'exu-no exu-no--b', cx: XS, cy: YS[i + 1], r: 11 }),
       criar('text', { class: 'exu-letra', x: XS, y: YS[i + 1] + 4, 'text-anchor': 'middle' }, ['B']),
     ]);
-    gRaiz.insertBefore(g, gRaiz.firstChild);
+    gRaiz.append(g); // por cima dos ramos vermelhos: o fundo destacado de uma linha não tapa os rótulos do tronco
     spine.push({ g, linha });
   }
-  gRaiz.insertBefore(criar('circle', { class: 'exu-no exu-no--raiz', cx: XS, cy: YS[0], r: 5 }), gRaiz.firstChild);
+  gRaiz.append(criar('circle', { class: 'exu-no exu-no--raiz', cx: XS, cy: YS[0], r: 5 }));
   $('.exu-lugar-arvore').append(svgA);
 
   // ---------- tabela de X ----------
@@ -579,7 +581,7 @@ export async function montar(el) {
   add('3.1', `<p>${nomes[1]} ${T('X = 1')}: há 2 vermelhas em 5 bolas.</p>${D('P(X=1)=' + fx(2, 5))}`);
   add('3.1', `<p>${nomes[2]} Como não repões, depois de tirares uma branca ficam 4 bolas, 2 delas vermelhas.</p>${D('P(X=2)=' + prodTex(2) + '=' + fp(tab[1].p))}`);
   add('3.1', `<p>${nomes[3]} Em cada passo há menos uma bola na caixa.</p>${D('P(X=3)=' + prodTex(3) + '=' + fp(tab[2].p))}`);
-  add('3.1', `<p>${nomes[4]} Na última tiragem só restam 2 bolas e são as duas vermelhas, por isso o último fator é ${T(fx(2, 2))}.</p>${D('P(X=4)=' + prodTex(4) + '=' + fp(tab[3].p))}`);
+  add('3.1', `<p>${nomes[4]} Na última tiragem só restam 2 bolas e são as duas vermelhas, por isso o último fator é ${T(fx(2, 2))}.</p>${D2('P(X=4)=' + prodTex(4), '=' + fp(tab[3].p))}`);
   add(
     '3.1',
     `<p>A tabela de distribuição fica assim. Confirma que as probabilidades somam 1.</p>
@@ -590,13 +592,13 @@ export async function montar(el) {
      ${D(tab.map((l) => fp(l.p)).join('+') + '=1')}`
   );
 
-  add('3.2', `<p>Esta pergunta é uma probabilidade condicionada: sabes que ${T('X \\geq 2')}, por isso o todo deixou de ser a caixa inteira. Usa a definição.</p>${D('P(X=3\\mid X\\geq 2)=\\dfrac{P(X=3\\cap X\\geq 2)}{P(X\\geq 2)}')}`);
-  add('3.2', `<p>Se ${T('X = 3')}, então já ${T('X \\geq 2')}. Logo a interseção é só ${T('X = 3')}.</p>${D('P(X=3\\cap X\\geq 2)=P(X=3)=' + fp(d.pX3))}`);
-  add('3.2', `<p>${T('P(X\\geq 2)')} calcula-se somando os valores 2, 3 e 4. Também podias fazer ${T('1-P(X=1)')}.</p>${D('P(X\\geq 2)=' + [1, 2, 3].map((i) => fp(tab[i].p)).join('+') + '=' + fp(d.pGe2) + '=1-' + fp(tab[0].p))}`);
+  add('3.2', `<p>Esta pergunta é uma probabilidade condicionada: sabes que ${T('X \\geq 2')}, por isso o todo deixou de ser a caixa inteira. Usa a definição.</p>${D2('P(X=3\\mid X\\geq 2)', '=\\dfrac{P(X=3\\cap X\\geq 2)}{P(X\\geq 2)}')}`);
+  add('3.2', `<p>Se ${T('X = 3')}, então já ${T('X \\geq 2')}. Logo a interseção é só ${T('X = 3')}.</p>${D2('P(X=3\\cap X\\geq 2)', '=P(X=3)=' + fp(d.pX3))}`);
+  add('3.2', `<p>${T('P(X\\geq 2)')} calcula-se somando os valores 2, 3 e 4. Também podias fazer ${T('1-P(X=1)')}.</p>${D2('P(X\\geq 2)=' + [1, 2, 3].map((i) => fp(tab[i].p)).join('+'), '=' + fp(d.pGe2) + '=1-' + fp(tab[0].p))}`);
   add('3.2', `<p>Divide a parte pelo todo.</p>${D('P(X=3\\mid X\\geq 2)=' + `\\dfrac{${fp(d.pX3)}}{${fp(d.pGe2)}}=` + fp(d.cond))}<p>Na figura: a barra ${T('X=3')} ocupa ${T(fp(d.cond))} da zona sombreada. Repara que ${T(fp(d.pX3))} é a parte, mas o todo é ${T(fp(d.pGe2))}, e não 1.</p>`);
 
-  add('3.3', `<p>O valor médio é a soma dos produtos de cada valor pela sua probabilidade.</p>${D('\\mu=\\sum x_i\\,P(X=x_i)=' + tab.map((l) => `${l.x}\\times ${fp(l.p)}`).join('+') + '=' + fp(d.mu))}`);
-  add('3.3', `<p>Para a variância, calcula cada parcela ${T('p_i(x_i-\\mu)^2')} com ${T('\\mu=' + fp(d.mu))} e soma.</p>${D('\\sigma^2=' + tab.map((l) => `${fp(l.p)}\\times(${l.x}-${fp(d.mu)})^2`).join('+'))}${D('\\sigma^2=' + par.map((p) => fp(p.parc)).join('+') + '=' + fp(d.sigma2))}`);
+  add('3.3', `<p>O valor médio é a soma dos produtos de cada valor pela sua probabilidade.</p>${D2('\\mu=\\sum x_i\\,P(X=x_i)', '=' + tab.slice(0, 2).map((l) => `${l.x}\\times ${fp(l.p)}`).join('+'), '+' + tab.slice(2).map((l) => `${l.x}\\times ${fp(l.p)}`).join('+') + '=' + fp(d.mu))}`);
+  add('3.3', `<p>Para a variância, calcula cada parcela ${T('p_i(x_i-\\mu)^2')} com ${T('\\mu=' + fp(d.mu))} e soma.</p>${D2(...tab.map((l, i) => `${i ? '+' : '\\sigma^2='}${fp(l.p)}\\times(${l.x}-${fp(d.mu)})^2`))}${D('\\sigma^2=' + par.map((p) => fp(p.parc)).join('+') + '=' + fp(d.sigma2))}`);
   add('3.3', `<p>O desvio-padrão é a raiz quadrada da variância.</p>${D('\\sigma=\\sqrt{\\sigma^2}=\\sqrt{' + fp(d.sigma2) + '}=' + M.fmt(d.sigma, 0))}<p>Em média, ${T('X')} é ${M.fmt(P.valor(d.mu), 0)} bolas tiradas, e os valores afastam-se dessa média cerca de ${M.fmt(d.sigma, 0)} bola.</p>`);
 
   const passosEl = $('.exu-passos');

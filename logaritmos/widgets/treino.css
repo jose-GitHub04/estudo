@@ -7,6 +7,7 @@
 .tre-guia { margin: 0; color: var(--tinta-suave); font-size: 0.95rem; }
 
 .tre-chips .chip { min-height: 2.75rem; padding: 0.45rem 0.95rem; }
+.tre-chips .chip[aria-pressed="true"]::before { content: "\2713\00a0"; }
 
 .tre-acoes { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.1rem 0 0; }
 .tre-acoes .botao { min-height: 2.9rem; }
@@ -43,26 +44,33 @@
 
 .tre-enunciado { margin: 0.5rem 0 1rem; font-size: 1.15rem; line-height: 1.75; overflow-wrap: anywhere; }
 .tre-enunciado:focus { outline: none; }
-.tre-cola { white-space: nowrap; }
+/* fórmula + pontuação que vem logo a seguir; inline-block (e não nowrap) para uma fórmula comprida quebrar por dentro */
+.tre-cola { display: inline-block; max-width: 100%; }
 
 /* opções */
-.tre-opcoes { display: grid; gap: 0.6rem; }
+/* minmax(0, 1fr): uma só coluna que nunca passa da largura do ecrã. Com a coluna «auto» uma opção com um
+   intervalo comprido esticava a coluna e a opção saía do ecrã a 390 px. */
+.tre-opcoes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
 .tre-opcao {
-  display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.5rem; padding: 0.55rem 0.85rem;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.2rem; align-items: center;
+  width: 100%; min-height: 3.5rem; padding: 0.55rem 0.85rem;
   border: 2px solid #cdbfae; border-radius: 0.5rem; background: var(--creme); color: var(--tinta);
   font-size: 1.05rem; text-align: left; cursor: pointer;
 }
 .tre-opcao:hover:not(:disabled) { border-color: var(--castanho); background: var(--dourado-fundo); }
 .tre-opcao__num {
-  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem;
+  display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem;
   border: 1px solid #cdbfae; border-radius: 50%; background: var(--papel); color: var(--tinta-suave);
   font-size: 0.85rem; font-weight: 600;
 }
-.tre-opcao__tex { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 0.1rem 0; }
-.tre-opcao__marca { flex: 0 0 auto; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+/* padding à direita: o KaTeX deixa o fim de uma fórmula 1 ou 2 px para lá da linha e, sem folga, a opção rolava */
+.tre-opcao__tex { min-width: 0; overflow-x: auto; overflow-y: hidden; overflow-wrap: anywhere; padding: 0.1rem 0.25rem 0.1rem 0; }
+.tre-opcao__marca { grid-column: 2; font-size: 0.85rem; font-weight: 700; }
+.tre-opcao__marca:empty { display: none; }
 
 .tre-opcao:disabled { color: var(--tinta); cursor: default; }
-.tre-opcao:disabled:not(.tre-opcao--certa):not(.tre-opcao--errada) { opacity: 0.6; }
+/* as outras opções, depois de responder: cinzentas mas legíveis (contraste ≥ 4,5:1, ao contrário de opacity) */
+.tre-opcao:disabled:not(.tre-opcao--certa):not(.tre-opcao--errada) { color: var(--tinta-suave); background: var(--papel); border-color: var(--linha); }
 .tre-opcao--certa { border-color: var(--certo); background: var(--certo-fundo); }
 .tre-opcao--certa .tre-opcao__marca { color: var(--certo); }
 .tre-opcao--errada { border-color: var(--erro); background: var(--erro-fundo); }
@@ -99,6 +107,6 @@
 
 @media (min-width: 40em) {
   .tre { padding: 1.25rem; }
-  .tre-opcoes { grid-template-columns: 1fr 1fr; }
+  .tre-opcoes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tre-acoes--fim .botao { flex: 0 1 auto; }
 }

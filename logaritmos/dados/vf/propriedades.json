@@ -6,7 +6,7 @@
    "tema": "propriedades",
    "texto": "Para $x,y>0$, tem-se $\\log(x+y)=\\log x+\\log y$.",
    "verdadeira": false,
-   "explicacao": "O logaritmo transforma <strong>produtos</strong> em somas, não somas em somas. Contraexemplo: $x=y=5$ dá $\\log(5+5)=\\log10=1$, mas $\\log5+\\log5=\\log25\\approx1{,}40$. Não há regra para o logaritmo de uma soma, porque $a^m+a^n$ não se simplifica.",
+   "explicacao": "O logaritmo transforma <strong>produtos</strong> em somas, mas não separa uma soma. Contraexemplo: $x=y=5$ dá $\\log(5+5)=\\log10=1$, mas $\\log5+\\log5=\\log25\\approx1{,}40$. Não há regra para o logaritmo de uma soma, porque $a^m+a^n$ não se simplifica.",
    "erroComum": "Pensar que o logaritmo se distribui por qualquer operação, como se fosse um número a multiplicar.",
    "verifica": [
     "not ig(log(x+y), log(x)+log(y))",

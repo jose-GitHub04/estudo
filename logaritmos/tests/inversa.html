@@ -337,9 +337,11 @@ async function correrTestes() {
   });
 
   await teste('leituras para o leitor de ecrã: aria-live com o resumo de P e Q', async (ok) => {
+    await esperar(900); // deixa acabar a animação do teste anterior (o texto «P foi refletido...» chega no fim dela)
     API.definirBase(2);
+    API.moverP(0.5); // sai de onde estava, para o texto ser mesmo o desta leitura
     API.moverP(1.5);
-    await esperar(500);
+    await esperar(600);
     const t = palco.querySelector('.inv-vivo').textContent;
     ok(/Base 2\./.test(t) && /P tem coordenadas \(1,5 ; 2,83\)/.test(t) && /Q tem as mesmas coordenadas trocadas, \(2,83 ; 1,5\)/.test(t), 'texto: ' + t);
   });

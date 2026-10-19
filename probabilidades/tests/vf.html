@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes do verdadeiro ou falso de Probabilidades</title>
+<!-- A página probabilidades/verdadeiro-falso.html real num iframe: percorre as 14 afirmações (respostas certas, depois
+     erradas), confere em cada uma o enunciado, o veredito, a explicação, o erro comum e a figura com o que está em
+     dados/verdadeiro-falso.json, o ecrã final, o filtro por tema, o progresso guardado e o teclado.
+     A VERDADE de cada afirmação é conferida em Python por tools/verificar_prob.py (cada uma é resolvida de novo).
+     Abrir /probabilidades/tests/vf.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8830/probabilidades/tests/vf.html
+     O resultado fica no elemento com id resultado e em data-testes (ok ou falhou) no elemento html. -->
+<style>
+  body { margin: 0; font: 13px/1.4 monospace; }
+  #resultado { margin: 0; padding: 0.5rem 1rem; white-space: pre-wrap; }
+  #palco { opacity: 0.6; }
+</style>
+</head>
+<body>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import { criarTestes, carregarPagina, auditar, aplicarAuditoria, esperar, clicar, tecla, texto, pontosDoCaminho } from './base.js';
+
+const t = criarTestes('verdadeiro ou falso');
+const DADOS = await (await fetch('../dados/verdadeiro-falso.json')).json();
+const AFS = DADOS.afirmacoes;
+const NOME_TEMA = Object.fromEntries(DADOS.temas.map((x) => [x.id, x.nome]));
+const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
+const virgula = (n, casas = 2) => Number(n.toFixed(casas)).toString().replace('.', ',').replace('-', '−');
+
+/** Texto de um elemento com as fórmulas de volta em $...$ (o LaTeX está no <annotation> do KaTeX). */
+function original(el) {
+  const c = el.cloneNode(true);
+  for (const k of c.querySelectorAll('.katex')) {
+    const a = k.querySelector('annotation');
+    k.replaceWith(c.ownerDocument.createTextNode(`$${a ? a.textContent : ''}$`));
+  }
+  return norm(c.textContent);
+}
+const POR_TEXTO = new Map(AFS.map((a) => [norm(a.texto), a]));
+
+const estado = (p) => {
+  try { return JSON.parse(p.win.localStorage.getItem('mat100-estudo-v1') || '{}'); } catch { return {}; }
+};
+
+/** Verifica o ecrã de uma afirmação já respondida e devolve a afirmação. */
+function conferirResultado(ok, p, a, escolha) {
+  const certa = escolha === a.verdadeira;
+  const res = p.q('.vf-resultado');
+  ok(res.classList.contains(certa ? 'vf-resultado--certo' : 'vf-resultado--errado'), `${a.id}: classe do resultado`);
+  const ver = texto(p.q('.vf-veredito'));
+  ok(ver.includes(certa ? 'Certo' : 'Errado') && ver.endsWith(`A afirmação é ${a.verdadeira ? 'verdadeira' : 'falsa'}.`), `${a.id}: veredito «${ver}»`);
+  ok(original(p.q('.vf-expl')) === norm(a.explicacao), `${a.id}: a explicação não é a do JSON`);
+  const erro = p.q('.vf-erro__texto');
+  ok(a.erroComum ? !!erro && original(erro) === norm(a.erroComum) : !erro, `${a.id}: erro comum ${a.erroComum ? 'em falta ou diferente' : 'a mais'}`);
+  const botoes = p.qa('.vf-resp');
+  ok(botoes.every((b) => b.disabled), `${a.id}: os botões devem ficar desligados`);
+  const escolhido = botoes.find((b) => b.dataset.valor === String(escolha));
+  const outro = botoes.find((b) => b !== escolhido);
+  ok(escolhido.classList.contains(certa ? 'vf-resp--certa' : 'vf-resp--errada') && texto(escolhido.querySelector('.vf-resp__marca')) === (certa ? '✓ Certo' : '✗ Errado'), `${a.id}: marca do botão escolhido`);
+  ok(certa ? outro.classList.contains('vf-resp--outra') : outro.classList.contains('vf-resp--certa') && texto(outro.querySelector('.vf-resp__marca')) === '✓ Era esta', `${a.id}: marca do outro botão`);
+  // figura
+  const fig = p.q('.vf-fig svg');
+  ok(!!a.figura === !!fig, `${a.id}: figura ${a.figura ? 'em falta' : 'a mais'}`);
+  if (a.figura && fig) {
+    const al = fig.getAttribute('aria-label');
+    const f = a.figura;
+    if (f.tipo === 'barras') {
+      f.x.forEach((x, i) => ok(al.includes(`${virgula(x)} com probabilidade ${virgula(f.p[i])}`), `${a.id}: aria-label sem «${x}: ${f.p[i]}» (${al})`));
+      const media = f.x.reduce((s, x, i) => s + x * f.p[i], 0);
+      ok(f.media ? al.includes(`O valor médio é ${virgula(media)}`) : !al.includes('valor médio'), `${a.id}: valor médio no aria-label «${al.slice(-40)}»`);
+      ok(p.qa('.vf-fig rect.vf-fig__barra').length === f.x.length, `${a.id}: número de barras`);
+      if (f.destaque) ok(p.qa('.vf-fig__barra--apagada').length === f.x.length - f.destaque.length, `${a.id}: barras apagadas`);
+      const alturas = p.qa('.vf-fig rect.vf-fig__barra').map((r) => Number(r.getAttribute('height')));
+      const mx = Math.max(...f.p);
+      alturas.forEach((h, i) => ok(Math.abs(h / alturas[f.p.indexOf(mx)] - f.p[i] / mx) < 0.005, `${a.id}: altura da barra ${i} não é proporcional`));
+    } else if (f.tipo === 'normal') {
+      const mus = [].concat(f.mu); const sgs = [].concat(f.sigma);
+      const n = Math.max(mus.length, sgs.length);
+      for (let i = 0; i < n; i++) ok(al.includes(`μ = ${virgula(mus[i % mus.length])} e σ = ${virgula(sgs[i % sgs.length])}`), `${a.id}: aria-label sem a curva ${i} (${al})`);
+      ok(p.qa('.vf-fig path.vf-fig__curva').length === n, `${a.id}: número de curvas`);
+      // geometria: a altura do pico é proporcional a 1/σ e o pico está por cima do rótulo «μ = …»
+      const picos = p.qa('.vf-fig path.vf-fig__curva').map((c) => pontosDoCaminho(c.getAttribute('d')).reduce((m, q) => (q[1] < m[1] ? q : m)));
+      const alturas = picos.map((q) => 112 - q[1]);
+      for (let i = 1; i < n; i++) {
+        const sa = sgs[0]; const sb = sgs[i % sgs.length];
+        ok(Math.abs((alturas[i] / alturas[0]) - sa / sb) < 0.04 * (sa / sb), `${a.id}: a razão das alturas dos picos devia ser ${(sa / sb).toFixed(2)} e é ${(alturas[i] / alturas[0]).toFixed(2)}`);
+      }
+      const rotulos = p.qa('.vf-fig text.vf-fig__txt--eixo');
+      for (let i = 0; i < n; i++) {
+        const r = rotulos.find((x) => texto(x) === `μ = ${virgula(mus[i % mus.length])}`);
+        ok(!!r && Math.abs(Number(r.getAttribute('x')) - picos[i][0]) < 4, `${a.id}: o pico da curva ${i} devia estar sobre o rótulo de μ`);
+      }
+    } else if (f.tipo === 'normal-intervalo') {
+      ok(al.includes('0,9545') && al.includes('cerca de 95,45%'), `${a.id}: aria-label «${al}»`);
+      ok(p.qa('.vf-fig text').some((x) => texto(x) === '95,45%'), `${a.id}: falta o 95,45% no desenho`);
+      // a área sombreada vai de «μ − 2σ» a «μ + 2σ» e o centro está a meio
+      const xs = ['μ − 2σ', 'μ', 'μ + 2σ'].map((nome) => Number(p.qa('.vf-fig text.vf-fig__txt--eixo').find((x) => texto(x) === nome).getAttribute('x')));
+      const area = pontosDoCaminho(p.q('.vf-fig path.vf-fig__area').getAttribute('d'));
+      ok(Math.abs(area[0][0] - xs[0]) < 1 && Math.abs(area[area.length - 1][0] - xs[2]) < 1 && Math.abs((xs[1] - xs[0]) - (xs[2] - xs[1])) < 1, `${a.id}: a área sombreada e as marcas não coincidem (${area[0][0]}, ${area[area.length - 1][0]} vs ${xs})`);
+    }
+  }
+  return a;
+}
+
+/** Responde a toda a ronda (função escolhe(a) -> verdadeiro/falso). Devolve as afirmações vistas, por ordem. */
+async function percorrer(ok, p, escolhe, nome) {
+  const vistas = [];
+  for (let i = 0; i < 400; i++) {
+    const enun = p.q('.vf-enunciado');
+    if (!enun) break;
+    const a = POR_TEXTO.get(original(enun));
+    ok(!!a, `${nome}: enunciado desconhecido «${original(enun).slice(0, 60)}»`);
+    if (!a) break;
+    ok(texto(p.q('.vf-etiqueta')).startsWith(NOME_TEMA[a.tema]), `${a.id}: etiqueta do tema «${texto(p.q('.vf-etiqueta'))}»`);
+    ok(/^\d+ de \d+$/.test(texto(p.q('.vf-contador'))), `${a.id}: contador «${texto(p.q('.vf-contador'))}»`);
+    vistas.push(a);
+    const escolha = escolhe(a);
+    clicar(p.qa('.vf-resp').find((b) => b.dataset.valor === String(escolha)));
+    conferirResultado(ok, p, a, escolha);
+    ok(p.doc.activeElement === p.q('.vf-seguinte') || p.doc.activeElement.classList.contains('vf-seguinte'), `${a.id}: o foco devia passar para «Próxima»`);
+    clicar(p.q('.vf-seguinte'));
+    await esperar(5);
+  }
+  return vistas;
+}
+
+await t.teste('percorrer as 14 afirmações com respostas certas: enunciado, veredito, explicação, figura, ecrã final, progresso', async (ok) => {
+  const p = await carregarPagina('../verdadeiro-falso.html', 390);
+  try {
+    ok(AFS.length === 14, `${AFS.length} afirmações no JSON`);
+    ok(texto(p.q('.vf-estat')) === 'Já acertaste à primeira em 0 de 14 afirmações deste filtro.', `estatística «${texto(p.q('.vf-estat'))}»`);
+    ok(p.qa('.vf-temas .chip').map(texto).join() === 'Todos (14),Tabela (8),Normal (6)', `filtros: ${p.qa('.vf-temas .chip').map(texto)}`);
+    const vistas = await percorrer(ok, p, (a) => a.verdadeira, 'certas');
+    ok(vistas.length === 14 && new Set(vistas.map((a) => a.id)).size === 14, `${vistas.length} afirmações vistas, ${new Set(vistas.map((a) => a.id)).size} diferentes`);
+    ok(texto(p.q('.vf-titulo')) === 'Acertaste 14 de 14' && texto(p.q('.vf-fim p')) === 'Sem falhas. Muito bem!', `ecrã final «${texto(p.q('.vf-fim'))}»`);
+    ok(!p.q('.vf-erradas') && texto(p.q('.vf-acoes')) === 'Recomeçar com todas', `ações «${texto(p.q('.vf-acoes'))}»`);
+    const guardado = estado(p).vf || {};
+    ok(AFS.every((a) => guardado[a.id] === 1), `progresso guardado: ${Object.keys(guardado)}`);
+    ok(texto(p.q('.vf-estat')) === 'Já acertaste à primeira em 14 de 14 afirmações deste filtro.', `estatística «${texto(p.q('.vf-estat'))}»`);
+    clicar(p.q('.vf-acoes .botao'));
+    ok(texto(p.q('.vf-contador')) === '1 de 14', 'recomeçar devia voltar a 1 de 14');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('afirmações verdadeiras e falsas: 7 e 7; respostas erradas, «Para rever», rever só as erradas (não guarda)', async (ok) => {
+  const p = await carregarPagina('../verdadeiro-falso.html', 390);
+  try {
+    ok(AFS.filter((a) => a.verdadeira).length === 7 && AFS.filter((a) => !a.verdadeira).length === 7, 'devia haver 7 verdadeiras e 7 falsas');
+    const vistas = await percorrer(ok, p, (a) => !a.verdadeira, 'erradas');
+    ok(vistas.length === 14, `${vistas.length} vistas`);
+    ok(texto(p.q('.vf-titulo')) === 'Acertaste 0 de 14' && /Ainda há trabalho/.test(texto(p.q('.vf-fim p'))), `ecrã final «${texto(p.q('.vf-fim')).slice(0, 80)}»`);
+    const lista = p.qa('.vf-errada');
+    ok(lista.length === 14 && /Para rever \(14\)/.test(texto(p.q('.vf-subtitulo'))), `${lista.length} erradas`);
+    for (const li of lista) {
+      const a = POR_TEXTO.get(original(li.querySelector('.vf-errada__texto')));
+      ok(!!a && texto(li.querySelector('.vf-errada__nota')) === `✗ Era ${a.verdadeira ? 'verdadeira' : 'falsa'}.` && texto(li.querySelector('.vf-errada__tema')) === NOME_TEMA[a.tema], `item a rever «${texto(li).slice(0, 50)}»`);
+    }
+    ok(Object.keys(estado(p).vf || {}).length === 0, 'respostas erradas não devem ficar guardadas como acertadas');
+    // rever só as erradas, agora a acertar: «(a rever)» e não fica guardado
+    clicar(p.qa('.vf-acoes .botao').find((b) => texto(b) === 'Recomeçar só com as erradas'));
+    ok(texto(p.q('.vf-contador')) === '1 de 14' && texto(p.q('.vf-etiqueta')).endsWith('(a rever)'), `rever: «${texto(p.q('.vf-contador'))}» «${texto(p.q('.vf-etiqueta'))}»`);
+    await percorrer(ok, p, (a) => a.verdadeira, 'revisão');
+    ok(texto(p.q('.vf-titulo')) === 'Acertaste 14 de 14', `fim da revisão «${texto(p.q('.vf-titulo'))}»`);
+    ok(Object.keys(estado(p).vf || {}).length === 0, 'numa revisão as respostas certas não contam para o progresso');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('resultado parcial: frases do ecrã final e contagens (7 certas, 13 certas)', async (ok) => {
+  const p = await carregarPagina('../verdadeiro-falso.html', 390);
+  try {
+    let i = 0;
+    await percorrer(ok, p, (a) => (i++ < 7 ? a.verdadeira : !a.verdadeira), 'meio');
+    ok(texto(p.q('.vf-titulo')) === 'Acertaste 7 de 14' && /Estás no bom caminho/.test(texto(p.q('.vf-fim p'))), `«${texto(p.q('.vf-fim')).slice(0, 90)}»`);
+    ok(p.qa('.vf-errada').length === 7, `${p.qa('.vf-errada').length} erradas`);
+    clicar(p.qa('.vf-acoes .botao').find((b) => texto(b) === 'Recomeçar só com as erradas'));
+    ok(texto(p.q('.vf-contador')) === '1 de 7', `só as erradas: «${texto(p.q('.vf-contador'))}»`);
+    clicar(p.q('.vf-temas .chip[data-tema="todos"]'));
+    let j = 0;
+    await percorrer(ok, p, (a) => (j++ === 3 ? !a.verdadeira : a.verdadeira), 'quase');
+    ok(texto(p.q('.vf-titulo')) === 'Acertaste 13 de 14' && /Estás no bom caminho/.test(texto(p.q('.vf-fim p'))) && p.qa('.vf-errada').length === 1 && /Para rever \(1\)/.test(texto(p.q('.vf-subtitulo'))), `«${texto(p.q('.vf-fim')).slice(0, 90)}»`);
+  } finally { p.fechar(); }
+});
+
+await t.teste('filtros por tema: Tabela (8) e Normal (6), progresso do filtro e teclado nos botões', async (ok) => {
+  const p = await carregarPagina('../verdadeiro-falso.html', 390);
+  try {
+    for (const [id, n] of [['tabela', 8], ['normal', 6]]) {
+      clicar(p.q(`.vf-temas .chip[data-tema="${id}"]`));
+      ok(p.q(`.vf-temas .chip[data-tema="${id}"]`).getAttribute('aria-pressed') === 'true' && p.q('.vf-temas .chip[data-tema="todos"]').getAttribute('aria-pressed') === 'false', `filtro ${id}: aria-pressed`);
+      ok(/^1 de \d+$/.test(texto(p.q('.vf-contador'))) && texto(p.q('.vf-contador')) === `1 de ${n}`, `filtro ${id}: «${texto(p.q('.vf-contador'))}»`);
+      const vistas = await percorrer(ok, p, (a) => a.verdadeira, `filtro ${id}`);
+      ok(vistas.length === n && vistas.every((a) => a.tema === id), `filtro ${id}: ${vistas.length} afirmações, temas ${[...new Set(vistas.map((a) => a.tema))]}`);
+      ok(texto(p.q('.vf-estat')) === `Já acertaste à primeira em ${n} de ${n} afirmações deste filtro.`, `estatística «${texto(p.q('.vf-estat'))}»`);
+      ok(estado(p)['vf-tema'] === id, `filtro guardado: ${estado(p)['vf-tema']}`);
+    }
+    // o filtro volta quando se reabre a página
+    const q = await carregarPagina('../verdadeiro-falso.html', 390);
+    try {
+      ok(q.q('.vf-temas .chip[data-tema="normal"]').getAttribute('aria-pressed') === 'true' || estado(q)['vf-tema'] !== 'normal', 'o filtro guardado devia voltar');
+    } finally { q.fechar(); }
+    // teclado: as setas passam de um botão ao outro; Enter/espaço escolhem (botões nativos)
+    clicar(p.q('.vf-temas .chip[data-tema="todos"]'));
+    const [bV, bF] = p.qa('.vf-resp');
+    bV.focus();
+    tecla(bV, 'ArrowRight');
+    ok(p.doc.activeElement === bF, 'ArrowRight devia ir para «Falso»');
+    tecla(bF, 'ArrowLeft');
+    ok(p.doc.activeElement === bV, 'ArrowLeft devia voltar a «Verdadeiro»');
+    tecla(bV, 'ArrowDown');
+    ok(p.doc.activeElement === bF, 'ArrowDown devia ir para «Falso»');
+    ok(p.q('.vf-respostas').getAttribute('role') === 'group' && !!p.q('.vf-respostas').getAttribute('aria-labelledby'), 'grupo de respostas sem rótulo');
+    ok(p.q('.vf-barra').getAttribute('role') === 'progressbar', 'barra de progresso');
+    // depois de responder, os botões não aceitam outra resposta
+    clicar(bV);
+    const antes = texto(p.q('.vf-veredito'));
+    clicar(bF);
+    ok(texto(p.q('.vf-veredito')) === antes, 'uma segunda resposta não devia mudar o veredito');
+    ok(p.erros.length === 0, `erros: ${p.erros.join(' | ')}`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`verdadeiro ou falso a ${largura} px: auditoria (pergunta, cada afirmação respondida com figura, ecrã final)`, async (ok) => {
+    const p = await carregarPagina('../verdadeiro-falso.html', largura);
+    try {
+      aplicarAuditoria(auditar(p.doc, { nome: `vf pergunta@${largura}`, largura }), ok, t);
+      for (let i = 0; i < 14; i++) {
+        const a = POR_TEXTO.get(original(p.q('.vf-enunciado')));
+        clicar(p.qa('.vf-resp').find((b) => b.dataset.valor === String(i % 2 === 0 ? a.verdadeira : !a.verdadeira)));
+        await esperar(10);
+        aplicarAuditoria(auditar(p.doc, { nome: `vf ${a.id}@${largura}`, largura }), ok, t);
+        clicar(p.q('.vf-seguinte'));
+      }
+      aplicarAuditoria(auditar(p.doc, { nome: `vf fim@${largura}`, largura }), ok, t);
+    } finally { p.fechar(); }
+  });
+}
+
+// 360 px é a largura de muitos telemóveis Android; o tema foi desenhado a 390, por isso aqui só se avisa
+await t.teste('verdadeiro ou falso a 360 px (aviso, não falha): scroll horizontal e etiquetas', async (ok) => {
+  const p = await carregarPagina('../verdadeiro-falso.html', 360);
+  try {
+    for (let i = 0; i < 14; i++) {
+      const a = POR_TEXTO.get(original(p.q('.vf-enunciado')));
+      clicar(p.qa('.vf-resp').find((b) => b.dataset.valor === String(a.verdadeira)));
+      const r = auditar(p.doc, { nome: `vf ${a.id}@360`, largura: 360 });
+      for (const e of r.erros.filter((x) => /scroll horizontal|sai do ecrã|cortada|sobrepostas/.test(x))) t.avisos.push(e);
+      clicar(p.q('.vf-seguinte'));
+    }
+    ok(true, '');
+  } finally { p.fechar(); }
+});
+
+t.fim();
+</script>
+</body>
+</html>

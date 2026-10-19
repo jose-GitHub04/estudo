@@ -115,6 +115,7 @@
     .lt { margin: 0 0 1.3mm; padding: 0 0 0 4.4mm; }
     .lt li { margin: 0 0 0.7mm; padding-left: 0.4mm; }
     .lt li::marker { color: var(--castanho); font-weight: 700; }
+    .caixa > .lt:last-child { margin-bottom: 0; }
 
     /* exemplo mínimo */
     .ex {
@@ -147,6 +148,12 @@
     tbody th { font-weight: 600; text-align: left; }
     td.esq { text-align: left; }
 
+    /* gráficos: dois desenhos lado a lado (SVG simples, sem scripts) */
+    .graficos { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2.5mm; margin: 0 0 1.2mm; }
+    .graficos figure { margin: 0; min-width: 0; }
+    .graficos svg { display: block; width: 100%; height: auto; }
+    .graficos figcaption { margin-top: -0.4mm; text-align: center; font-size: 8.5pt; color: var(--tinta-suave); }
+
     .aviso { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 0.4rem; background: #f8e4df; color: var(--erro); }
 
     /* ---------- ecrã estreito ---------- */
@@ -160,12 +167,15 @@
     /* ---------- impressão ---------- */
     @media print {
       html, body { background: #fff; }
-      body { font-size: 9.5pt; line-height: 1.27; }
+      body { font-size: 9pt; line-height: 1.22; }
       .nao-imprimir { display: none !important; }
       .folha { max-width: none; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; }
       .pagina { grid-template-columns: 1fr 1fr; gap: 4.5mm; }
+      .graficos { grid-template-columns: repeat(2, 32mm); justify-content: space-between; }
       .pagina + .pagina { margin-top: 0; padding-top: 0; border-top: 0; break-before: page; page-break-before: always; }
-      .col { gap: 3.5mm; }
+      .col { gap: 3mm; }
+      .caixa p { margin-bottom: 1mm; }
+      .ex { margin: 1.1mm 0 1mm !important; }
       .fl { grid-template-columns: 1fr 1fr; }
       .fl--1 { grid-template-columns: 1fr; }
       .tabela-rolante { overflow: visible; }
@@ -202,7 +212,7 @@
         <section class="caixa" aria-labelledby="t-exp">
           <h2 id="t-exp">Função exponencial</h2>
           <p class="def">$f(x)=a^x$, com $a&gt;0$ e $a\neq1$</p>
-          <p>$D_f=\mathbb{R}$ e $D'_f=\mathbb{R}^+$ (ou seja, $a^x&gt;0$ sempre). Contínua e injetiva. Passa em $(0,1)$ e em $(1,a)$. Assíntota horizontal: $y=0$.</p>
+          <p>$D_f=\mathbb{R}$, $D'_f=\mathbb{R}^+$ (logo $a^x&gt;0$). Contínua e injetiva. Passa em $(0,1)$ e em $(1,a)$. Assíntota horizontal: <span class="nb">$y=0$.</span></p>
           <div class="tabela-rolante">
             <table>
               <thead><tr><th scope="col"></th><th scope="col">$a&gt;1$</th><th scope="col">$0&lt;a&lt;1$</th></tr></thead>
@@ -214,8 +224,8 @@
               </tbody>
             </table>
           </div>
-          <p>Número de Neper: $e\approx2{,}718$. A função $e^x$ é crescente, porque $e&gt;1$.</p>
-          <p>$a^x+k$ sobe $k$ unidades e a assíntota passa a $y=k$. &nbsp; $a^{-x}=\left(\dfrac{1}{a}\right)^x$ é a reflexão de $a^x$ no eixo $Oy$.</p>
+          <p>Número de Neper: $e\approx2{,}718$. Como $e&gt;1$, $e^x$ é crescente.</p>
+          <p>$a^x+k$ sobe $k$ unidades, com assíntota $y=k$. &nbsp; $a^{-x}=\left(\tfrac{1}{a}\right)^x$ reflete $a^x$ em $Oy$.</p>
           <p class="sub">Potências <small>($a,b&gt;0$)</small></p>
           <ul class="fl">
             <li>$a^x\times a^y=a^{x+y}$</li>
@@ -249,6 +259,85 @@
           <p class="nota">Sem calculadora: ou reescreves o argumento como potência da base ($32=4^{5/2}$), ou resolves a equação exponencial.</p>
         </section>
 
+        <section class="caixa" aria-labelledby="t-gra">
+          <h2 id="t-gra">Gráficos</h2>
+          <div class="graficos">
+            <figure>
+              <svg class="graf" viewBox="0 0 100 100" role="img" aria-label="Gráficos de a elevado a x e de log de x na base a, com a maior que 1 (a = 2), e da reta y = x" xmlns="http://www.w3.org/2000/svg">
+              <line x1="13.50" y1="94.00" x2="13.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="28.50" y1="94.00" x2="28.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="43.50" y1="94.00" x2="43.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="58.50" y1="94.00" x2="58.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="73.50" y1="94.00" x2="73.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="88.50" y1="94.00" x2="88.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="86.50" x2="96.00" y2="86.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="71.50" x2="96.00" y2="71.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="56.50" x2="96.00" y2="56.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="41.50" x2="96.00" y2="41.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="26.50" x2="96.00" y2="26.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="11.50" x2="96.00" y2="11.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="71.50" x2="96.00" y2="71.50" stroke="#2a1c13" stroke-width="0.6"/>
+              <line x1="28.50" y1="94.00" x2="28.50" y2="4.00" stroke="#2a1c13" stroke-width="0.6"/>
+              <line x1="6.00" y1="94.00" x2="96.00" y2="4.00" stroke="#6b5a4e" stroke-width="0.9" stroke-dasharray="3 2.4"/>
+              <path d="M6.00,66.20 L6.79,66.00 L7.57,65.80 L8.36,65.59 L9.15,65.37 L9.93,65.14 L10.72,64.90 L11.50,64.66 L12.29,64.41 L13.08,64.14 L13.86,63.87 L14.65,63.59 L15.44,63.30 L16.22,62.99 L17.01,62.68 L17.80,62.35 L18.58,62.01 L19.37,61.66 L20.16,61.30 L20.94,60.92 L21.73,60.53 L22.51,60.12 L23.30,59.70 L24.09,59.27 L24.87,58.81 L25.66,58.34 L26.45,57.86 L27.23,57.35 L28.02,56.83 L28.81,56.29 L29.59,55.72 L30.38,55.14 L31.17,54.53 L31.95,53.91 L32.74,53.26 L33.52,52.58 L34.31,51.88 L35.10,51.15 L35.88,50.40 L36.67,49.62 L37.46,48.81 L38.24,47.97 L39.03,47.10 L39.82,46.20 L40.60,45.26 L41.39,44.29 L42.17,43.28 L42.96,42.24 L43.75,41.15 L44.53,40.03 L45.32,38.87 L46.11,37.66 L46.89,36.41 L47.68,35.11 L48.47,33.76 L49.25,32.36 L50.04,30.92 L50.83,29.41 L51.61,27.86 L52.40,26.24 L53.18,24.57 L53.97,22.83 L54.76,21.03 L55.54,19.16 L56.33,17.22 L57.12,15.22 L57.90,13.13 L58.69,10.97 L59.48,8.73 L60.26,6.41 L61.05,4.00" fill="none" stroke="#1d5f94" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M33.80,94.00 L34.00,93.21 L34.20,92.43 L34.41,91.64 L34.63,90.85 L34.86,90.07 L35.10,89.28 L35.34,88.50 L35.59,87.71 L35.86,86.92 L36.13,86.14 L36.41,85.35 L36.70,84.56 L37.01,83.78 L37.32,82.99 L37.65,82.20 L37.99,81.42 L38.34,80.63 L38.70,79.84 L39.08,79.06 L39.47,78.27 L39.88,77.49 L40.30,76.70 L40.73,75.91 L41.19,75.13 L41.66,74.34 L42.14,73.55 L42.65,72.77 L43.17,71.98 L43.71,71.19 L44.28,70.41 L44.86,69.62 L45.47,68.83 L46.09,68.05 L46.74,67.26 L47.42,66.48 L48.12,65.69 L48.85,64.90 L49.60,64.12 L50.38,63.33 L51.19,62.54 L52.03,61.76 L52.90,60.97 L53.80,60.18 L54.74,59.40 L55.71,58.61 L56.72,57.83 L57.76,57.04 L58.85,56.25 L59.97,55.47 L61.13,54.68 L62.34,53.89 L63.59,53.11 L64.89,52.32 L66.24,51.53 L67.64,50.75 L69.08,49.96 L70.59,49.17 L72.14,48.39 L73.76,47.60 L75.43,46.82 L77.17,46.03 L78.97,45.24 L80.84,44.46 L82.78,43.67 L84.78,42.88 L86.87,42.10 L89.03,41.31 L91.27,40.52 L93.59,39.74 L96.00,38.95" fill="none" stroke="#b4452f" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="28.50" cy="56.50" r="1.5" fill="#1d5f94"/>
+              <circle cx="43.50" cy="41.50" r="1.5" fill="#1d5f94"/>
+              <circle cx="43.50" cy="71.50" r="1.5" fill="#b4452f"/>
+              <circle cx="58.50" cy="56.50" r="1.5" fill="#b4452f"/>
+              <text x="43.50" y="77.70" font-size="5.6" text-anchor="middle" fill="#2a1c13">1</text>
+              <text x="26.70" y="58.50" font-size="5.6" text-anchor="end" fill="#2a1c13">1</text>
+              <text x="58.50" y="77.70" font-size="5.6" text-anchor="middle" fill="#2a1c13">2</text>
+              <text x="26.70" y="43.50" font-size="5.6" text-anchor="end" fill="#2a1c13">2</text>
+              <text x="95.00" y="69.50" font-size="5.6" text-anchor="end" font-style="italic" fill="#2a1c13">x</text>
+              <text x="30.50" y="9.00" font-size="5.6" font-style="italic" fill="#2a1c13">y</text>
+              <text x="63.00" y="10.75" font-size="6.6" font-style="italic" fill="#1d5f94">a<tspan dy="-2.6" font-size="4.6">x</tspan></text>
+              <text x="73.50" y="61.75" font-size="6.6" fill="#b4452f">log<tspan dy="1.8" font-size="4.6" font-style="italic">a</tspan><tspan dy="-1.8" font-style="italic"> x</tspan></text>
+              <text x="73.50" y="34.75" font-size="5.6" fill="#6b5a4e"><tspan font-style="italic">y</tspan> = <tspan font-style="italic">x</tspan></text>
+              </svg>
+              <figcaption>$a&gt;1$ (aqui $a=2$)</figcaption>
+            </figure>
+            <figure>
+              <svg class="graf" viewBox="0 0 100 100" role="img" aria-label="Gráficos de a elevado a x e de log de x na base a, com a entre 0 e 1 (a = 1/2), e da reta y = x" xmlns="http://www.w3.org/2000/svg">
+              <line x1="13.50" y1="94.00" x2="13.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="28.50" y1="94.00" x2="28.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="43.50" y1="94.00" x2="43.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="58.50" y1="94.00" x2="58.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="73.50" y1="94.00" x2="73.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="88.50" y1="94.00" x2="88.50" y2="4.00" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="86.50" x2="96.00" y2="86.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="71.50" x2="96.00" y2="71.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="56.50" x2="96.00" y2="56.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="41.50" x2="96.00" y2="41.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="26.50" x2="96.00" y2="26.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="11.50" x2="96.00" y2="11.50" stroke="#e6dbcf" stroke-width="0.4"/>
+              <line x1="6.00" y1="71.50" x2="96.00" y2="71.50" stroke="#2a1c13" stroke-width="0.6"/>
+              <line x1="28.50" y1="94.00" x2="28.50" y2="4.00" stroke="#2a1c13" stroke-width="0.6"/>
+              <line x1="6.00" y1="94.00" x2="96.00" y2="4.00" stroke="#6b5a4e" stroke-width="0.9" stroke-dasharray="3 2.4"/>
+              <path d="M6.00,29.07 L7.29,31.52 L8.57,33.83 L9.86,36.00 L11.14,38.05 L12.43,39.98 L13.71,41.80 L15.00,43.51 L16.29,45.12 L17.57,46.65 L18.86,48.08 L20.14,49.43 L21.43,50.70 L22.71,51.90 L24.00,53.03 L25.29,54.10 L26.57,55.10 L27.86,56.05 L29.14,56.94 L30.43,57.78 L31.71,58.57 L33.00,59.32 L34.29,60.02 L35.57,60.68 L36.86,61.31 L38.14,61.89 L39.43,62.45 L40.71,62.97 L42.00,63.46 L43.29,63.93 L44.57,64.36 L45.86,64.77 L47.14,65.16 L48.43,65.53 L49.71,65.87 L51.00,66.20 L52.29,66.50 L53.57,66.79 L54.86,67.06 L56.14,67.32 L57.43,67.56 L58.71,67.79 L60.00,68.00 L61.29,68.20 L62.57,68.39 L63.86,68.57 L65.14,68.74 L66.43,68.90 L67.71,69.05 L69.00,69.19 L70.29,69.32 L71.57,69.45 L72.86,69.57 L74.14,69.68 L75.43,69.78 L76.71,69.88 L78.00,69.98 L79.29,70.06 L80.57,70.15 L81.86,70.23 L83.14,70.30 L84.43,70.37 L85.71,70.43 L87.00,70.50 L88.29,70.55 L89.57,70.61 L90.86,70.66 L92.14,70.71 L93.43,70.75 L94.71,70.80 L96.00,70.84" fill="none" stroke="#1d5f94" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M70.93,94.00 L68.48,92.71 L66.17,91.43 L64.00,90.14 L61.95,88.86 L60.02,87.57 L58.20,86.29 L56.49,85.00 L54.88,83.71 L53.35,82.43 L51.92,81.14 L50.57,79.86 L49.30,78.57 L48.10,77.29 L46.97,76.00 L45.90,74.71 L44.90,73.43 L43.95,72.14 L43.06,70.86 L42.22,69.57 L41.43,68.29 L40.68,67.00 L39.98,65.71 L39.32,64.43 L38.69,63.14 L38.11,61.86 L37.55,60.57 L37.03,59.29 L36.54,58.00 L36.07,56.71 L35.64,55.43 L35.23,54.14 L34.84,52.86 L34.47,51.57 L34.13,50.29 L33.80,49.00 L33.50,47.71 L33.21,46.43 L32.94,45.14 L32.68,43.86 L32.44,42.57 L32.21,41.29 L32.00,40.00 L31.80,38.71 L31.61,37.43 L31.43,36.14 L31.26,34.86 L31.10,33.57 L30.95,32.29 L30.81,31.00 L30.68,29.71 L30.55,28.43 L30.43,27.14 L30.32,25.86 L30.22,24.57 L30.12,23.29 L30.02,22.00 L29.94,20.71 L29.85,19.43 L29.77,18.14 L29.70,16.86 L29.63,15.57 L29.57,14.29 L29.50,13.00 L29.45,11.71 L29.39,10.43 L29.34,9.14 L29.29,7.86 L29.25,6.57 L29.20,5.29 L29.16,4.00" fill="none" stroke="#b4452f" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="28.50" cy="56.50" r="1.5" fill="#1d5f94"/>
+              <circle cx="43.50" cy="64.00" r="1.5" fill="#1d5f94"/>
+              <circle cx="43.50" cy="71.50" r="1.5" fill="#b4452f"/>
+              <circle cx="36.00" cy="56.50" r="1.5" fill="#b4452f"/>
+              <text x="43.50" y="77.70" font-size="5.6" text-anchor="middle" fill="#2a1c13">1</text>
+              <text x="26.70" y="58.50" font-size="5.6" text-anchor="end" fill="#2a1c13">1</text>
+              <text x="58.50" y="77.70" font-size="5.6" text-anchor="middle" fill="#2a1c13">2</text>
+              <text x="26.70" y="43.50" font-size="5.6" text-anchor="end" fill="#2a1c13">2</text>
+              <text x="13.50" y="77.70" font-size="5.6" text-anchor="middle" fill="#2a1c13">−1</text>
+              <text x="26.70" y="88.50" font-size="5.6" text-anchor="end" fill="#2a1c13">−1</text>
+              <text x="95.00" y="69.50" font-size="5.6" text-anchor="end" font-style="italic" fill="#2a1c13">x</text>
+              <text x="30.50" y="9.00" font-size="5.6" font-style="italic" fill="#2a1c13">y</text>
+              <text x="7.50" y="17.50" font-size="6.6" font-style="italic" fill="#1d5f94">a<tspan dy="-2.6" font-size="4.6">x</tspan></text>
+              <text x="35.25" y="22.00" font-size="6.6" fill="#b4452f">log<tspan dy="1.8" font-size="4.6" font-style="italic">a</tspan><tspan dy="-1.8" font-style="italic"> x</tspan></text>
+              <text x="64.50" y="10.00" font-size="5.6" fill="#6b5a4e"><tspan font-style="italic">y</tspan> = <tspan font-style="italic">x</tspan></text>
+              </svg>
+              <figcaption>$0&lt;a&lt;1$ (aqui $a=\tfrac12$)</figcaption>
+            </figure>
+          </div>
+          <p><strong>Inversas:</strong> gráficos simétricos em relação a $y=x$; se $(p,q)$ está num, $(q,p)$ está no outro. <strong>Concavidade:</strong> $a^x$ sempre para cima; $\log_a x$ para baixo se $a&gt;1$, para cima se $0&lt;a&lt;1$.</p>
+        </section>
+
       </div>
       <div class="col">
 
@@ -267,8 +356,7 @@
           <div class="cuidado">
             <p class="sub">Cuidado: isto não existe</p>
             <ul>
-              <li>$\log_a(x+y)\neq\log_a x+\log_a y$: o logaritmo de uma soma não se simplifica.</li>
-              <li>$\log_a(xy)$ é a <em>soma</em> dos logaritmos, nunca o produto.</li>
+              <li>$\log_a(x+y)\neq\log_a x+\log_a y$: o logaritmo de uma soma não se simplifica. E $\log_a(xy)$ é a <em>soma</em>, nunca o produto.</li>
               <li>$\dfrac{\log_a x}{\log_a y}=\log_y x$, e não $\log_a\dfrac{x}{y}$.</li>
               <li>$\ln x^2=2\ln|x|$ (só dá $2\ln x$ se $x&gt;0$) e $(\ln x)^2\neq\ln x^2$.</li>
             </ul>
@@ -278,7 +366,7 @@
         <section class="caixa" aria-labelledby="t-fun">
           <h2 id="t-fun">Função logarítmica</h2>
           <p class="def">$f(x)=\log_a x$, com $a&gt;0$ e $a\neq1$</p>
-          <p>$D_f=\mathbb{R}^+$ e $D'_f=\mathbb{R}$. Zero em $x=1$. Passa em $(1,0)$ e em $(a,1)$. Contínua e injetiva. Assíntota vertical $x=0$; não tem horizontal.</p>
+          <p>$D_f=\mathbb{R}^+$, $D'_f=\mathbb{R}$. Zero em $x=1$ e passa em $(a,1)$. Contínua e injetiva. Assíntota vertical $x=0$; não tem horizontal.</p>
           <div class="tabela-rolante">
             <table>
               <thead><tr><th scope="col"></th><th scope="col">$a&gt;1$</th><th scope="col">$0&lt;a&lt;1$</th></tr></thead>
@@ -291,11 +379,22 @@
               </tbody>
             </table>
           </div>
-          <p><strong>Inversa</strong> de $a^x$: os gráficos são simétricos em relação a $y=x$. Se $(p,q)$ está em $a^x$, então $(q,p)$ está em $\log_a x$.</p>
-          <p><strong>Transformações.</strong> $\ln(x-c)$: translação de $c$, assíntota $x=c$, $D=\mathopen{]}c,+\infty[$. $\ln(-x)$: reflexão em $Oy$, $D=\mathopen{]}-\infty,0[$. $a+b\ln x$: $a$ sobe ou desce, $b$ estica (se $b&lt;0$, reflete em $Ox$).</p>
+          <p><strong>Transformações.</strong> $\ln(x-c)$: translação horizontal de $c$, assíntota $x=c$, <span class="nb">$D=\mathopen{]}c,+\infty[$.</span> $\ln(-x)$: reflexão em $Oy$, <span class="nb">$D=\mathopen{]}-\infty,0[$.</span> $a+b\ln x$: $a$ sobe ou desce, $|b|$ estica na vertical e, se $b&lt;0$, reflete em $Ox$.</p>
           <p><strong>Domínio de $\ln u$:</strong> $u&gt;0$. Se houver mais condições (denominadores $\neq0$, outros logaritmos), têm de valer todas.</p>
           <p class="ex"><strong>Ex.</strong> $\ln(3x-6)$: $3x-6&gt;0\Leftrightarrow x&gt;2$, logo $D=\mathopen{]}2,+\infty[$.</p>
-          <p>Inversa de $f(x)=a+b\ln(x-c)$, com $b\neq0$:<br><span class="nb">$f^{-1}(x)=c+e^{(x-a)/b}$</span></p>
+          <p>Inversa de $f(x)=a+b\ln(x-c)$, com $b\neq0$: &nbsp; <span class="nb">$f^{-1}(x)=c+e^{(x-a)/b}$</span>, com $D_{f^{-1}}=\mathbb{R}$.</p>
+        </section>
+
+        <section class="caixa" aria-labelledby="t-err">
+          <h2 id="t-err">Erros típicos</h2>
+          <ul class="lt lt--pontos">
+            <li><strong>Esquecer o domínio.</strong> $\log_2x+\log_2(x-2)=3$ dá $x=4$ ou $x=-2$, mas só serve $x=4$, porque $x&gt;2$.</li>
+            <li><strong>Quocientes.</strong> $1/\ln x$ pede $x&gt;0$ <em>e</em> $x\neq1$.</li>
+            <li><strong>Sentido.</strong> Com $0&lt;a&lt;1$ inverte-se: $\left(\tfrac12\right)^x&lt;\tfrac14\Leftrightarrow x&gt;2$.</li>
+            <li><strong>Soma em vez de produto.</strong> $2^{x+1}=2\times2^x$, e não $2^x+1$.</li>
+            <li><strong>Substituição.</strong> Com $u=e^x$, rejeita-se $u\le0$.</li>
+            <li><strong>Derivada do interior.</strong> $(e^{3x})'=3e^{3x}$ e $\left(\ln(2x)\right)'=\tfrac1x$.</li>
+          </ul>
         </section>
 
       </div>
@@ -326,7 +425,7 @@
             <li>Uma potência isolada: passar a logaritmo.</li>
             <li>$e^{x+2}$ junto de $e^x$: $e^{x+2}=e^x\times e^2$ e pôr $e^x$ em evidência.</li>
             <li>$e^{2x}$ e $e^x$: $u=e^x$ com <strong>$u&gt;0$</strong>; rejeitar $u\le0$; depois $x=\ln u$.</li>
-            <li>Bases diferentes: aplicar $\ln$, $2^x=3^{x-1}\Leftrightarrow x\ln2=(x-1)\ln3$.</li>
+            <li>Bases diferentes: aplicar $\ln$, <span class="nb">$2^x=3^{x-1}\Leftrightarrow x\ln2=(x-1)\ln3$.</span></li>
           </ul>
           <p class="ex"><strong>Ex.</strong> $4^x-5\times2^x+4=0$. Com $u=2^x$: $u^2-5u+4=0\Leftrightarrow u=1$ ou $u=4$, logo $x=0$ ou $x=2$.</p>
           <p class="sub">Inequações <small>(só dentro do domínio)</small></p>
@@ -340,6 +439,7 @@
             </table>
           </div>
           <p class="ex"><strong>Ex.</strong> $\log_2(x-1)&lt;3$: domínio $x&gt;1$; $x-1&lt;8\Leftrightarrow x&lt;9$; a solução é a interseção: $]1,9[$.</p>
+          <p class="nota">Soluções aproximadas: guarda os valores exatos e arredonda só no fim.</p>
         </section>
 
         <section class="caixa" aria-labelledby="t-der">
@@ -356,9 +456,9 @@
               </tbody>
             </table>
           </div>
-          <p>Em $2^x$ a variável está no <strong>expoente</strong>: $(2^x)'=2^x\ln2$, e não $x\,2^{x-1}$.</p>
+          <p>Em $2^x$ a variável está no <strong>expoente</strong>: $(2^x)'=2^x\ln2$, e não <span class="nb">$x\,2^{x-1}$.</span></p>
           <p class="ex"><strong>Ex.</strong> $(e^{3x-1})'=3e^{3x-1}$ &nbsp; e &nbsp; $\left(\ln(x^2+1)\right)'=\dfrac{2x}{x^2+1}$<br>
-            Simplificar antes: $\ln(x^2e^{3x})=2\ln x+3x$, que dá $\dfrac{2}{x}+3$.</p>
+            Simplificar antes ($x&gt;0$): $\ln(x^2e^{3x})=2\ln x+3x$, que dá $\dfrac{2}{x}+3$.</p>
           <p class="sub">Reta tangente em $x_0$</p>
           <p>$y=f'(x_0)\,(x-x_0)+f(x_0)$. &nbsp; O declive é $f'(x_0)$ e o ponto é $\left(x_0,\,f(x_0)\right)$. Tangente horizontal: $f'(x_0)=0$.</p>
         </section>
@@ -385,10 +485,10 @@
           </ul>
           <p><strong>Quem vence</strong> quando $x\to+\infty$: $\ln x\ \ll\ x^p\ \ll\ e^x$. A exponencial vence a potência, que vence o logaritmo.</p>
           <p class="ex"><strong>Mudança de variável.</strong> $\lim_{x\to0}\dfrac{e^{5x}-1}{x}$: com $y=5x$ fica $5\lim_{y\to0}\dfrac{e^y-1}{y}=5$.<br>
-            <strong>Indeterminações:</strong> $0\times\infty$ passa a fração ($x\,e^{-x}=\dfrac{x}{e^x}$); $\infty-\infty$ põe em evidência o termo que manda.</p>
+            <strong>Indeterminações:</strong> $0\times\infty$ passa a fração ($x\,e^{-x}=\dfrac{x}{e^x}$); <span class="nb">$\infty-\infty$</span> põe em evidência o termo que manda.</p>
           <p class="sub">Assíntotas</p>
           <ul class="lt">
-            <li><strong>Vertical</strong> $x=c$: $c$ é extremo finito do domínio (fora dele) e algum limite lateral em $c$ é $\pm\infty$.</li>
+            <li><strong>Vertical</strong> $x=c$: algum limite lateral em $c$ é $\pm\infty$. Procura-a nos extremos finitos do domínio (como $0$ em $\ln x$); onde $f$ é contínua não há.</li>
             <li><strong>Horizontal</strong> $y=b$: $\lim_{x\to\pm\infty}f(x)=b$.</li>
             <li><strong>Oblíqua</strong> $y=mx+b$, em $+\infty$ e em $-\infty$ em separado: $m=\lim\dfrac{f(x)}{x}$ e $b=\lim\left(f(x)-mx\right)$. Só há assíntota se $m$ e $b$ forem reais; com $m=0$ é a horizontal.</li>
           </ul>
@@ -401,7 +501,7 @@
             <li><strong>Domínio e zeros.</strong> Em $\ln u$, $u&gt;0$. Zeros: $f(x)=0$.</li>
             <li><strong>Limites e assíntotas</strong> nas extremidades do domínio.</li>
             <li><strong>$f'$ e variação.</strong> Tabela com o sinal de $f'$: $f'&gt;0$ dá $f\nearrow$, $f'&lt;0$ dá $f\searrow$.</li>
-            <li><strong>Extremos.</strong> Só há extremo onde $f'$ <em>muda de sinal</em> ($f'(c)=0$ não chega). $+$ para $-$: máximo. $-$ para $+$: mínimo. O valor é $f(c)$, não $f'(c)$.</li>
+            <li><strong>Extremos.</strong> Só há extremo onde $f'$ <em>muda de sinal</em> ($f'(c)=0$ não chega): de $+$ para $-$ é máximo, de $-$ para $+$ é mínimo. O valor do extremo é $f(c)$, não $f'(c)$.</li>
             <li><strong>$f''$ e concavidade.</strong> $f''&gt;0$: para cima $\cup$. $f''&lt;0$: para baixo $\cap$. Inflexão em $(c,f(c))$ se $f''$ muda de sinal.</li>
             <li><strong>Contradomínio:</strong> extremos absolutos e limites nas extremidades do domínio.</li>
           </ol>

@@ -36,12 +36,12 @@
     "opcoes": [
       {"tex": "$3$", "valor": "3"},
       {"tex": "$e^{3}$", "valor": "exp(3)"},
-      {"tex": "$\\dfrac{3}{e}$", "valor": "3/e"},
+      {"tex": "$\\log3$", "valor": "log(3)"},
       {"tex": "$\\ln3$", "valor": "ln(3)"} ],
     "certa": 3,
     "ref": "ln(3)",
     "verifica": ["abs(der(lambda s: exp(s)-3*s, ln(3)))<1e-6"],
-    "explicacao": "Tangente horizontal quer dizer declive zero, ou seja, $f'(x)=0$. Como $f'(x)=e^x-3$, a equação é $e^x=3$, que se resolve com o logaritmo: $x=\\ln3\\approx1{,}10$. Não se «passa o $e$ para o outro lado»: $e^x=3$ pede o expoente que dá $3$, e esse expoente é $\\ln3$ (já $e^3\\approx20{,}1$ seria muito maior)." },
+    "explicacao": "Tangente horizontal quer dizer declive zero, ou seja, $f'(x)=0$. Como $f'(x)=e^x-3$, a equação é $e^x=3$, que se resolve com o logaritmo de base $e$: $x=\\ln3\\approx1{,}10$. Não se «passa o $e$ para o outro lado»: $e^x=3$ pede o expoente de $e$ que dá $3$, e esse expoente é $\\ln3$ (já $e^3\\approx20{,}1$ seria muito maior). Cuidado com a tecla da calculadora: $\\log3\\approx0{,}48$ é o logaritmo de base $10$." },
   { "id": "est-05", "nivel": 1,
     "enunciado": "A função $f(x)=x\\,e^{-2x}$ tem um máximo em $x=\\frac12$. Qual é o valor desse máximo?",
     "opcoes": [
@@ -106,7 +106,7 @@
     "verifica": ["abs(der(lambda s: s**2-8*ln(s), 2))<1e-6"],
     "explicacao": "O domínio é $\\mathbb{R}^+$ e $f'(x)=2x-\\dfrac8x$. Então $f'(x)=0\\Leftrightarrow 2x^2=8\\Leftrightarrow x^2=4\\Leftrightarrow x=\\pm2$, mas só $x=2$ pertence ao domínio, porque $\\ln(-2)$ não existe. É um mínimo: $f'<0$ em $]0,2[$ e $f'>0$ em $]2,+\\infty[$." },
   { "id": "est-11", "nivel": 2,
-    "enunciado": "Para $f(x)=\\dfrac{\\ln x}{x}$ tem-se $f''(x)=\\dfrac{2\\ln x-3}{x^3}$. Na tabela do sinal de $f''$, $\\smile$ indica concavidade voltada para cima e $\\frown$ concavidade voltada para baixo.$$\\begin{array}{c|ccccc}x&0&&e^{3/2}&&+\\infty\\\\[4pt]\\hline f''&&-&0&+&\\\\[4pt]\\hline f&&\\frown&\\frac32e^{-3/2}&\\smile&\\end{array}$$Qual das afirmações é verdadeira?",
+    "enunciado": "Para $f(x)=\\dfrac{\\ln x}{x}$ tem-se $f''(x)=\\dfrac{2\\ln x-3}{x^3}$. Na tabela do sinal de $f''$, $\\cup$ indica concavidade voltada para cima e $\\cap$ concavidade voltada para baixo.$$\\begin{array}{c|ccccc}x&0&&e^{3/2}&&+\\infty\\\\[4pt]\\hline f''&&-&0&+&\\\\[4pt]\\hline f&&\\cap&\\frac32e^{-3/2}&\\cup&\\end{array}$$Qual das afirmações é verdadeira?",
     "opcoes": [
       {"tex": "O gráfico de $f$ tem um ponto de inflexão de coordenadas $\\left(e^{3/2},\\,\\frac32e^{-3/2}\\right)$."},
       {"tex": "O gráfico de $f$ tem a concavidade voltada para cima em $]0,e^{3/2}[$."},
@@ -134,7 +134,7 @@
       {"tex": "$f$ é decrescente em $]-\\infty,1]$ e crescente em $[1,+\\infty[$."} ],
     "certa": 1,
     "verifica": ["(t-1)**2*exp(t) >= 0", "abs(der(lambda s: exp(s)*(s*s-4*s+5), t)-(t-1)**2*exp(t)) < 1e-6"],
-    "explicacao": "Como $(x-1)^2\\ge0$ e $e^x>0$, tem-se $f'(x)\\ge0$ para todo o $x$, e só se anula em $x=1$. Logo $f'$ não muda de sinal em $x=1$ e $f$ é crescente em todo o $\\mathbb{R}$, sem máximo nem mínimo: aí a tangente é horizontal, mas o gráfico continua a subir. Resolver $f'(x)=0$ só dá um candidato a extremo, que só é extremo se $f'$ mudar de sinal." },
+    "explicacao": "Como $(x-1)^2\\ge0$ e $e^x>0$, tem-se $f'(x)\\ge0$ para todo o $x$, e só se anula em $x=1$. Logo $f'$ não muda de sinal em $x=1$ e $f$ é crescente em todo o $\\mathbb{R}$, sem máximo nem mínimo: aí a tangente é horizontal, mas o gráfico continua a subir. Resolver $f'(x)=0$ só dá um candidato a extremo: vê se $f'$ muda de sinal." },
   { "id": "est-14", "nivel": 3,
     "enunciado": "Seja $f$ uma função de domínio $\\mathbb{R}$ tal que $f''(x)=(x-2)^2(x+1)e^{-x}$. Qual das afirmações é verdadeira?",
     "opcoes": [

@@ -214,10 +214,44 @@ export async function montar(el) {
       'aria-label': ROTULO_PEGA[k],
     }, [hit, bola]);
     g.style.touchAction = 'none';
+    g.dataset.alvo = 'figura'; // também se agarra tocando na faixa do eixo (ver abaixo)
     pegas[k] = g;
     gPegas.append(g);
     ligarPega(g, k);
   }
+
+  /** As bolas que estão no desenho neste momento. */
+  const pegasAtivas = () => (est.sim ? [] : est.modo === 'cauda' ? ['c'] : est.modo === 'entre' ? ['a', 'b'] : []);
+
+  // Uma bola sozinha é um alvo pequeno para um dedo: tocar na faixa do eixo agarra a mais próxima.
+  let agarrada = null;
+  const pontoSvg = (e) => {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const m = svg.getScreenCTM();
+    return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
+  };
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.target.closest && e.target.closest('.nor-pega-g')) return;
+    const ativas = pegasAtivas();
+    const p = pontoSvg(e);
+    if (!ativas.length || Math.abs(p.y - BASE) > 34) return;
+    agarrada = ativas.reduce((melhor, k) => (Math.abs(pxX(est[k]) - p.x) < Math.abs(pxX(est[melhor]) - p.x) ? k : melhor));
+    svg.setPointerCapture(e.pointerId);
+    pegas[agarrada].focus();
+    definirValor(agarrada, r1(valX(p.x)));
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (agarrada) definirValor(agarrada, r1(valX(pontoSvg(e).x)));
+  });
+  const largar = (e) => {
+    agarrada = null;
+    if (svg.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
+  };
+  svg.addEventListener('pointerup', largar);
+  svg.addEventListener('pointercancel', largar);
 
   function ligarPega(g, k) {
     let ativo = false;
@@ -419,7 +453,7 @@ export async function montar(el) {
     desenharMarcas();
 
     // pegas
-    const ativas = est.sim ? [] : est.modo === 'cauda' ? ['c'] : est.modo === 'entre' ? ['a', 'b'] : [];
+    const ativas = pegasAtivas();
     for (const k of ['c', 'a', 'b']) {
       const g = pegas[k];
       const on = ativas.includes(k);

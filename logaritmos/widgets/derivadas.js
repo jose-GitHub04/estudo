@@ -38,9 +38,8 @@ let contador = 0;
 
 const r2 = (v) => Math.round(v * 100) / 100;
 const limitar = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-// quando não há valor a mostrar escreve-se um travessão (em escape: o verificador do site
-// não deixa o carácter por extenso em nenhum ficheiro)
-const SEM_VALOR = '\u2014';
+// quando não há valor a mostrar (x₀ fora do domínio, que o ponto P nunca alcança) escreve-se «n.d.», não definido
+const SEM_VALOR = 'n.d.';
 const nf = (v, c) => (Number.isFinite(v) ? M.fmt(v, c) : SEM_VALOR);
 const nt = (v, c) => M.fmt(v, c).replace(',', '{,}').replace('−', '-'); // LaTeX
 const par = (v, c = 2) => { const s = nt(v, c); return s.startsWith('-') ? `(${s})` : s; };

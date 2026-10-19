@@ -1,7 +1,8 @@
 /* dados: a soma de vários dados e a curva Normal. Classes com prefixo .dad- */
 
 .dad [hidden] { display: none !important; }
-.dad .chip { min-height: 2.5rem; }
+.dad .chip { min-height: 2.75rem; }
+.dad input[type="range"] { min-height: 2.75rem; }
 .dad .botao { min-height: 2.75rem; }
 
 .dad-controlos { grid-template-columns: 1fr; }
@@ -24,7 +25,7 @@
 
 .dad-frase { margin: 0.7rem 0 0; padding: 0.5rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); }
 .dad-opcoes { margin-top: 0.7rem; }
-.dad-caixa { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; cursor: pointer; }
+.dad-caixa { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; cursor: pointer; }
 .dad-caixa input { width: 1.2rem; height: 1.2rem; accent-color: var(--castanho); }
 .dad-caixa input:focus-visible { outline: 3px solid var(--dourado-texto); outline-offset: 2px; }
 

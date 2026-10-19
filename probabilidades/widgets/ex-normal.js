@@ -68,7 +68,8 @@ export function corrigirResposta(alinea, texto) {
     return { estado: 'errado', dica: 'Repara em quantos desvios-padrão 18 e 22 estão da média.' };
   }
   if (alinea === '4.2') {
-    if (perto(0.02275, 0.0005)) return { estado: 'certo' };
+    // 0,02275 (da regra), 0,0228 (da calculadora) ou 0,023 (às milésimas, como pede o enunciado)
+    if (perto(0.02275, 0.00006) || perto(0.023, 0)) return { estado: 'certo' };
     if (perto(0.0455, 0.0006)) return { estado: 'errado', dica: 'Esse valor é das duas caudas juntas. Falta usar a simetria e dividir por 2.' };
     if (perto(0.9545, 0.0006)) return { estado: 'errado', dica: 'Esse é o valor do centro, entre 16 e 24. Pede-se só a cauda à direita de 24.' };
     return { estado: 'errado', dica: 'Parte de P(16 < X < 24) ≈ 0,9545 e pensa no que fica de fora.' };
@@ -121,11 +122,11 @@ const PASSOS = [
   {
     alinea: '4.1',
     porque: 'Escreve os extremos do intervalo em função do valor médio e do desvio-padrão. Com μ = 20 e σ = 2, o 18 e o 22 ficam a um desvio-padrão da média.',
-    conta: '18 = 20 - 2 = \\mu - \\sigma \\qquad 22 = 20 + 2 = \\mu + \\sigma',
+    conta: '\\begin{gathered}18 = 20 - 2 = \\mu - \\sigma \\\\ 22 = 20 + 2 = \\mu + \\sigma\\end{gathered}',
   },
   {
     porque: 'O intervalo vai de μ−σ a μ+σ, e para qualquer Normal a probabilidade nesse intervalo é um valor de referência.',
-    conta: 'P(18 < X < 22) = P(\\mu - \\sigma < X < \\mu + \\sigma) \\approx 0{,}6827',
+    conta: '\\begin{gathered}P(18 < X < 22) \\\\ = P(\\mu - \\sigma < X < \\mu + \\sigma) \\\\ \\approx 0{,}6827\\end{gathered}',
   },
   {
     alinea: '4.2',
@@ -134,7 +135,7 @@ const PASSOS = [
   },
   {
     porque: 'O valor de referência para dois desvios-padrão dá a probabilidade do centro, de 16 a 24.',
-    conta: 'P(\\mu - 2\\sigma < X < \\mu + 2\\sigma) = P(16 < X < 24) \\approx 0{,}9545',
+    conta: '\\begin{gathered}P(\\mu - 2\\sigma < X < \\mu + 2\\sigma) \\\\ = P(16 < X < 24) \\\\ \\approx 0{,}9545\\end{gathered}',
   },
   {
     porque: 'O que não está no centro está nas duas caudas, uma à esquerda de 16 e outra à direita de 24. A área total é 1.',
@@ -151,11 +152,11 @@ const PASSOS = [
   {
     alinea: '4.3',
     porque: 'O número esperado de baterias é o número de baterias analisadas vezes a probabilidade de uma durar mais de 24 horas.',
-    conta: '400 \\times P(X > 24) \\approx 400 \\times 0{,}02275 = 9{,}1',
+    conta: '\\begin{gathered}400 \\times P(X > 24) \\\\ \\approx 400 \\times 0{,}02275 = 9{,}1\\end{gathered}',
   },
   {
     porque: 'Como não existem 0,1 baterias, arredonda-se às unidades.',
-    conta: '\\text{Espera-se que cerca de } 9 \\text{ baterias durem mais de 24 horas.}',
+    conta: '\\begin{gathered}\\small\\text{Espera-se que cerca de } 9 \\\\ \\small\\text{baterias durem mais de 24 horas.}\\end{gathered}',
   },
 ];
 
@@ -303,10 +304,41 @@ export async function montar(el) {
       'aria-label': k === 'a' ? 'Valor a, extremo esquerdo' : 'Valor b, extremo direito',
     }, [hit, bola]);
     g.style.touchAction = 'none';
+    g.dataset.alvo = 'figura'; // também se agarra tocando na faixa do eixo (ver abaixo)
     pegas[k] = g;
     gPegas.append(g);
     ligarPega(g, k);
   }
+
+  // Uma bola sozinha é um alvo pequeno para um dedo: no modo «dois valores», tocar na faixa do eixo
+  // agarra a bola mais próxima.
+  let agarrada = null;
+  const pontoSvg = (e) => {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const m = svg.getScreenCTM();
+    return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
+  };
+  svg.addEventListener('pointerdown', (e) => {
+    if (est.modo !== 'livre' || (e.target.closest && e.target.closest('.exn-pega-g'))) return;
+    const p = pontoSvg(e);
+    if (Math.abs(p.y - BASE) > 34) return;
+    agarrada = Math.abs(pxX(est.a) - p.x) <= Math.abs(pxX(est.b) - p.x) ? 'a' : 'b';
+    svg.setPointerCapture(e.pointerId);
+    pegas[agarrada].focus();
+    definirExtremo(agarrada, Math.round(valX(p.x) * 10) / 10);
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (agarrada) definirExtremo(agarrada, Math.round(valX(pontoSvg(e).x) * 10) / 10);
+  });
+  const largar = (e) => {
+    agarrada = null;
+    if (svg.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
+  };
+  svg.addEventListener('pointerup', largar);
+  svg.addEventListener('pointercancel', largar);
 
   function ligarPega(g, k) {
     const mover = (x) => definirExtremo(k, Math.round(x * 10) / 10);

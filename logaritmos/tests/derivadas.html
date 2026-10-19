@@ -467,8 +467,8 @@ await teste('perto da fronteira do domínio (ln x, log_a x, x ln x): valores fin
   }
 });
 
-await teste('fora do domínio (simulado): leituras com o travessão e uma nota, sem NaN, sem exceções; recupera ao voltar', (ok) => {
-  const raro = String.fromCharCode(0x2014);
+await teste('fora do domínio (simulado): leituras com «n.d.» e uma nota, sem NaN, sem exceções; recupera ao voltar', (ok) => {
+  const raro = 'n.d.';
   chipsEl()[2].click(); // ln x
   const original = FAMILIAS[2].dominio;
   FAMILIAS[2].dominio = (x) => x > 100; // faz com que o x0 atual já não pertença ao domínio

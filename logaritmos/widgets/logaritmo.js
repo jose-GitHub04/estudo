@@ -343,8 +343,12 @@ export function textoCasos(an) {
       return ['Caso especial: $\\log_a 1=0$ para qualquer base, porque $a^0=1$.'];
     case 'base':
       return ['Caso especial: $\\log_a a=1$ para qualquer base, porque $a^1=a$.'];
-    case 'potencia':
-      return [`Como $${an.yTex}=${pot(an.baseTex, x)}$, o logaritmo é o próprio expoente: $${logTex(an, pot(an.baseTex, x))}=${x}$. Em geral, $\\log_a a^k=k$.`];
+    case 'potencia': {
+      // quando o número já vem escrito como potência (e^3), não se diz «como e^3 = e^3»
+      const potencia = pot(an.baseTex, x);
+      const como = an.yTex === potencia ? 'O' : `Como $${an.yTex}=${potencia}$, o`;
+      return [`${como} logaritmo é o próprio expoente: $${logTex(an, potencia)}=${x}$. Em geral, $\\log_a a^k=k$.`];
+    }
     default:
       return [`Os expoentes também podem ser frações: $${an.yTex}=${pot(an.baseTex, x)}$, por isso $${logTex(an, an.yTex)}=${x}$.`];
   }
@@ -584,7 +588,9 @@ function texC(s) {
 }
 
 /** Converte os $...$ de um texto de aluno em KaTeX. */
-const rico = (s) => String(s).replace(/\$([^$]+)\$/g, (_, t) => texC(t));
+// a pontuação e o parêntese que abre ficam colados à fórmula (não passam sozinhos para outra linha)
+const rico = (s) => String(s).replace(/(\()?\$([^$]+)\$([.,;:!?)]*)/g, (_, ab, t, fim) => (t.length <= 40 && (ab || fim)
+  ? `<span class="lg-junto">${ab || ''}${texC(t)}${fim}</span>` : `${ab || ''}${texC(t)}${fim}`));
 
 function h(tag, props = {}, ...filhos) {
   const n = document.createElement(tag);
@@ -790,6 +796,11 @@ export async function montar(el, dados) {
       h('span', { class: 'lg-marca', 'aria-hidden': 'true' }, rotuloMarca),
       h('ol', { class: 'lg-degraus' }, ...lis));
     trilho.style.setProperty('--lg-n', String(hi - lo + 1));
+    // valores compridos (148,413; 1,2×10⁶) alargam os degraus, para não ficarem cortados
+    trilho.style.removeProperty('--lg-w');
+    const maior = Math.max(0, ...degraus.map((d) => d.li.querySelector('.lg-degrau__val').getBoundingClientRect().width));
+    const celula = degraus[0].li.getBoundingClientRect().width;
+    if (maior > 0 && celula > 0 && maior + 10 > celula) trilho.style.setProperty('--lg-w', `${Math.ceil(maior + 16)}px`);
     escada.setAttribute('aria-label', `Escada de potências de ${tex2fala(an.baseTex)}: expoentes de ${xTexto(lo)} a ${xTexto(hi)}.`);
     notaArred.hidden = !aprox;
   }

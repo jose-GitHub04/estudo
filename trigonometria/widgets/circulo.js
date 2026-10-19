@@ -466,16 +466,17 @@ export async function montar(el, dados) {
     at(E.dotX, { cx: n2(px), cy: 0 });
     const lado = c >= 0 ? 1 : -1;
     if (Math.abs(py) >= 30) {
-      // segmento comprido: rótulo do lado de fora, a meio
-      at(E.labSin, { x: n2(px + lado * 9), y: n2(py / 2 + 5), 'text-anchor': lado > 0 ? 'start' : 'end' });
+      // segmento comprido: rótulo do lado de fora, a meio (por baixo do eixo, junto ao «−1», desce um pouco)
+      const ySin = py > 0 && Math.abs(px) > 90 ? Math.max(py / 2 + 5, 36) : py / 2 + 5;
+      at(E.labSin, { x: n2(px + lado * 9), y: n2(ySin), 'text-anchor': lado > 0 ? 'start' : 'end' });
     } else {
       // segmento curto: rótulo do lado de dentro, logo acima (ou abaixo) do tracejado
       at(E.labSin, { x: n2(px - lado * 9), y: n2(s >= 0 ? py - 9 : py + 21), 'text-anchor': lado > 0 ? 'end' : 'start' });
     }
     // se o segmento é curto, o rótulo fica logo depois do pé de P (longe do «0»)
-    const curto = Math.abs(px) < 44;
+    const curto = Math.abs(px) < 60;
     at(E.labCos, {
-      x: n2(curto ? px + lado * 6 : px / 2),
+      x: n2(curto ? (lado > 0 ? px + 6 : Math.min(px - 6, -20)) : px / 2), // à esquerda, longe do «0» do eixo
       y: s >= 0 ? 22 : -10,
       'text-anchor': curto ? (lado > 0 ? 'start' : 'end') : 'middle',
     });
@@ -509,7 +510,13 @@ export async function montar(el, dados) {
     } else {
       at(E.tLab, { x: R - 7, y: -12, 'text-anchor': 'end' }); // longe do nome do eixo x
     }
-    at(E.tT, { x: R + 10, y: n2(corta ? Ty + 5 : ty >= 0 ? Ty - 9 : Ty + 19) });
+    // por defeito o «T» fica do lado de fora do ponto; perto do ponto P (ângulos pequenos) troca de lado
+    const pertoDeP = c > 0 && Math.abs(Ty - py) < 24;
+    let yT;
+    if (corta) yT = Ty + 5;
+    else if (pertoDeP) yT = ty >= 0 ? Ty - 22 : Ty + 30; // longe do rótulo «P» e do «tan α»
+    else yT = ty >= 0 ? Ty - 9 : Ty + 19;
+    at(E.tT, { x: R + 10, y: n2(yT) });
   }
 
   function pintarRed() {
@@ -606,9 +613,12 @@ export async function montar(el, dados) {
     selo.classList.toggle('cir-selo--perto', d >= 1e-9);
 
     let txtAviso = '';
-    if (est.modo === 'tan') {
-      if (!def) txtAviso = 'tan α = sin α / cos α, e aqui cos α = 0. O denominador não pode ser zero, por isso tan α não está definida (a reta OP é paralela à reta x = 1 e nunca a corta).';
-      else if (Math.abs(R * ty) > T_MAX) txtAviso = `T fica fora do desenho: tan α ≈ ${M.fmt(ty, 3)}`;
+    // a tangente aparece nas leituras dos dois modos: onde «não definida», diz porquê
+    if (!def) {
+      txtAviso = 'tan α = sin α / cos α, e aqui cos α = 0. O denominador não pode ser zero, por isso tan α não está definida'
+        + (est.modo === 'tan' ? ' (a reta OP é paralela à reta x = 1 e nunca a corta).' : '.');
+    } else if (est.modo === 'tan' && Math.abs(R * ty) > T_MAX) {
+      txtAviso = `T fica fora do desenho: tan α ≈ ${M.fmt(ty, 3)}`;
     }
     aviso.hidden = !txtAviso;
     definirTexto(aviso, txtAviso);
@@ -619,7 +629,7 @@ export async function montar(el, dados) {
   const DICAS = {
     sc: 'Arrasta o ponto P à volta da circunferência (ou usa as setas do teclado). O cosseno é a abcissa de P e o seno é a ordenada.',
     tan: 'A tangente é a ordenada do ponto T, onde a reta OP corta a reta x = 1. Como tan α = sin α / cos α, quando cos α = 0 o denominador é zero e a tangente não existe.',
-    red: 'Arrasta no 1.º quadrante para mudar α. O ponto Q, a roxo, é o ponto do ângulo escolhido nos botões em baixo.',
+    red: 'Arrasta no 1.º quadrante para mudar α. O ponto Q, a roxo, é o ponto do ângulo escolhido nos botões.',
   };
 
   function valorAtual() {

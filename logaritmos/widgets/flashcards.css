@@ -5,6 +5,9 @@
 .fc-sep { color: var(--linha); }
 
 .fc-grupos, .fc-modos { margin-top: 0.5rem; }
+/* alvos de toque de 44 px, como nos outros widgets do tema */
+.fc .chip { min-height: 2.75rem; padding: 0.45rem 0.95rem; }
+.fc .chip[aria-pressed="true"]::before { content: "\2713\00a0"; }
 .fc-modos { padding-bottom: 0.9rem; border-bottom: 1px solid var(--linha); }
 .fc-legenda { margin: 0.8rem 0 0; color: var(--tinta-suave); font-size: 0.88rem; }
 .fc-escolha { margin: 0.6rem 0 0; }
@@ -36,8 +39,10 @@
 .fc-acoes--uma { grid-template-columns: 1fr; }
 .fc-acoes .botao { min-height: 3rem; }
 .fc-dica { text-align: center; }
+@media (hover: none) { .fc-dica { display: none; } }
 
 .fc-rodape { margin: 1.2rem 0 0; padding-top: 0.8rem; border-top: 1px solid var(--linha); text-align: right; }
+.fc-rodape .botao { min-height: 2.75rem; }
 
 /* o cartão pode ter fórmulas largas: nunca estica a página */
 .fc-frente, .fc-resposta { overflow-x: auto; overflow-y: hidden; }

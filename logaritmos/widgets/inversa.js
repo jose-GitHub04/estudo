@@ -110,6 +110,7 @@ export async function montar(el, dados) {
   let regime = null; // true quando a > 1; muda -> as células que dependem da base piscam
   let raf = 0;
   let temporizador = 0;
+  let interagiu = false; // só se anuncia (aria-live) depois de o aluno mexer em alguma coisa
   const cresc = () => est.a > 1;
   const yDe = (x) => Math.pow(est.a, x);
   const reduzir = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -400,8 +401,8 @@ export async function montar(el, dados) {
     // assíntotas: o rótulo fica do lado onde a curva não se aproxima do eixo
     const hx = c ? R0 - 26 : L0 + 6;
     const hy = g.Y(0) - 7;
-    const vx = g.X(0) + (c ? -6 : 6);
-    const vy = c ? T0 + FONTE + 2 : B0 - 6;
+    const vx = g.X(0) + (c ? -16 : 6); // a crescente: à esquerda dos números do eixo dos yy
+    const vy = c ? g.Y(J1 - 0.5) + FONTE * 0.35 : B0 - 6; // a crescente: entre os números 6 e 7 do eixo dos yy, para não tocar neles
     const anc = c ? 'end' : 'start';
     poe(rotAssH, hx, hy, anc);
     poe(rotAssV, vx, vy, anc);
@@ -499,6 +500,7 @@ export async function montar(el, dados) {
       + `Lê-se: ${baseTxt(a)} elevado a ${num(x, 1)} é ${Math.abs(Number(y.toFixed(casasDe(y))) - y) < 1e-9 ? '' : 'aproximadamente '}${num(y)}, logo o logaritmo de ${num(y)} na base ${baseTxt(a)} é ${num(x, 1)}.`;
   }
   function agendarVoz() {
+    if (!interagiu) return; // ao abrir a página não se anuncia nada
     clearTimeout(temporizador);
     temporizador = setTimeout(() => definirTexto(vivo, textoVoz()), 350);
   }
@@ -507,6 +509,7 @@ export async function montar(el, dados) {
 
   /** Chamado pelo gráfico a cada movimento de P: arredonda x a 0,1 e mantém P dentro da janela. */
   function aoMoverP(x) {
+    interagiu = true;
     parar();
     const [lo, hi] = limitesX(est.a);
     const xr = limitar(arred1(x), lo, hi);
@@ -516,6 +519,7 @@ export async function montar(el, dados) {
   }
 
   function definirBase(a) {
+    interagiu = true;
     parar();
     est.a = a;
     const [lo, hi] = limitesX(a);
@@ -540,6 +544,7 @@ export async function montar(el, dados) {
   });
 
   btnDobrar.addEventListener('click', () => {
+    interagiu = true;
     parar();
     est.dobrar = !est.dobrar;
     refrescarDobra();

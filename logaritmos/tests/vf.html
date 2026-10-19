@@ -42,6 +42,7 @@
 import { GRUPOS } from '../grupos.js';
 import * as P from '../../assets/motor/progresso.js';
 import * as vf from '../widgets/vf.js';
+import { intervalosTex, intervalosNoTexto } from '../widgets/intervalos.js';
 
 const palco = document.getElementById('palco');
 const saida = document.getElementById('resultado');
@@ -291,9 +292,27 @@ async function testes() {
     ok(!!q(svg, '[data-camada="areas"] path') && q(svg, '[data-camada="areas"] path').getAttribute('d').length > 10, 'falta a área');
     const rotulos = qa(svg, 'text').map((t) => t.textContent);
     ok(rotulos.includes('x = 0') && rotulos.includes('x = 3') && rotulos.includes('y = 4'), 'rótulos das guias: ' + rotulos.join(' | '));
+    ok(rotulos.includes('y = 2x') && !rotulos.some((t) => t.includes('^')), 'o rótulo «y = 2^x» devia sair sem o sinal ^: ' + rotulos.join(' | '));
+    ok(qa(svg, '[data-camada="texto"] tspan[dy]').length >= 1, 'o expoente devia sair num tspan mais alto');
   });
 
-  await teste('figura: rótulos que se sobrepõem são afastados e ficam dentro da zona do gráfico', async (ok) => {
+  await teste('figura: expoentes dos rótulos saem em cima (e^x, e^(−x²), (1/2)^x), sem o sinal ^ (rotulos.js)', async (ok) => {
+    const figura = {
+      tipo: 'grafico', x: [-3, 3], y: [-1, 5],
+      curvas: [{ expr: 'exp(x)', rotulo: 'y = e^x' }, { expr: '(1/2)^x', rotulo: 'y = (1/2)^x' }, { expr: 'exp(-x^2)', rotulo: 'y = e^(−x²)' }, { expr: 'exp(-x)', rotulo: 'y = 1 − e^(−x)' }],
+    };
+    const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-2', tema: 'funcao', texto: 'T', verdadeira: true, explicacao: 'E', figura }] } });
+    botao(el, true).click();
+    const textos = qa(q(el, '.vf-fig svg'), '[data-camada="texto"] text');
+    const por = new Map(textos.map((t) => [t.textContent, t]));
+    for (const esperado of ['y = ex', 'y = (1/2)x', 'y = e−x²', 'y = 1 − e−x']) {
+      const t = por.get(esperado);
+      ok(!!t, `falta o rótulo «${esperado}» em: ${[...por.keys()].join(' | ')}`);
+      ok(!t || !!t.querySelector('tspan[dy]'), `«${esperado}»: o expoente devia estar num tspan mais alto`);
+    }
+  });
+
+  await teste('figura: rótulos que se sobrepõem são afastados e ficam dentro do desenho', async (ok) => {
   const figura = {
     tipo: 'grafico', x: [-3, 3], y: [-1, 5],
     curvas: [{ expr: '2^x', rotulo: 'y = 2^x' }, { expr: '2^x', rotulo: 'y = 2^x (a mesma)' }, { expr: '2^x+0.05', rotulo: 'y = 2^x + 0,05' }],
@@ -303,15 +322,16 @@ async function testes() {
   botao(el, true).click();
   const svg = q(el, '.vf-fig svg');
   ok(!!svg, 'a figura devia desenhar');
-  const zona = q(svg, 'clipPath rect');
-  const [zx, zy, zw, zh] = ['x', 'y', 'width', 'height'].map((a) => Number(zona.getAttribute(a)));
-  const caixas = qa(svg, '[data-camada="curvas"] text, [data-camada="pontos"] text').filter((t) => t.getClientRects().length > 0).map((t) => t.getBBox());
+  const vb = svg.viewBox.baseVal; // os rótulos podem sair da zona dos eixos, mas não do desenho (a caixa do texto tem 2 px de folga em cima)
+  // os rótulos das curvas e dos pontos (os nomes dos eixos, x e y, também estão na camada do texto e não contam)
+  const caixas = qa(svg, '[data-camada="texto"] text').filter((t) => t.getClientRects().length > 0 && t.textContent.length > 1).map((t) => t.getBBox());
   ok(caixas.length === 5, 'devia haver 5 rótulos visíveis, há ' + caixas.length);
   const cruzam = (a, b) => a.x < b.x + b.width - 0.5 && b.x < a.x + a.width - 0.5 && a.y < b.y + b.height - 0.5 && b.y < a.y + a.height - 0.5;
   let sobrepostos = 0;
   caixas.forEach((a, i) => caixas.slice(i + 1).forEach((b) => { if (cruzam(a, b)) sobrepostos++; }));
   ok(sobrepostos === 0, `${sobrepostos} pares de rótulos ainda se sobrepõem`);
-  ok(caixas.every((b) => b.x >= zx && b.y >= zy && b.x + b.width <= zx + zw && b.y + b.height <= zy + zh), 'há rótulos fora da zona do gráfico');
+  const fora = caixas.filter((b) => !(b.x >= -0.5 && b.y >= -2 && b.x + b.width <= vb.width + 0.5 && b.y + b.height <= vb.height + 0.5));
+  ok(fora.length === 0, 'há rótulos fora do desenho: ' + fora.map((b) => [b.x, b.y, b.width, b.height].map(Math.round).join(',')).join(' | ') + ' desenho ' + vb.width + 'x' + vb.height);
 });
 
 await teste('as chaves guardadas começam por log- e guardam o certo', async (ok) => {
@@ -455,6 +475,26 @@ await teste('as chaves guardadas começam por log- e guardam o certo', async (ok
     ok(idAtual(el) === 't-exp-contradominio', 'não cheguei à afirmação com ponto final');
     const cola = q(el, '.vf-enunciado .vf-cola');
     ok(!!cola && cola.textContent.endsWith('.'), 'o ponto final devia estar dentro de .vf-cola');
+  });
+
+  await teste('intervalos à portuguesa: o «]» que abre e o «[» que fecha levam \\mathopen e \\mathclose (widgets/intervalos.js)', async (ok) => {
+    const A = '\\mathopen{]}';
+    const F = '\\mathclose{[}';
+    ok(intervalosTex(']-\\infty,2]') === `${A}-\\infty,2]`, 'aberto à esquerda: ' + intervalosTex(']-\\infty,2]'));
+    ok(intervalosTex('[0,1[') === `[0,1${F}`, 'aberto à direita: ' + intervalosTex('[0,1['));
+    ok(intervalosTex(']1,3[\\cup]5,7[') === `${A}1,3${F}\\cup${A}5,7${F}`, 'união: ' + intervalosTex(']1,3[\\cup]5,7['));
+    ok(intervalosTex('[0,1]') === '[0,1]', 'fechado fica igual');
+    ok(intervalosTex('\\sqrt[3]{8}=2') === '\\sqrt[3]{8}=2', 'raiz de índice n fica igual');
+    ok(intervalosTex('\\ln[(x-2)(x-5)]') === '\\ln[(x-2)(x-5)]', 'parênteses retos de agrupamento ficam iguais');
+    ok(intervalosTex('\\left]1,2\\right[') === '\\left]1,2\\right[', 'com \\left e \\right não se mexe');
+    ok(intervalosTex(']1,2') === ']1,2', 'sem par, não se mexe');
+    ok(intervalosTex(intervalosTex(']1,2[')) === intervalosTex(']1,2['), 'aplicar duas vezes dá o mesmo');
+    ok(intervalosNoTexto('Seja $]0,1[$ e ] fora') === `Seja $${A}0,1${F}$ e ] fora`, 'só dentro de $...$');
+    // no widget: o texto da afirmação passa por aí
+    const el = await montar({ vf: { afirmacoes: [{ id: 'x-vf-i', tema: 'funcao', texto: 'O domínio é $]-\\infty,2]$.', verdadeira: true, explicacao: 'E' }] } });
+    const fonte = qa(q(el, '.vf-enunciado'), 'annotation').map((a) => a.textContent).join('');
+    ok(fonte.includes(A), 'o widget devia marcar o intervalo: ' + fonte);
+    ok(!q(el, '.vf-enunciado .katex-error'), 'KaTeX sem erros');
   });
 
   await teste('dados em falta, vazios ou inválidos: aviso simpático, sem exceção', async (ok) => {

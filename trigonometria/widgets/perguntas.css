@@ -11,6 +11,7 @@
 }
 
 .per-cola { white-space: nowrap; }
+.per-cola--livre { white-space: normal; }
 
 /* ---------- ecrã inicial ---------- */
 
@@ -129,7 +130,7 @@
   background: var(--dourado-fundo); font-size: 0.98rem;
 }
 .per-janela__expl-titulo { margin: 0 0 0.25rem; color: var(--dourado-texto); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.per-janela__expl-texto { margin: 0; overflow-wrap: anywhere; }
+.per-janela__expl-texto { margin: 0; line-height: 1.8; overflow-wrap: anywhere; }
 
 .per-janela__rodape { display: flex; flex: none; padding: 0.8rem 1.1rem 1rem; border-top: 1px solid var(--linha); background: var(--creme); }
 .per-janela__seguinte { flex: 1 1 auto; min-height: 2.9rem; }
@@ -147,7 +148,7 @@
 
 .per-falhadas { margin: 1.3rem 0 0; }
 .per-subtitulo { margin: 0 0 0.5rem; font-size: 1.1rem; }
-.per-falhadas__lista { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.per-falhadas__lista { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
 .per-falhada {
   padding: 0.5rem 0.8rem; border-left: 3px solid var(--erro); border-radius: 0 0.4rem 0.4rem 0;
   background: var(--erro-fundo); font-size: 0.95rem;

@@ -2,7 +2,7 @@
 
 .exu [hidden] { display: none !important; }
 .exu .botao { min-height: 2.75rem; }
-.exu .chip { min-height: 2.5rem; }
+.exu .chip { min-height: 2.75rem; }
 
 .exu-enunciado p { margin: 0 0 0.6rem; }
 .exu-alineas { margin: 0 0 0.4rem; padding: 0; list-style: none; }
@@ -44,12 +44,13 @@
 /* barras e faixa */
 .exu-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
 .exu-barra { fill: var(--c-seno); fill-opacity: 0.8; }
-.exu-seg { fill: var(--c-seno); fill-opacity: 0.8; stroke: var(--papel); stroke-width: 1.6; }
+.exu-seg { fill: var(--c-seno); stroke: var(--papel); stroke-width: 1.6; }
 .exu-barra.exu-alvo, .exu-seg.exu-alvo { fill: var(--c-destaque); fill-opacity: 0.95; }
 .exu-barra.exu-fora, .exu-seg.exu-fora { fill: var(--c-grelha); fill-opacity: 1; stroke: var(--c-eixo); stroke-width: 1; stroke-dasharray: 4 3; }
 .exu-svg .exu-t { fill: var(--tinta); font-size: 14px; font-weight: 600; }
 .exu-svg .exu-t--eixo { fill: var(--tinta-suave); font-weight: 400; font-size: 13.5px; }
 .exu-svg .exu-t--seg { fill: var(--papel); font-size: 14px; pointer-events: none; }
+.exu-svg .exu-seg.exu-fora + .exu-t--seg { fill: var(--tinta); }
 .exu-svg .exu-t--todo { fill: var(--castanho); }
 .exu-colchete { fill: none; stroke: var(--castanho); stroke-width: 1.8; stroke-linejoin: round; }
 
@@ -61,7 +62,7 @@
 .exu-mu-tri { fill: var(--c-destaque); }
 .exu-svg .exu-t--mu { fill: var(--c-destaque); font-size: 15px; font-weight: 700; }
 .exu-desvio { stroke: var(--dourado-texto); stroke-width: 2.6; }
-.exu-svg .exu-t--desvio { fill: var(--dourado-texto); font-size: 14px; font-weight: 700; }
+.exu-svg .exu-t--desvio { fill: var(--dourado-texto); font-size: 14px; font-weight: 700; paint-order: stroke; stroke: var(--papel); stroke-width: 5px; stroke-linejoin: round; }
 
 /* ---------- tabelas ---------- */
 
@@ -69,7 +70,7 @@
 .exu-tab .katex { font-size: 1em; }
 .exu-tab-lugar { margin-top: 0.8rem; }
 .exu-btn-x {
-  min-width: 2.75rem; min-height: 2.5rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
+  min-width: 2.75rem; min-height: 2.75rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
   border-radius: 0.4rem; background: var(--creme); color: var(--castanho); font: inherit; cursor: pointer;
 }
 .exu-btn-x:hover { border-color: var(--castanho); }

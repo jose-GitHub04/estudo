@@ -371,6 +371,14 @@ if __name__ == "__main__":
         erros.extend(_log.correr())
     except Exception as _exc:  # noqa: BLE001
         falha(f"tools/verificar_log.py rebentou: {type(_exc).__name__}: {_exc}")
+    # tema Probabilidades: recalcula V/F, exercícios e leituras dos desenhos (a parte de browser é opcional: --navegador)
+    try:
+        _spec_p = importlib.util.spec_from_file_location("verificar_prob", RAIZ / "tools" / "verificar_prob.py")
+        _prob = importlib.util.module_from_spec(_spec_p)
+        _spec_p.loader.exec_module(_prob)
+        erros.extend(_prob.correr())
+    except Exception as _exc:  # noqa: BLE001
+        falha(f"tools/verificar_prob.py rebentou: {type(_exc).__name__}: {_exc}")
     verificar_travessoes()
     if erros:
         print(f"\n{len(erros)} falha(s).")

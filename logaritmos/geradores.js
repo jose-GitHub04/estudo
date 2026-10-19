@@ -148,7 +148,7 @@ function combinacoesLog() {
     for (const s of S_BASE[c]) {
       for (const t of ts) {
         const [rp, rq] = M.reduzir(t[0] * s[1], t[1] * s[0]);
-        if (rq <= 4 && Math.abs(rp / rq) <= 8) combosLog.push({ c, s, t, r: [rp, rq] });
+        if (rq <= 4 && Math.abs(rp / rq) <= 8 && !(s[0] * t[1] === s[1] * t[0])) combosLog.push({ c, s, t, r: [rp, rq] });
       }
     }
   }
@@ -347,7 +347,7 @@ function formaIsolarX(rng) {
     enunciado: `Sabendo que $${nome} x=${c}$, qual é o valor de $x$?`,
     correta,
     outras,
-    explicacao: `$${nome} x=${c}$ diz que ${c} é o expoente a que se eleva a base $${b}$ para obter $x$. Logo $x=${b}^{${c}}$. Um erro frequente é trocar os papéis e escrever $x=${c}^{${b}}$.`,
+    explicacao: `$${nome} x=${c}$ diz que ${c} é o expoente a que se eleva a base $${b}$ para obter $x$. Logo $x=${b}^{${c}}$.${c ** base === base ** c ? '' : ` Um erro frequente é trocar os papéis e escrever $x=${c}^{${b}}$.`}`,
     verificacao: { forma: 'x-potencia', a: base === 'e' ? Math.E : base, c },
   });
 }
@@ -692,9 +692,11 @@ function combinacoesMudanca() {
   return combosMudanca;
 }
 
+/** t/s em LaTeX; sem denominador quando s = 1. */
+const razao = (t, s) => (s === 1 ? String(t) : `\\frac{${t}}{${s}}`);
 const sufixoReduzido = (t, s) => {
   const [rp, rq] = M.reduzir(t, s);
-  return rp !== t || rq !== s ? `=${fr(rp, rq)}` : '';
+  return s !== 1 && (rp !== t || rq !== s) ? `=${fr(rp, rq)}` : '';
 };
 
 function mudancaBase(rng) {
@@ -727,7 +729,7 @@ function mudancaDireta(rng) {
     tex: `\\log_{${A}} ${B}`,
     logs: [{ base: A, arg: B }],
     valor: M.reduzir(t, s),
-    explicacao: `A mudança de base diz que $\\log_a b=\\frac{\\log_c b}{\\log_c a}$, com $c$ à tua escolha. Escolhe $c=${c}$, porque $${A}=${c}^{${s}}$ e $${B}=${c}^{${t}}$: $\\log_{${A}} ${B}=\\frac{\\log_{${c}} ${B}}{\\log_{${c}} ${A}}=\\frac{${t}}{${s}}${sufixoReduzido(t, s)}$. O logaritmo da base fica no denominador, por isso não é $\\frac{${s}}{${t}}$.`,
+    explicacao: `A mudança de base diz que $\\log_a b=\\frac{\\log_c b}{\\log_c a}$, com $c$ à tua escolha. Escolhe $c=${c}$, porque $${A}=${c}^{${s}}$ e $${B}=${c}^{${t}}$: $\\log_{${A}} ${B}=\\frac{\\log_{${c}} ${B}}{\\log_{${c}} ${A}}=${razao(t, s)}${sufixoReduzido(t, s)}$. O logaritmo da base fica no denominador, por isso não é $\\frac{${s}}{${t}}$.`,
   };
 }
 
@@ -746,14 +748,15 @@ function mudancaQuociente(rng) {
     tex: `\\frac{${cb} ${m}}{${cb} ${n}}`,
     logs: [{ base: k === 'e' ? Math.E : k, arg: m }, { base: k === 'e' ? Math.E : k, arg: n }],
     valor: M.reduzir(w, u),
-    explicacao: `Um quociente de logaritmos com a mesma base é um logaritmo de mudança de base: $\\frac{${cb} ${m}}{${cb} ${n}}=\\log_{${n}} ${m}$. Procura o expoente $x$ tal que $${n}^{x}=${m}$. Como $${n}=${d}^{${u}}$ e $${m}=${d}^{${w}}$, vem $${d}^{${coefX([u, 1])}}=${d}^{${w}}$, logo $${coefX([u, 1])}=${w}$ e $x=${fr(w, u)}$.`,
+    explicacao: `Um quociente de logaritmos com a mesma base é um logaritmo de mudança de base: $\\frac{${cb} ${m}}{${cb} ${n}}=\\log_{${n}} ${m}$. Procura o expoente $x$ tal que $${n}^{x}=${m}$. ${u === 1 ? `Como $${m}=${d}^{${w}}$, vem $${d}^{x}=${d}^{${w}}$, logo $x=${w}$.` : `Como $${n}=${d}^{${u}}$ e $${m}=${d}^{${w}}$, vem $${d}^{${coefX([u, 1])}}=${d}^{${w}}$, logo $${coefX([u, 1])}=${w}$ e $x=${fr(w, u)}$.`}`,
   };
 }
 
 function mudancaProduto(rng) {
   const c = um(rng, [2, 3, 5]);
   const s = um(rng, [1, 2, 3]);
-  const t = M.inteiro(rng, 1, MAX_EXP[c]);
+  let t;
+  do t = M.inteiro(rng, 1, MAX_EXP[c]); while (t === s); // D = A daria o produto trivial 1
   const A = c ** s;
   const D = c ** t;
   const potenciaDeC = (x) => {
@@ -767,7 +770,7 @@ function mudancaProduto(rng) {
     tex: `\\log_{${A}} ${b}\\times\\log_{${b}} ${D}`,
     logs: [{ base: A, arg: b }, { base: b, arg: D }],
     valor: M.reduzir(t, s),
-    explicacao: `Passa tudo para logaritmos neperianos com a mudança de base: $\\log_a b=\\frac{\\ln b}{\\ln a}$. Então $\\log_{${A}} ${b}\\times\\log_{${b}} ${D}=\\frac{\\ln ${b}}{\\ln ${A}}\\times\\frac{\\ln ${D}}{\\ln ${b}}=\\frac{\\ln ${D}}{\\ln ${A}}=\\log_{${A}} ${D}$, porque $\\ln ${b}$ cancela. Como $${A}=${c}^{${s}}$ e $${D}=${c}^{${t}}$, o valor é $\\frac{${t}}{${s}}${sufixoReduzido(t, s)}$.`,
+    explicacao: `Passa tudo para logaritmos neperianos com a mudança de base: $\\log_a b=\\frac{\\ln b}{\\ln a}$. Então $\\log_{${A}} ${b}\\times\\log_{${b}} ${D}=\\frac{\\ln ${b}}{\\ln ${A}}\\times\\frac{\\ln ${D}}{\\ln ${b}}=\\frac{\\ln ${D}}{\\ln ${A}}=\\log_{${A}} ${D}$, porque $\\ln ${b}$ cancela. Como $${A}=${c}^{${s}}$ e $${D}=${c}^{${t}}$, o valor é $${razao(t, s)}${sufixoReduzido(t, s)}$.`,
   };
 }
 
@@ -784,10 +787,11 @@ function expMesmaBase(rng) {
     c = um(rng, [2, 2, 3, 5]);
     s = um(rng, S_BASE[c]);
     const ts = [];
-    for (let k = T_INT[c][0]; k <= T_INT[c][1]; k++) ts.push([k, 1]);
+    for (let k = T_INT[c][0]; k <= T_INT[c][1]; k++) if (k !== 0) ts.push([k, 1]); // sem «= 1», que é trivial
     t = um(rng, [...ts, ...T_EXTRA]);
     p = um(rng, [1, 1, 2, -1]);
     h = M.inteiro(rng, -3, 3);
+    if (h === 0 && p === 1 && t[0] * s[1] === t[1] * s[0]) continue; // a^x = a: demasiado óbvia
     const [xp, xq] = M.reduzir(t[0] * s[1] - h * t[1] * s[0], t[1] * s[0] * p);
     if (xq <= 6 && Math.abs(xp / xq) <= 10) x = [xp, xq];
   }
@@ -799,10 +803,13 @@ function expMesmaBase(rng) {
   const tT = fr(t[0], t[1]);
   const xT = fr(x[0], x[1]);
   const sx = s[0] === 1 && s[1] === 1 ? '' : (s[0] === -1 && s[1] === 1 ? '-' : sT);
-  const igualdade = `${sx}${sx === '' ? expo : `\\left(${expo}\\right)`}=${tT}`;
+  const par = (e) => (e === 'x' ? e : `\\left(${e}\\right)`); // x sozinho não leva parênteses
+  const expoDoLado = sx === '' ? expo : (sx === '-' ? polinomio(-p, -h) : `${sx}${par(expo)}`); // expoente da base comum: s(px+h)
+  const igualdade = `${expoDoLado}=${tT}`;
+  const btSolta = s[1] === 1 && s[0] > 0 ? String(c ** s[0]) : potTex(c, s); // sem parênteses, para «base = c^s»
   const explicacao = s[0] === 1 && s[1] === 1
-    ? `Escreve o segundo membro como potência de ${c}: $${rhs}=${c}^{${tT}}$. Como a função exponencial é injetiva, duas potências com a mesma base só são iguais se os expoentes forem iguais: $${igualdade}$, logo $x=${xT}$.`
-    : `Escreve os dois lados como potências de ${c}: $${bt}=${c}^{${sT}}$ e $${rhs}=${c}^{${tT}}$. A equação fica $${c}^{${sx}\\left(${expo}\\right)}=${c}^{${tT}}$ e, como a base é a mesma, os expoentes são iguais: $${igualdade}$, o que dá $x=${xT}$.`;
+    ? `Escreve o segundo membro como potência de ${c}: $${rhs}=${c}^{${tT}}$. Como a função exponencial é injetiva, duas potências com a mesma base só são iguais se os expoentes forem iguais: $${igualdade}$${expo === 'x' ? '.' : `, logo $x=${xT}$.`}`
+    : `${btSolta === rhs ? `Escreve a base e o segundo membro como potências de ${c}: $${btSolta}=${c}^{${sT}}$.` : `Escreve os dois lados como potências de ${c}: $${btSolta}=${c}^{${sT}}$ e $${rhs}=${c}^{${tT}}$.`} A equação fica $${c}^{${expoDoLado}}=${c}^{${tT}}$ e, como a base é a mesma, os expoentes são iguais: $${igualdade}$, o que dá $x=${xT}$.`;
   const o = opNum(x[0], x[1]);
   return escrita('exp-mesma-base', {
     enunciado: um(rng, [
@@ -878,18 +885,30 @@ function eqLogSimples(rng) {
     valor = xp / xq;
     bk = fr(n, d);
   }
-  const explicacao = `Condição de existência: $${pol}>0$. Na forma exponencial, $${E}$ equivale a $${pol}=${b}^{${k}}$, isto é, $${pol}=${bk}$, e daí $x=${tex}$. Esta solução serve: o argumento vale $${bk}$, que é positivo.`;
+  const potencia = `${b}^{${k}}`;
+  const explicacao = `Condição de existência: $${pol}>0$. Na forma exponencial, $${E}$ equivale a $${pol}=${potencia}$${potencia === bk ? '' : `, isto é, $${pol}=${bk}$`}, e daí $x=${tex}$. Esta solução serve: o argumento vale $${bk}$, que é positivo.`;
   return eqSolucao(rng, E, expr, tex, explicacao,
     { forma: 'simples', b: nomeBase(b), p, h, k, solucoes: [valor] }, ENUNCIADOS_EQ);
 }
 
+let combosSoma = null;
+/** (b, k, u, v) com u·v = b^k e u > v: a equação log_b x + log_b(x-h) = k tem as raízes u e -v do trinómio (h = u - v). */
+function combinacoesSoma() {
+  if (combosSoma) return combosSoma;
+  combosSoma = [];
+  for (const b of [2, 3, 5]) {
+    for (let k = 1; k <= 5; k++) {
+      const N = b ** k;
+      for (let v = 1; v * v < N; v++) {
+        if (N % v === 0 && N / v > v && N / v <= 25) combosSoma.push({ b, k, N, u: N / v, v }); // números pequenos: nada de x^2-242x-243
+      }
+    }
+  }
+  return combosSoma;
+}
+
 function eqLogSoma(rng) {
-  const b = um(rng, [2, 2, 3, 5]);
-  const k = um(rng, [1, 2, 3, 4, 5].filter((e) => b ** e <= 250));
-  const N = b ** k;
-  const pares = [];
-  for (let v = 1; v * v < N; v++) if (N % v === 0 && N / v > v) pares.push([N / v, v]);
-  const [u, v] = um(rng, pares);
+  const { b, k, N, u, v } = um(rng, combinacoesSoma());
   const h = u - v;
   const orient = um(rng, ['menos', 'mais']);
   const cb = cabeca(b);
@@ -898,7 +917,8 @@ function eqLogSoma(rng) {
   const rejeitada = orient === 'menos' ? -v : -u;
   const verificacao = { forma: 'soma', b, h, k, orient, solucoes: [valida], rejeitadas: [rejeitada] };
   const condicao = orient === 'menos' ? `$x>0$ e $x-${h}>0$, ou seja, $x>${h}$` : `$x+${h}>0$ e $x>0$, ou seja, $x>0$`;
-  const quadrado = orient === 'menos' ? `x^{2}-${h}x-${N}=0` : `x^{2}+${h}x-${N}=0`;
+  const hx = h === 1 ? 'x' : `${h}x`;
+  const quadrado = orient === 'menos' ? `x^{2}-${hx}-${N}=0` : `x^{2}+${hx}-${N}=0`;
   const explicacao = `Condição de existência: ${condicao}. Juntando os logaritmos, $${cb}\\left(${orient === 'menos' ? `x(${fator(h)})` : `(${fator(-h)})x`}\\right)=${k}$, logo o produto é $${b}^{${k}}=${N}$ e fica $${quadrado}$, com soluções $x=${valida}$ e $x=${rejeitada}$. Só $x=${valida}$ cumpre a condição de existência; $x=${rejeitada}$ é rejeitada.`;
   if (rng() < 0.5) {
     return eqSolucao(rng, E, String(valida), String(valida), explicacao, verificacao, ENUNCIADOS_EQ);
@@ -923,7 +943,9 @@ function eqLogQuadrado(rng) {
     ]);
   }
   const E = `2${cb} x=${k}`;
-  const explicacao = `Condição de existência: $x>0$. Dividindo por 2, $${cb} x=${fr(k, 2)}$, logo $x=${b}^{${fr(k, 2)}}=${rTex}$, que é positivo. Atenção: $\\ln(x^{2})$ e $2\\ln x$ não são iguais para todos os $x$, porque o primeiro aceita $x<0$.`;
+  const meio = fr(k, 2);
+  const pot = meio === '1' ? String(b) : `${b}^{${meio}}`;
+  const explicacao = `Condição de existência: $x>0$. Dividindo por 2, $${cb} x=${meio}$, logo $x=${pot}${pot === rTex ? '' : `=${rTex}`}$, que é positivo. Atenção: $${cb}\\left(x^{2}\\right)$ e $2${cb} x$ não são iguais para todos os $x$, porque o primeiro aceita $x<0$.`;
   const verificacao = { forma: 'dobro', b: nomeBase(b), k, solucoes: [valorR(r)] };
   if (rng() < 0.75) return eqSolucao(rng, E, rExpr, rTex, explicacao, verificacao, ENUNCIADOS_EQ);
   return eqQuantas(rng, 1, E, explicacao, verificacao);
@@ -970,7 +992,7 @@ function substituicao(rng) {
   const negativa = rng() < 0.4;
   let u1;
   let u2;
-  const potencias = natural ? [1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4].map((k) => c ** k).filter((v) => v <= 130);
+  const potencias = natural ? [1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4].map((k) => c ** k).filter((v) => v <= 25); // coeficientes pequenos
   do {
     u1 = um(rng, potencias);
     u2 = negativa ? -M.inteiro(rng, 1, 6) : um(rng, potencias);
@@ -1011,9 +1033,10 @@ function substituicao(rng) {
   const lado = (u) => `${lin}=${u}`;
   const voltar = positivas.map((u) => `$${lado(u)}\\Leftrightarrow x=${xTex(u)}$`).join(' e ');
   const rejeicao = negativa ? ` $u=${Math.min(u1, u2)}$ não serve, porque $${lin}>0$ para todo o $x$.` : '';
-  const fecho = pedido === 'numero' ? `Há ${positivas.length} solução(ões) reais.`
-    : (pedido === 'soma' ? `A soma é $${tex}$.` : `A solução pedida é $${tex}$.`);
-  const explicacao = `Faz $u=${lin}$, com $u>0$. Como ${passo1}, a equação fica $u^{2}${B > 0 ? '+' : '-'}${Math.abs(B) === 1 ? '' : Math.abs(B)}u${C > 0 ? '+' : '-'}${Math.abs(C)}=0$, com soluções $u=${u1}$ e $u=${u2}$.${rejeicao} Voltando a $x$: ${voltar}. ${fecho}`;
+  const fecho = pedido === 'numero' ? (positivas.length === 1 ? 'Há 1 solução real.' : `Há ${positivas.length} soluções reais.`)
+    : (pedido === 'soma' ? `A soma das soluções é $${tex}$.` : (pedido === 'maior' ? `A maior solução é $${tex}$.` : `A solução é $${tex}$.`));
+  const [ua, ub] = [u1, u2].sort((a, b) => a - b);
+  const explicacao = `Faz $u=${lin}$, com $u>0$. Como ${passo1}, a equação fica $u^{2}${B > 0 ? '+' : '-'}${Math.abs(B) === 1 ? '' : Math.abs(B)}u${C > 0 ? '+' : '-'}${Math.abs(C)}=0$, com soluções $u=${ua}$ e $u=${ub}$.${rejeicao} Voltando a $x$: ${voltar}. ${fecho}`;
   return escrita('substituicao', {
     enunciado, expr, tex, explicacao,
     verificacao: { c: natural ? Math.E : c, B, C, pedido, valor, equacao: E },
@@ -1060,7 +1083,7 @@ function inequacaoExp(rng) {
   const sentido = cresc
     ? 'Como a base é maior do que 1, a função exponencial é crescente e o sentido da desigualdade mantém-se'
     : 'Como a base está entre 0 e 1, a função exponencial é decrescente e o sentido da desigualdade inverte-se';
-  const explicacao = `Escreve o segundo membro como potência da mesma base: $${fr(...rhs)}=${baseTex(base)}^{${k}}$. ${sentido}: $${expo}${OPS_TEX[opFinal]}${k}$, logo $x${OPS_TEX[opFinal]}${k - h}$ e o conjunto-solução é $${correta.tex}$.`;
+  const explicacao = `Escreve o segundo membro como potência da mesma base: $${fr(...rhs)}=${baseTex(base)}^{${k}}$. ${sentido}: $${expo}${OPS_TEX[opFinal]}${k}$${h === 0 ? '' : `, logo $x${OPS_TEX[opFinal]}${k - h}$`} e o conjunto-solução é $${correta.tex}$.`;
   return pergunta(rng, 'inequacao', {
     enunciado: um(rng, [`Resolve a inequação $${E}$.`, `Qual é o conjunto-solução da inequação $${E}$?`]),
     correta,
@@ -1091,17 +1114,18 @@ function inequacaoLog(rng) {
   const cb = natural ? '\\ln' : (base[0] === 10 && base[1] === 1 ? '\\log' : `\\log_{${fr(...base)}}`);
   const E = `${cb} x${OPS_TEX[op]}${k}`;
   const correta = intDe(opFinal, limiar, zero);
+  // erro típico: comparar x com k em vez de com a base^k (se k < 0 isso já não cabe em x>0, e o intervalo vem de -infinito)
   const pontoErrado = pt(k === 0 ? 2 : k);
+  const pisoErrado = k >= 0 ? zero : MINF;
   const outras = distratores(rng, correta, [
     [intDe(OPOSTO[opFinal], limiar, zero), opFinal.startsWith('<') ? intDe(opFinal, limiar) : null],
-    [intDe(ALTERNA[opFinal], limiar, zero), intDe(opFinal, pontoErrado, zero)],
-    [intDe(OPOSTO[opFinal], pontoErrado, zero), opInt(iv(zero, INF))],
+    [intDe(ALTERNA[opFinal], limiar, zero), intDe(opFinal, pontoErrado, pisoErrado)],
+    [intDe(OPOSTO[opFinal], pontoErrado, pisoErrado), opInt(iv(zero, INF))],
   ]);
-  const bTex = natural ? 'e' : fr(...base);
   const sentido = cresc
     ? 'Como a base é maior do que 1, o logaritmo é crescente e o sentido mantém-se'
     : 'Como a base está entre 0 e 1, o logaritmo é decrescente e o sentido inverte-se';
-  const explicacao = `Condição de existência: $x>0$. Escrevendo $${k}=${cb} ${bTex}^{${k}}$, ${sentido}: $x${OPS_TEX[opFinal]}${limiarTex}$. Juntando com $x>0$, o conjunto-solução é $${correta.tex}$.`;
+  const explicacao = `Condição de existência: $x>0$. Escreve $${k}=${cb} ${arg(limiarTex)}$${natural ? '' : `, porque $${baseTex(base)}^{${k}}=${limiarTex}$`}. ${sentido}: $x${OPS_TEX[opFinal]}${limiarTex}$. Juntando com $x>0$, o conjunto-solução é $${correta.tex}$.`;
   return pergunta(rng, 'inequacao', {
     enunciado: um(rng, [`Resolve a inequação $${E}$.`, `Qual é o conjunto-solução da inequação $${E}$?`]),
     correta,
@@ -1119,11 +1143,12 @@ export const TIPOS = [
   { id: 'existe', nome: 'Existência e domínio', tema: 'Função logarítmica', gerar: existe },
   { id: 'propriedades', nome: 'Propriedades dos logaritmos', tema: 'Propriedades', gerar: propriedades },
   { id: 'mudanca-base', nome: 'Mudança de base', tema: 'Propriedades', gerar: mudancaBase },
-  // Desligados até terem recálculo independente da resposta certa em tests/geradores.html:
-  // { id: 'exp-mesma-base', nome: 'Exponenciais com a mesma base', tema: 'Equações', gerar: expMesmaBase },
-  // { id: 'eq-log', nome: 'Equações logarítmicas', tema: 'Equações', gerar: eqLog },
-  // { id: 'substituicao', nome: 'Substituição de variável', tema: 'Equações', gerar: substituicao },
-  // { id: 'inequacao', nome: 'Inequações', tema: 'Equações', gerar: inequacao },
+  // Equações e inequações: cada uma tem em tests/geradores.html um recálculo da solução feito a partir
+  // do LaTeX do enunciado, sem passar pelo gerador.
+  { id: 'exp-mesma-base', nome: 'Exponenciais com a mesma base', tema: 'Equações', gerar: expMesmaBase },
+  { id: 'eq-log', nome: 'Equações logarítmicas', tema: 'Equações', gerar: eqLog },
+  { id: 'substituicao', nome: 'Substituição de variável', tema: 'Equações', gerar: substituicao },
+  { id: 'inequacao', nome: 'Inequações', tema: 'Equações', gerar: inequacao },
   // derivadas, tangentes, limites e monotonia vêm de geradores-analise.js (módulo autónomo)
   ...TIPOS_ANALISE,
 ];

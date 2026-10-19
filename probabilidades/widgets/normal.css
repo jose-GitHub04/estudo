@@ -1,7 +1,8 @@
 /* normal: explorador da distribuição Normal. Classes com prefixo .nor- */
 
 .nor [hidden] { display: none !important; }
-.nor .chip { min-height: 2.5rem; }
+.nor .chip { min-height: 2.75rem; }
+.nor input[type="range"] { min-height: 2.75rem; }
 .nor .botao { min-height: 2.75rem; }
 
 .nor-svg { max-width: 38rem; touch-action: pan-y; }

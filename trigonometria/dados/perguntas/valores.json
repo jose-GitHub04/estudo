@@ -32,7 +32,7 @@
       { "tex": "$\\cos\\dfrac{3\\pi}{2}$" } ],
     "certa": 0,
     "verifica": ["abs(cos(3*pi/2))<1e-9", "abs(cos(pi))>0.5", "ig(sin(3*pi/2), -1)"],
-    "explicacao": "A tangente é $\\dfrac{\\sin}{\\cos}$ e $\\cos\\dfrac{3\\pi}{2}=0$, por isso $\\tan\\dfrac{3\\pi}{2}=\\dfrac{-1}{0}$ não existe. As outras têm valor: $\\tan\\pi=\\dfrac{0}{-1}=0$, $\\sin\\dfrac{3\\pi}{2}=-1$ e $\\cos\\dfrac{3\\pi}{2}=0$." },
+    "explicacao": "A tangente é $\\dfrac{\\sin}{\\cos}$ e $\\cos\\dfrac{3\\pi}{2}=0$, por isso $\\tan\\dfrac{3\\pi}{2}=\\dfrac{-1}{0}$ não existe: o cosseno está no denominador e o denominador não pode ser zero. As outras têm valor: $\\tan\\pi=\\dfrac{0}{-1}=0$, $\\sin\\dfrac{3\\pi}{2}=-1$ e $\\cos\\dfrac{3\\pi}{2}=0$." },
 
   { "id": "val-04", "nivel": 1,
     "enunciado": "Qual é o valor de $\\sin\\dfrac{\\pi}{6}+\\cos\\dfrac{\\pi}{3}$?",

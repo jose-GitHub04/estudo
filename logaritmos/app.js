@@ -23,8 +23,35 @@ import { renderizar } from '../assets/motor/katex.js';
 import { montarEstrutura } from '../assets/motor/estrutura.js';
 import { GRUPOS } from './grupos.js';
 
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * fetch com uma segunda tentativa se a ligação falhar (rede fraca, servidor ocupado: «ligação recusada» ou
+ * interrompida). Uma resposta com erro HTTP (404...) não se repete.
+ */
+async function buscar(url) {
+  try {
+    return await fetch(url);
+  } catch (e) {
+    await esperar(400);
+    return fetch(url);
+  }
+}
+
+/** import() de um widget, com uma segunda tentativa (o endereço leva um sufixo para não reaproveitar a falha). */
+async function importar(nome) {
+  try {
+    return await import(`./widgets/${nome}.js`);
+  } catch (e) {
+    if (!(e instanceof TypeError)) throw e; // um erro de código não se resolve repetindo
+    console.warn(`widget ${nome}: a repetir o carregamento`, e);
+    await esperar(400);
+    return import(`./widgets/${nome}.js?de-novo=1`);
+  }
+}
+
 async function json(nome) {
-  const r = await fetch(new URL(`./dados/${nome}.json`, import.meta.url));
+  const r = await buscar(new URL(`./dados/${nome}.json`, import.meta.url));
   if (!r.ok) throw new Error(`${nome}.json: ${r.status}`);
   return r.json();
 }
@@ -32,7 +59,7 @@ async function json(nome) {
 /** Lê dados/<pasta>/<grupo>.json. Em falta devolve null sem barulho; inválido, null com erro na consola. */
 async function lerGrupo(pasta, g) {
   try {
-    const r = await fetch(new URL(`./dados/${pasta}/${g.id}.json`, import.meta.url));
+    const r = await buscar(new URL(`./dados/${pasta}/${g.id}.json`, import.meta.url));
     if (!r.ok) return null;
     return await r.json();
   } catch (e) {
@@ -83,7 +110,7 @@ async function iniciar() {
   await Promise.all([...document.querySelectorAll('[data-widget]')].map(async (el) => {
     const nome = el.dataset.widget;
     try {
-      const modulo = await import(`./widgets/${nome}.js`);
+      const modulo = await importar(nome);
       await modulo.montar(el, dados);
     } catch (e) {
       console.error(`widget ${nome}:`, e);

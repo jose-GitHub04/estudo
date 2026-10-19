@@ -57,7 +57,7 @@
    "tema": "limites",
    "texto": "Se $f(x)\\to+\\infty$ e $g(x)\\to0$ quando $x\\to+\\infty$, então $f(x)\\times g(x)\\to0$.",
    "verdadeira": false,
-   "explicacao": "O 0 não «engole» o infinito: $\\infty\\times0$ é uma indeterminação. Os três produtos seguintes são desse tipo e dão resultados diferentes: $x\\cdot\\dfrac1x=1$; $x\\cdot\\dfrac1{x^2}=\\dfrac1x\\to0$; $x^2\\cdot\\dfrac1x=x\\to+\\infty$. Em $x\\,e^{-x}$ o limite até é 0, mas porque $\\dfrac{x}{e^{x}}\\to0$ (a exponencial vence a potência), e não por ser «$\\infty\\times0$».",
+   "explicacao": "O 0 não «engole» o infinito: $\\infty\\times0$ é uma indeterminação. Os três produtos seguintes são desse tipo e dão resultados diferentes: $x\\times\\dfrac1x=1$; $x\\times\\dfrac1{x^2}=\\dfrac1x\\to0$; $x^2\\times\\dfrac1x=x\\to+\\infty$. Em $x\\,e^{-x}$ o limite até é 0, mas porque $\\dfrac{x}{e^{x}}\\to0$ (a exponencial vence a potência), e não por ser «$\\infty\\times0$».",
    "erroComum": "Pensar que o fator que tende para 0 ganha sempre. Quem ganha depende de quem tende mais depressa.",
    "verifica": [
     "ig(x*(1/x), 1)",

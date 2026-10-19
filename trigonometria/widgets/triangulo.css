@@ -2,8 +2,11 @@
 
 .tri [hidden], .tri-valores [hidden] { display: none !important; }
 
-/* alvos de toque de pelo menos 40 px */
-.tri .chip, .tri .botao, .tri-valores .botao { min-height: 2.5rem; }
+/* índice «Nesta página» da matéria (classe partilhada .indice): alvos de toque de 44 px */
+.indice a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+
+/* alvos de toque de pelo menos 44 px */
+.tri .chip, .tri .botao, .tri-valores .botao { min-height: 2.75rem; }
 .tri .chip { padding-inline: 1rem; }
 
 /* disposição: em ecrã estreito tudo em coluna, em ecrã largo desenho e controlos lado a lado */
@@ -50,7 +53,7 @@
 .tri-atalhos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .tri .tri-atalho { min-width: 3.5rem; }
 .tri-controlo__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
-.tri-controlo input[type="range"] { height: 2.5rem; margin: 0; }
+.tri-controlo input[type="range"] { height: 2.75rem; margin: 0; }
 .tri .controlo { margin: 0; }
 
 /* leituras */

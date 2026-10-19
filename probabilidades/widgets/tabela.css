@@ -3,7 +3,7 @@
 .tab [hidden] { display: none !important; }
 
 /* alvos de toque de pelo menos 40 px */
-.tab .chip, .tab .botao, .tab .campo { min-height: 2.5rem; }
+.tab .chip, .tab .botao, .tab .campo { min-height: 2.75rem; }
 .tab .chip { padding-inline: 1rem; }
 .tab .tab-chips { margin: 0 0 0.9rem; }
 
@@ -20,10 +20,10 @@
 
 /* figura */
 .tab .tab-fig { max-width: 34rem; cursor: pointer; }
-.tab-fig text { font-size: 12px; }
+.tab-fig text { font-size: 13px; }
 .tab-fig .tab-grelha { stroke: var(--c-grelha); stroke-width: 1; }
 .tab-fig .tab-eixo { stroke: var(--c-eixo); stroke-width: 1.5; }
-.tab-fig .tab-eixo-y { fill: var(--tinta-suave); font-size: 11px; }
+.tab-fig .tab-eixo-y { fill: var(--tinta-suave); font-size: 12.5px; }
 .tab-fig .tab-marca { fill: var(--tinta-suave); }
 .tab-fig .tab-barra { fill: var(--c-seno); opacity: 0.85; }
 .tab-fig .tab-valor { fill: var(--tinta); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }

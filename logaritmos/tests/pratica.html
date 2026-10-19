@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes das páginas de prática</title>
+<!-- Testes de ponta a ponta das páginas de prática do tema (cartoes, perguntas, treino, verdadeiro-falso, exercicios),
+     carregadas num iframe de 390 px com os dados reais. Procuram o que os testes de cada widget não veem: uma fórmula
+     que passa do ecrã, KaTeX com erro, erro de consola, janela que não abre, progresso que não se guarda.
+     Abrir /logaritmos/tests/pratica.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8827/logaritmos/tests/pratica.html
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">.
+     Atenção: cada teste apaga o progresso guardado neste browser para este endereço (como os outros testes do site).
+     Corre os mesmos passos que um aluno: escolhe, responde, vira, avança. As perguntas são identificadas pelo LaTeX
+     das fórmulas (o <annotation> do KaTeX), por isso a posição das opções baralhadas não interfere. -->
+<style>
+  body { margin: 0; font: 13px/1.4 monospace; }
+  #resultado { margin: 0; padding: 0.75rem 1.25rem; white-space: pre-wrap; }
+  .palco { position: absolute; left: -9999px; top: 0; }
+</style>
+</head>
+<body>
+<pre id="resultado">A correr...</pre>
+<div class="palco" id="palco"></div>
+<script type="module">
+import { GRUPOS } from '../grupos.js';
+import * as P from '../../assets/motor/progresso.js';
+
+const LARGURA = 390;
+const saida = document.getElementById('resultado');
+const palco = document.getElementById('palco');
+const linhas = [];
+let nFalhas = 0;
+const inicio = performance.now();
+
+const esperar = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+const hoje = new Date();
+const isoDe = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Erros do iframe: o script entra no <head> antes dos da página (por isso se usa srcdoc em vez de src).
+const SCRIPT_ERROS = `<script>window.__erros=[];
+addEventListener('error',function(e){var t=e.target;if(t&&t!==window&&(t.src||t.href)){__erros.push('recurso: '+(t.src||t.href));return;}__erros.push('erro: '+e.message);},true);
+addEventListener('unhandledrejection',function(e){__erros.push('rejeicao: '+(e.reason&&e.reason.message||e.reason));});
+var ce=console.error;console.error=function(){__erros.push('console.error: '+[].map.call(arguments,String).join(' '));ce.apply(console,arguments);};
+<\/script>`;
+
+// Janela privada ou dados do site bloqueados: escrever no storage falha.
+const SEM_STORAGE = `<script>Storage.prototype.setItem=function(){throw new Error('sem espaço');};<\/script>`;
+
+/** Abre ../<pagina> num iframe de 390 px e espera por data-pronto="sim". */
+async function abrir(pagina, { semStorage = false } = {}) {
+  const base = new URL('../', location.href).href;
+  const f = document.createElement('iframe');
+  f.style.cssText = `width:${LARGURA}px;height:900px;border:0`;
+  const html = (await (await fetch(`${base}${pagina}`, { cache: 'no-store' })).text())
+    .replace('<head>', `<head><base href="${base}">${SCRIPT_ERROS}${semStorage ? SEM_STORAGE : ''}`);
+  f.srcdoc = html;
+  palco.append(f);
+  await new Promise((r) => { f.onload = r; });
+  for (let i = 0; i < 200 && f.contentDocument.documentElement.dataset.pronto !== 'sim'; i++) await esperar(50);
+  const doc = f.contentDocument;
+  return { f, win: f.contentWindow, doc, erros: () => f.contentWindow.__erros || [], pronta: doc.documentElement.dataset.pronto === 'sim' };
+}
+
+/** O que passa da largura do ecrã ou obriga a rolar dentro de uma caixa (o salto de navegação fica de fora). */
+function excessos(doc) {
+  const res = [];
+  const de = doc.documentElement;
+  if (de.scrollWidth > LARGURA + 0.5) res.push(`página com scrollWidth ${de.scrollWidth}`);
+  for (const e of doc.body.querySelectorAll('*')) {
+    if ((e.closest('svg') && e.tagName !== 'svg') || e.classList.contains('saltar') || e.closest('.katex-mathml')) continue;
+    const cs = doc.defaultView.getComputedStyle(e);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const r = e.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    const classe = typeof e.className === 'string' ? e.className : '';
+    if (r.right > LARGURA + 1 || r.left < -1) {
+      let p = e.parentElement;
+      let cortado = false;
+      while (p && p !== doc.body) {
+        if (/(auto|scroll|hidden|clip)/.test(doc.defaultView.getComputedStyle(p).overflowX)) { cortado = true; break; }
+        p = p.parentElement;
+      }
+      if (!cortado) res.push(`${e.tagName.toLowerCase()}.${classe} até ${Math.round(r.right)} px`);
+    }
+    if (/(auto|scroll)/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0
+        && !e.classList.contains('katex-display') && !e.classList.contains('tabela-rolante')) {
+      res.push(`${e.tagName.toLowerCase()}.${classe} rola (${e.scrollWidth} > ${e.clientWidth})`);
+    }
+  }
+  return res;
+}
+
+const avisosVisiveis = (doc) => [...doc.querySelectorAll('.aviso-erro')].filter((e) => !e.hidden && e.getClientRects().length > 0);
+
+// O LaTeX que se vê (o <annotation> de cada fórmula), sem $, sem \mathopen{]} / \mathclose{[} e sem espaços.
+const norm = (s) => s.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+  .replace(/\$/g, '').replace(/\\math(open|close)\{(.)\}/g, '$2').replace(/\s+/g, '');
+function fonte(el) {
+  const c = el.cloneNode(true);
+  for (const k of c.querySelectorAll('.katex')) {
+    const a = k.querySelector('annotation');
+    k.replaceWith(c.ownerDocument.createTextNode(a ? a.textContent : '?'));
+  }
+  for (const k of c.querySelectorAll('.per-opcao__marca, .per-opcao__letra, .tre-opcao__marca, .tre-opcao__num')) k.remove();
+  return norm(c.textContent);
+}
+
+async function json(caminho) {
+  const r = await fetch(new URL(caminho, location.href), { cache: 'no-store' });
+  if (!r.ok) throw new Error(`${caminho}: ${r.status}`);
+  return r.json();
+}
+
+async function teste(nome, fn) {
+  const erros = [];
+  let total = 0;
+  const ok = (cond, msg) => { if (!cond) { total++; if (erros.length < 5) erros.push(msg); } };
+  try {
+    P.apagarTudo();
+    try { localStorage.clear(); } catch (e) { /* sem storage */ }
+    await fn(ok);
+  } catch (e) {
+    total++;
+    erros.push('exceção: ' + (e && e.message));
+  } finally {
+    while (palco.firstChild) palco.firstChild.remove();
+  }
+  if (total === 0) linhas.push('OK: ' + nome);
+  else {
+    nFalhas++;
+    linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : ''));
+  }
+}
+
+const guardado = () => { try { return JSON.parse(localStorage.getItem('mat100-estudo-v1')) || {}; } catch (e) { return {}; } };
+
+// ---------- testes ----------
+
+async function testes() {
+  await teste('cada página carrega sem erros, com o menu certo e sem scroll horizontal a 390 px', async (ok) => {
+    for (const [pagina, atual] of [['index.html', null], ['cartoes.html', 'cartoes.html'], ['perguntas.html', 'perguntas.html'], ['treino.html', 'treino.html'],
+      ['verdadeiro-falso.html', 'verdadeiro-falso.html'], ['exercicios.html', 'exercicios.html']]) {
+      const { doc, erros, pronta } = await abrir(pagina);
+      ok(pronta, `${pagina}: não ficou pronta`);
+      ok(avisosVisiveis(doc).length === 0, `${pagina}: aviso de erro visível: ${avisosVisiveis(doc).map((a) => a.textContent.trim().slice(0, 60)).join(' | ')}`);
+      ok(doc.querySelectorAll('.katex-error').length === 0, `${pagina}: erro de KaTeX`);
+      ok(erros().length === 0, `${pagina}: erros de consola: ${erros().join(' | ')}`);
+      ok(excessos(doc).length === 0, `${pagina}: ${excessos(doc).slice(0, 3).join('; ')}`);
+      const ligacoes = [...doc.querySelectorAll('.menu a')];
+      ok(ligacoes.length === 7, `${pagina}: menu com ${ligacoes.length} ligações`);
+      if (atual) ok(doc.querySelector('.menu a[aria-current="page"]') && doc.querySelector('.menu a[aria-current="page"]').getAttribute('href') === atual, `${pagina}: ligação atual do menu`);
+      ok(!!doc.querySelector('.barra__temas[href="../"]'), `${pagina}: falta «Todos os temas»`);
+      if (pagina === 'index.html') ok(doc.querySelectorAll('#destinos .destino').length === 7, `index: ${doc.querySelectorAll('#destinos .destino').length} destinos`);
+      doc.defaultView.frameElement.remove();
+    }
+  });
+
+  // as ligações do menu e da página inicial apontam para páginas que existem
+  await teste('as ligações do menu e da página inicial existem', async (ok) => {
+    const { doc } = await abrir('index.html');
+    const hrefs = new Set([...doc.querySelectorAll('.menu a, #destinos a')].map((a) => a.getAttribute('href')));
+    for (const h of hrefs) {
+      const r = await fetch(new URL(`../${h}`, location.href), { cache: 'no-store' });
+      ok(r.ok, `${h}: ${r.status}`);
+    }
+    ok(hrefs.size >= 7, `só ${hrefs.size} ligações`);
+  });
+
+  for (const modo of ['certa', 'errada']) {
+    await teste(`perguntas: todas as perguntas respondidas (${modo}), a janela abre, KaTeX limpo e nada passa de 390 px`, async (ok) => {
+      const dados = [];
+      for (const g of GRUPOS) {
+        try { for (const p of (await json(`../dados/perguntas/${g.id}.json`)).perguntas) dados.push({ ...p, tema: g.id }); } catch (e) { /* grupo por escrever */ }
+      }
+      const porEnun = new Map(dados.map((p) => [norm(p.enunciado), p]));
+      const { doc, erros } = await abrir('perguntas.html');
+      const q = (s) => doc.querySelector(s);
+      const qa = (s) => [...doc.querySelectorAll(s)];
+      qa('.per-tamanhos .chip').find((b) => b.textContent === 'Todas').click();
+      q('.per-comecar').click();
+      const total = Number(/de (\d+)/.exec(q('.per-progresso__texto').textContent)[1]);
+      ok(total === dados.length, `a ronda tem ${total} perguntas e há ${dados.length} nos dados`);
+      let vistas = 0;
+      for (let i = 0; i < total; i++) {
+        const p = porEnun.get(fonte(q('.per-enunciado')));
+        if (!p) { ok(false, `pergunta ${i + 1}: não a reconheci`); break; }
+        vistas++;
+        const textos = qa('.per-opcao').map((b) => fonte(b.querySelector('.per-opcao__tex')));
+        const ic = textos.indexOf(norm(p.opcoes[p.certa].tex));
+        ok(ic >= 0, `${p.id}: não encontrei a opção certa`);
+        qa('.per-opcao')[modo === 'certa' ? ic : [0, 1, 2, 3].find((j) => j !== ic)].click();
+        const dlg = q('dialog.per-janela');
+        ok(dlg.open, `${p.id}: a janela não abriu`);
+        ok(q('.per-janela__cab').classList.contains(modo === 'certa' ? 'per-janela__cab--certo' : 'per-janela__cab--errado'), `${p.id}: cabeçalho da janela`);
+        ok(fonte(q('.per-janela__tex')) === norm(p.opcoes[p.certa].tex), `${p.id}: a janela não mostra a resposta certa`);
+        ok(q('.per-janela__expl-texto') && q('.per-janela__expl-texto').textContent.trim().length > 10, `${p.id}: sem explicação`);
+        ok(doc.querySelectorAll('.katex-error').length === 0, `${p.id}: erro de KaTeX`);
+        await doc.fonts.ready; // as fontes do KaTeX carregam à medida que são precisas: sem esperar, as larguras saíam diferentes
+        const ex = excessos(doc);
+        ok(ex.length === 0, `${p.id}: ${ex.slice(0, 3).join('; ')}`);
+        q('.per-janela__seguinte').click();
+      }
+      ok(vistas === total && /Fim da ronda/.test(q('.per-titulo') ? q('.per-titulo').textContent : ''), 'a ronda não chegou ao fim');
+      ok(excessos(doc).length === 0, `ecrã final: ${excessos(doc).slice(0, 3).join('; ')}`);
+      ok(erros().length === 0, 'erros de consola: ' + erros().join(' | '));
+      const res = guardado()['log-perguntas'] || {};
+      ok(Object.keys(res).length === dados.length, `guardou ${Object.keys(res).length} resultados`);
+      ok(Object.values(res).every((v) => v === (modo === 'certa' ? 1 : 0)), 'resultados guardados trocados');
+    });
+  }
+
+  await teste('perguntas: temas (1.º toque isola), filtro «ainda não acertei», progresso e escolha mantêm-se ao recarregar', async (ok) => {
+    const { doc } = await abrir('perguntas.html');
+    const q = (s) => doc.querySelector(s);
+    const ativos = () => [...doc.querySelectorAll('.per-temas .chip')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tema);
+    ok(ativos().join() === 'todos', 'inicio: ' + ativos());
+    q('.per-temas .chip[data-tema="derivadas"]').click();
+    ok(ativos().join() === 'derivadas', '1.º toque isola: ' + ativos());
+    q('.per-temas .chip[data-tema="limites"]').click();
+    ok(ativos().join() === 'derivadas,limites', 'junta: ' + ativos());
+    q('.per-temas .chip[data-tema="limites"]').click();
+    ok(ativos().join() === 'derivadas', 'tira: ' + ativos());
+    q('.per-tamanhos .chip[data-tamanho="Infinity"]').click();
+    q('.per-comecar').click();
+    for (let i = 0, n = Number(/de (\d+)/.exec(q('.per-progresso__texto').textContent)[1]); i < n; i++) {
+      q('.per-opcao').click();
+      ok(q('dialog.per-janela').open, 'janela');
+      q('.per-janela__seguinte').click();
+    }
+    doc.defaultView.frameElement.remove();
+    const nova = await abrir('perguntas.html');
+    const nq = (s) => nova.doc.querySelector(s);
+    ok([...nova.doc.querySelectorAll('.per-temas .chip')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.tema).join() === 'derivadas', 'o tema escolhido não ficou guardado');
+    const mat = /Acertaste (\d+) de/.exec(nq('.per-estat').textContent);
+    const acertadas = Object.values(guardado()['log-perguntas'] || {}).filter((v) => v === 1).length;
+    ok(mat && Number(mat[1]) === acertadas, `estatística «${nq('.per-estat').textContent}» != ${acertadas}`);
+    nq('.per-filtros .chip').click();
+    ok(/ronda/.test(nq('.per-estado').textContent) || nq('.per-comecar').disabled, 'filtro: ' + nq('.per-estado').textContent);
+  });
+
+  await teste('cartões: temas (1.º toque isola), virar, caixas de Leitner, os 8 grupos misturados, estado mantido ao recarregar', async (ok) => {
+    let { doc, erros } = await abrir('cartoes.html');
+    const q = (s) => doc.querySelector(s);
+    const qa = (s) => [...doc.querySelectorAll(s)];
+    const ativos = () => qa('.fc-grupos .chip').filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.grupo);
+    ok(ativos().join() === 'todos', 'inicio: ' + ativos());
+    q('.fc-grupos .chip[data-grupo="funcao"]').click();
+    ok(ativos().join() === 'funcao', '1.º toque isola: ' + ativos());
+    q('.fc-grupos .chip[data-grupo="estudo"]').click();
+    ok(ativos().join() === 'funcao,estudo', 'junta: ' + ativos());
+    q('.fc-grupos .chip[data-grupo="estudo"]').click();
+    q('.fc-grupos .chip[data-grupo="funcao"]').click();
+    ok(ativos().join() === 'todos', 'nunca fica sem nenhum: ' + ativos());
+    q('.fc-modos .chip[data-modo="tudo"]').click();
+    const todos = Number(/nesta ronda/.test(q('.fc-palco').textContent) ? /(\d+) cartões nesta ronda/.exec(q('.fc-palco').textContent)[1] : 0);
+    ok(todos >= 80, `«estudar tudo» com ${todos} cartões`);
+    q('[data-acao="comecar"]').click();
+    const grupos = new Set();
+    let passos = 0;
+    while (q('.fc-cartao') && passos < 500) {
+      passos++;
+      grupos.add(q('.fc-meta span').textContent);
+      ok(q('.fc-verso').hidden, `cartão ${passos}: o verso devia estar escondido`);
+      q('[data-acao="virar"]').click();
+      ok(!q('.fc-verso').hidden, `cartão ${passos}: o verso não apareceu`);
+      await doc.fonts.ready;
+      const ex = excessos(doc);
+      ok(ex.length === 0, `cartão ${passos} («${q('.fc-frente').textContent.slice(0, 30)}»): ${ex.slice(0, 3).join('; ')}`);
+      ok(doc.querySelectorAll('.katex-error').length === 0, `cartão ${passos}: erro de KaTeX`);
+      q('[data-acao="sim"]').click();
+    }
+    ok(passos === todos, `a ronda teve ${passos} passos e devia ter ${todos}`);
+    ok(grupos.size === GRUPOS.length, `viu ${grupos.size} grupos de ${GRUPOS.length}`);
+    const est = guardado()['log-flashcards'] || {};
+    ok(Object.keys(est).length === todos, `guardou ${Object.keys(est).length} cartões`);
+    ok(Object.values(est).every((v) => v.caixa === 2 && v.prox === isoDe(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1))), 'um cartão sabido pela 1.ª vez vai para a caixa 2 e volta amanhã');
+    ok(erros().length === 0, 'erros de consola: ' + erros().join(' | '));
+    doc.defaultView.frameElement.remove();
+    ({ doc, erros } = await abrir('cartoes.html'));
+    ok(/\b0\b[^.]*para rever hoje/.test(doc.querySelector('.fc-resumo').textContent.replace(/\s+/g, ' ')), 'depois de recarregar ainda há cartões para hoje: ' + doc.querySelector('.fc-resumo').textContent.replace(/\s+/g, ' '));
+    ok(Object.keys(guardado()['log-flashcards'] || {}).length === todos, 'o estado perdeu-se ao recarregar');
+  });
+
+  await teste('treino: uma sessão de cada tipo, a 390 px, sem excessos, e «x = 4» ou «S = {4}» contam como «4»', async (ok) => {
+    const { win, doc, erros } = await abrir('treino.html');
+    const q = (s) => doc.querySelector(s);
+    const qa = (s) => [...doc.querySelectorAll(s)];
+    const tipos = qa('.tre-chips .chip').map((b) => b.textContent);
+    ok(tipos.length >= 10, `só ${tipos.length} opções de treino`);
+    const SESSOES = 4; // 40 perguntas por tipo: os números sorteados variam e um enunciado ou uma opção comprida acaba por aparecer
+    for (const nome of tipos) for (let sessao = 0; sessao < SESSOES; sessao++) {
+      qa('.tre-chips .chip').find((b) => b.textContent === nome).click();
+      q('.tre-comecar').click();
+      for (let i = 0; i < 10; i++) {
+        ok(q('.tre-progresso__texto') && q('.tre-progresso__texto').textContent === `Pergunta ${i + 1} de 10`, `${nome}: contador na pergunta ${i + 1}`);
+        const opcoes = qa('.tre-opcao');
+        if (opcoes.length) opcoes[(i + sessao) % opcoes.length].click();
+        else {
+          q('.tre-campo').value = '12345';
+          q('.tre-escrita').dispatchEvent(new win.Event('submit', { cancelable: true, bubbles: true }));
+        }
+        ok(!!q('.tre-explicacao__texto'), `${nome}: sem explicação (pergunta ${i + 1})`);
+        ok(doc.querySelectorAll('.katex-error').length === 0, `${nome}: erro de KaTeX (pergunta ${i + 1})`);
+        await doc.fonts.ready;
+        const ex = excessos(doc);
+        ok(ex.length === 0, `${nome} (pergunta ${i + 1}): ${ex.slice(0, 3).join('; ')}`);
+        q('.tre-seguinte').click();
+      }
+      ok(/Acertaste \d+ de 10/.test(q('.tre-pontuacao') ? q('.tre-pontuacao').textContent : ''), `${nome}: não chegou ao resultado`);
+      ok(excessos(doc).length === 0, `${nome}, ecrã final: ${excessos(doc).slice(0, 3).join('; ')}`);
+      qa('.tre-acoes--fim .botao').find((b) => /outro treino/.test(b.textContent)).click();
+    }
+    const stats = guardado()['log-treino'] || {};
+    const respondidas = Object.values(stats).reduce((s, a) => s + a.total, 0);
+    ok(respondidas === tipos.length * 10 * SESSOES, `as estatísticas guardam ${respondidas} respostas e foram ${tipos.length * 10 * SESSOES}`);
+    ok(Object.keys(stats).length === tipos.length - 1, `estatísticas de ${Object.keys(stats).length} tipos (esperava ${tipos.length - 1}, sem o «misto»)`);
+    ok(erros().length === 0, 'erros de consola: ' + erros().join(' | '));
+  });
+
+  await teste('treino: um gerador que falha com certos números não deixa «Começar» sem resposta; «x = 4» e «S = {4}» são aceites', async (ok) => {
+    const tre = await import('../widgets/treino.js');
+    const el = document.createElement('div');
+    palco.append(el);
+    let chamadas = 0;
+    const tipos = [{ id: 'teste', nome: 'Tipo de teste', tema: 'T', gerar: () => {
+      chamadas += 1;
+      if (chamadas % 3 !== 0) throw new Error('poucos distratores (1 em vez de 3)');
+      return { tipo: 'teste', modo: 'escrita', enunciado: `Resolve a equação $x+${chamadas}=${chamadas + 4}$.`, explicacao: 'Passa o número para o outro lado.', verificacao: {}, esperado: { expr: '4', tex: '4' } };
+    } }];
+    await tre.montar(el, {}, { tipos, semente: 3 });
+    el.querySelector('.tre-comecar').click();
+    ok(!!el.querySelector('.tre-campo'), 'o treino não começou apesar de o gerador acertar de vez em quando');
+    ok(/«x = valor»/.test(el.textContent), 'a dica de escrita devia falar de «x = valor» numa equação');
+    ok(tre.limparResposta('x = 4') === '4' && tre.limparResposta('S={4}') === '4' && tre.limparResposta('S = { -1/2 }') === '-1/2', 'limparResposta');
+    ok(tre.limparResposta('S={1,2}') === 'S={1,2}', 'uma lista não se aceita');
+    for (const [resposta, certo] of [['x = 4', true], ['S={4}', true], ['x=5', false]]) {
+      if (!el.querySelector('.tre-campo')) break;
+      el.querySelector('.tre-campo').value = resposta;
+      el.querySelector('.tre-escrita').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      ok(el.querySelector('.tre-aviso') && el.querySelector('.tre-aviso').classList.contains(certo ? 'aviso-ok' : 'aviso-erro'), `«${resposta}» devia ser ${certo ? 'certa' : 'errada'}: ${el.querySelector('.tre-aviso') && el.querySelector('.tre-aviso').textContent}`);
+      el.querySelector('.tre-seguinte').click();
+    }
+    // um gerador que falha sempre: mensagem simpática e o início continua utilizável
+    const el2 = document.createElement('div');
+    palco.append(el2);
+    await tre.montar(el2, {}, { tipos: [{ id: 'mau', nome: 'Mau', tema: 'T', gerar: () => { throw new Error('sempre'); } }], semente: 1 });
+    el2.querySelector('.tre-comecar').click();
+    ok(!!el2.querySelector('.aviso-erro') && !!el2.querySelector('.tre-comecar'), 'sem aviso quando o gerador falha sempre');
+  });
+
+  await teste('sem armazenamento (janela privada): cartões, perguntas e treino funcionam e avisam que o progresso não fica guardado', async (ok) => {
+    const c = await abrir('cartoes.html', { semStorage: true });
+    ok(c.pronta, 'cartões: não ficou pronta');
+    ok(!c.doc.querySelector('.fc-aviso'), 'cartões: o aviso não devia aparecer antes de guardar');
+    c.doc.querySelector('[data-acao="comecar"]').click();
+    c.doc.querySelector('[data-acao="virar"]').click();
+    c.doc.querySelector('[data-acao="sim"]').click();
+    ok(!!c.doc.querySelector('.fc-aviso'), 'cartões: falta o aviso depois de responder');
+    c.doc.querySelector('[data-acao="virar"]').click();
+    ok(!!c.doc.querySelector('.fc-aviso'), 'cartões: o aviso desapareceu no cartão seguinte');
+    ok(!!c.doc.querySelector('.fc-cartao'), 'cartões: a sessão devia continuar');
+    const p = await abrir('perguntas.html', { semStorage: true });
+    p.doc.querySelector('.per-comecar').click();
+    for (let i = 0; i < 10; i++) { p.doc.querySelector('.per-opcao').click(); p.doc.querySelector('.per-janela__seguinte').click(); }
+    ok(/Não consegui guardar o progresso/.test(p.doc.querySelector('.per-fim').textContent), 'perguntas: falta o aviso no fim da ronda');
+    const t = await abrir('treino.html', { semStorage: true });
+    t.doc.querySelector('.tre-comecar').click();
+    for (let i = 0; i < 10; i++) {
+      const op = t.doc.querySelector('.tre-opcao');
+      if (op) op.click(); else { t.doc.querySelector('.tre-campo').value = '1'; t.doc.querySelector('.tre-escrita').dispatchEvent(new t.win.Event('submit', { cancelable: true, bubbles: true })); }
+      t.doc.querySelector('.tre-seguinte').click();
+    }
+    ok(/Não consegui guardar o progresso/.test(t.doc.querySelector('.tre-fim').textContent), 'treino: falta o aviso no fim');
+  });
+
+  await teste('exercícios: todas as resoluções abertas a 390 px, sem erros e sem a página a rolar para o lado', async (ok) => {
+    const { doc, erros, pronta } = await abrir('exercicios.html');
+    ok(pronta, 'não ficou pronta');
+    const botoes = (txt) => [...doc.querySelectorAll('button')].filter((b) => b.textContent.trim() === txt);
+    botoes('Ver a dica').forEach((b) => b.click());
+    for (const b of botoes('Mostrar tudo')) b.click();
+    ok(doc.documentElement.scrollWidth <= LARGURA, `scrollWidth ${doc.documentElement.scrollWidth}`);
+    ok(doc.querySelectorAll('.katex-error').length === 0, 'erro de KaTeX');
+    await doc.fonts.ready;
+    const fora = excessos(doc); // as equações em modo display rolam dentro da sua caixa e não contam
+    ok(fora.length === 0, fora.slice(0, 3).join('; '));
+    ok(erros().length === 0, 'erros de consola: ' + erros().join(' | '));
+  });
+
+  linhas.push('');
+  const ms = Math.round(performance.now() - inicio);
+  linhas.push(nFalhas === 0 ? `TUDO OK (${ms} ms)` : `${nFalhas} TESTE(S) FALHARAM (${ms} ms)`);
+}
+
+try {
+  await testes();
+} catch (e) {
+  nFalhas++;
+  linhas.push('EXCEÇÃO FORA DOS TESTES: ' + (e && e.stack || e));
+}
+saida.textContent = linhas.join('\n');
+document.documentElement.dataset.testes = nFalhas === 0 ? 'ok' : 'falhou';
+</script>
+</body>
+</html>

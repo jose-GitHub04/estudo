@@ -1,7 +1,8 @@
 /* ex-normal: exercício 4, distribuição Normal. Classes com prefixo .exn- */
 
 .exn [hidden] { display: none !important; }
-.exn .chip { min-height: 2.5rem; }
+.exn .chip { min-height: 2.75rem; }
+.exn input[type="range"] { min-height: 2.75rem; }
 .exn .botao { min-height: 2.75rem; }
 
 .exn-enunc p { margin: 0 0 0.6rem; }
@@ -15,17 +16,17 @@
 
 /* figura */
 .exn-svg { max-width: 36rem; touch-action: pan-y; }
-.exn-svg text { font-size: 13px; }
+.exn-svg text { font-size: 14px; }
 .exn-eixo { stroke: var(--c-eixo); stroke-width: 1.4; }
 .exn-tique { stroke: var(--c-eixo); stroke-width: 1.2; }
-.exn-svg .exn-eixo-t { fill: var(--tinta-suave); font-size: 13px; }
+.exn-svg .exn-eixo-t { fill: var(--tinta-suave); font-size: 14px; }
 .exn-curva { stroke: var(--c-curva); stroke-width: 2.6; stroke-linejoin: round; }
 .exn-area { fill: var(--c-seno); fill-opacity: 0.3; }
 .exn-cauda { fill: var(--c-cosseno); fill-opacity: 0.45; }
 .exn-marca { stroke: var(--c-eixo); stroke-width: 1.2; stroke-dasharray: 4 3; }
 .exn-marca--mu { stroke: var(--c-ponto); stroke-width: 1.6; }
-.exn-svg .exn-marca-t { fill: var(--castanho-escuro); font-size: 13px; font-weight: 600; }
-.exn-svg .exn-area-t { fill: var(--c-ponto); font-size: 13px; font-weight: 700; stroke: var(--papel); stroke-width: 3px; paint-order: stroke; }
+.exn-svg .exn-marca-t { fill: var(--castanho-escuro); font-size: 14px; font-weight: 600; }
+.exn-svg .exn-area-t { fill: var(--c-ponto); font-size: 14px; font-weight: 700; stroke: var(--papel); stroke-width: 3px; paint-order: stroke; }
 
 .exn-pega-g { cursor: grab; }
 .exn-pega-hit { fill: transparent; }

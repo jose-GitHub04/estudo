@@ -6,7 +6,7 @@
    "tema": "propriedades",
    "nivel": 2,
    "enunciado": "Resolve as quatro alíneas sem usar a calculadora. Nas alíneas a) e b) o resultado é um número exato (uma fração, por exemplo) e não um valor aproximado.",
-   "dica": "Antes de somar ou subtrair logaritmos, põe-nos todos na mesma base e escreve os números como potências dessa base: $9=3^{2}$, $27=3^{3}$. Lembra-te de que um logaritmo é um expoente.",
+   "dica": "Antes de somar ou subtrair logaritmos, põe-nos todos na mesma base e escreve os números como potências dessa base: ${9=3^{2}}$, ${27=3^{3}}$. Lembra-te de que um logaritmo é um expoente.",
    "erroComum": "Pensar que $\\log_a x-\\log_a y$ é o mesmo que $\\dfrac{\\log_a x}{\\log_a y}$. A diferença de logaritmos dá o logaritmo do <em>quociente</em>, $\\log_a\\dfrac{x}{y}$; o quociente de logaritmos só aparece na mudança de base. Outro tropeção frequente é perder um sinal: $-\\ln\\dfrac{1}{e^{4}}$ vale $+4$, não $-4$.",
    "verifica": [
     "ig(logb(3, 63)-logb(3, 7)+logb(9, 27), 7/2)",
@@ -22,22 +22,28 @@
      "passos": [
       {
        "titulo": "Juntar a mesma base",
-       "texto": "Os dois primeiros logaritmos têm a mesma base, 3. Nesse caso, a diferença de logaritmos é o logaritmo do quociente: $\\log_a x-\\log_a y=\\log_a\\dfrac{x}{y}$.$$\\begin{aligned}\\log_3 63-\\log_3 7&=\\log_3\\dfrac{63}{7}\\\\&=\\log_3 9\\end{aligned}$$E $\\log_3 9=2$, porque o logaritmo é o expoente a que se eleva 3 para obter 9, e $3^{2}=9$."
+       "texto": "Os dois primeiros logaritmos têm a mesma base, 3. Nesse caso, a diferença de logaritmos é o logaritmo do quociente: $\\log_a x-\\log_a y=\\log_a\\dfrac{x}{y}$.$$\\begin{aligned}\\log_3 63-\\log_3 7&=\\log_3\\dfrac{63}{7}\\\\&=\\log_3 9\\end{aligned}$$E ${\\log_3 9=2}$, porque o logaritmo é o expoente a que se eleva 3 para obter 9, e ${3^{2}=9}$."
       },
       {
        "titulo": "Mudar a base do terceiro",
-       "texto": "O terceiro logaritmo, $\\log_9 27$, tem base 9, por isso ainda não se pode juntar aos outros. Usamos a mudança de base, $\\log_a b=\\dfrac{\\log_c b}{\\log_c a}$, e escolhemos $c=3$ porque 9 e 27 são potências de 3.$$\\log_9 27=\\dfrac{\\log_3 27}{\\log_3 9}$$"
+       "texto": "O terceiro logaritmo, $\\log_9 27$, tem base 9, por isso ainda não se pode juntar aos outros. Usamos a mudança de base, $\\log_a b=\\dfrac{\\log_c b}{\\log_c a}$, e escolhemos ${c=3}$ porque 9 e 27 são potências de 3.$$\\log_9 27=\\dfrac{\\log_3 27}{\\log_3 9}$$"
       },
       {
        "titulo": "Calcular cada logaritmo",
-       "texto": "Como $3^{3}=27$, tem-se $\\log_3 27=3$. Já vimos que $\\log_3 9=2$. Então$$\\log_9 27=\\dfrac{3}{2}$$Confirma: $9^{\\frac32}=(3^{2})^{\\frac32}=3^{3}=27$."
+       "texto": "Como ${3^{3}=27}$, tem-se ${\\log_3 27=3}$. Já vimos que ${\\log_3 9=2}$. Então$$\\log_9 27=\\dfrac{3}{2}$$Confirma: $9^{\\frac32}=(3^{2})^{\\frac32}=3^{3}=27$."
       },
       {
        "titulo": "Somar os resultados",
        "texto": "Falta somar o que calculámos: o $2$ do primeiro passo e o $\\dfrac32$ do terceiro. Pomos tudo no denominador 2 antes de somar.$$\\begin{aligned}2+\\dfrac32&=\\dfrac42+\\dfrac32\\\\&=\\dfrac72\\end{aligned}$$"
       }
      ],
-     "resposta": "$\\log_3 63-\\log_3 7+\\log_9 27=\\dfrac{7}{2}$"
+     "resposta": "$\\log_3 63-\\log_3 7+\\log_9 27=\\dfrac{7}{2}$",
+     "verifica": [
+      "ig(logb(3, 63)-logb(3, 7)+logb(9, 27), 7/2)",
+      "ig(logb(3, 63/7), 2) and ig(logb(3, 27), 3) and ig(logb(9, 27), 3/2)",
+      "ig(logb(9, 27), logb(3, 27)/logb(3, 9))",
+      "ig(9**1.5, 27) and ig(2+3/2, 7/2)"
+     ]
     },
     {
      "id": "b",
@@ -45,22 +51,27 @@
      "passos": [
       {
        "titulo": "Primeira parcela: a raiz",
-       "texto": "O $\\ln$ é o logaritmo de base $e$, por isso $\\ln e^{p}=p$ (o logaritmo é o expoente). Uma raiz é uma potência de expoente fracionário: $\\sqrt[3]{e}=e^{\\frac13}$. Logo$$\\begin{aligned}2\\ln\\sqrt[3]{e}&=2\\ln e^{\\frac13}\\\\&=2\\times\\dfrac13\\\\&=\\dfrac23\\end{aligned}$$"
+       "texto": "O $\\ln$ é o logaritmo de base $e$, por isso ${\\ln e^{p}=p}$ (o logaritmo é o expoente). Uma raiz é uma potência de expoente fracionário: ${\\sqrt[3]{e}=e^{\\frac13}}$. Logo$$\\begin{aligned}2\\ln\\sqrt[3]{e}&=2\\ln e^{\\frac13}\\\\&=2\\times\\dfrac13\\\\&=\\dfrac23\\end{aligned}$$"
       },
       {
        "titulo": "Segunda parcela: desfazer o ln",
-       "texto": "$\\ln 5$ é o expoente a que se eleva $e$ para obter 5. Elevar $e$ a esse expoente dá, naturalmente, 5. Em geral, $e^{\\ln a}=a$ para $a\\gt 0$. Assim,$$e^{\\ln 5}=5$$"
+       "texto": "$\\ln 5$ é o expoente a que se eleva $e$ para obter 5. Elevar $e$ a esse expoente dá, naturalmente, 5. Em geral, ${e^{\\ln a}=a}$ para $a\\gt 0$. Assim,$$e^{\\ln 5}=5$$"
       },
       {
        "titulo": "Terceira parcela: expoente negativo",
-       "texto": "$\\dfrac{1}{e^{4}}=e^{-4}$, portanto $\\ln\\dfrac{1}{e^{4}}=\\ln e^{-4}=-4$.<br>Atenção ao sinal: antes desta parcela está um menos, por isso$$\\begin{aligned}-\\ln\\dfrac{1}{e^{4}}&=-(-4)\\\\&=+4\\end{aligned}$$"
+       "texto": "${\\dfrac{1}{e^{4}}=e^{-4}}$, portanto ${\\ln\\dfrac{1}{e^{4}}=\\ln e^{-4}=-4}$.<br>Atenção ao sinal: antes desta parcela está um menos, por isso$$\\begin{aligned}-\\ln\\dfrac{1}{e^{4}}&=-(-4)\\\\&=+4\\end{aligned}$$"
       },
       {
        "titulo": "Somar tudo",
        "texto": "Juntamos as três parcelas, $\\dfrac23$, $5$ e $4$, com o mesmo denominador:$$\\begin{aligned}\\dfrac23+5+4&=\\dfrac23+\\dfrac{27}{3}\\\\&=\\dfrac{29}{3}\\end{aligned}$$"
       }
      ],
-     "resposta": "$2\\ln\\sqrt[3]{e}+e^{\\ln 5}-\\ln\\dfrac{1}{e^{4}}=\\dfrac{29}{3}$"
+     "resposta": "$2\\ln\\sqrt[3]{e}+e^{\\ln 5}-\\ln\\dfrac{1}{e^{4}}=\\dfrac{29}{3}$",
+     "verifica": [
+      "ig(2*ln(exp(1/3))+exp(ln(5))-ln(1/exp(4)), 29/3)",
+      "ig(2*ln(exp(1/3)), 2/3) and ig(exp(ln(5)), 5) and ig(ln(1/exp(4)), -4)",
+      "ig(2/3+5+4, 29/3)"
+     ]
     },
     {
      "id": "c",
@@ -68,11 +79,11 @@
      "passos": [
       {
        "titulo": "Coeficientes para expoentes",
-       "texto": "Para juntar logaritmos, o número que está à frente de cada um passa a expoente do argumento (propriedade da potência): $a\\ln b=\\ln b^{a}$.$$\\begin{aligned}3\\ln x&=\\ln x^{3}\\\\\\dfrac12\\ln(x+2)&=\\ln(x+2)^{\\frac12}\\\\&=\\ln\\sqrt{x+2}\\end{aligned}$$"
+       "texto": "Para juntar logaritmos, o número que está à frente de cada um passa a expoente do argumento (propriedade da potência): ${a\\ln b=\\ln b^{a}}$.$$\\begin{aligned}3\\ln x&=\\ln x^{3}\\\\\\dfrac12\\ln(x+2)&=\\ln(x+2)^{\\frac12}\\\\&=\\ln\\sqrt{x+2}\\end{aligned}$$"
       },
       {
        "titulo": "Escrever o 2 como logaritmo",
-       "texto": "Só se juntam logaritmos com logaritmos, por isso o número 2 também tem de ser um $\\ln$ de qualquer coisa. Como $\\ln e^{2}=2$, escrevemos $2=\\ln e^{2}$."
+       "texto": "Só se juntam logaritmos com logaritmos, por isso o número 2 também tem de ser um $\\ln$ de qualquer coisa. Como ${\\ln e^{2}=2}$, escrevemos ${2=\\ln e^{2}}$."
       },
       {
        "titulo": "Juntar com produto e quociente",
@@ -83,7 +94,12 @@
        "texto": "A expressão inicial existe para $x\\gt 0$ (e então também $x+2\\gt 0$). O logaritmo final tem argumento $\\dfrac{e^{2}x^{3}}{\\sqrt{x+2}}$, que é positivo exatamente quando $x\\gt 0$. O domínio é o mesmo, por isso a igualdade vale para todo o $x\\gt 0$.<br>Esta verificação é importante: ao juntar logaritmos podes, sem dar por isso, mudar o domínio (compara $\\ln x^{2}$ com $2\\ln x$)."
       }
      ],
-     "resposta": "$3\\ln x-\\dfrac12\\ln(x+2)+2=\\ln\\dfrac{e^{2}x^{3}}{\\sqrt{x+2}}$, para $x\\gt 0$."
+     "resposta": "$3\\ln x-\\dfrac12\\ln(x+2)+2=\\ln\\dfrac{e^{2}x^{3}}{\\sqrt{x+2}}$, para $x\\gt 0$.",
+     "verifica": [
+      "ig(3*ln(x)-0.5*ln(x+2)+2, ln(exp(2)*x**3/sqrt(x+2)))",
+      "ig(3*ln(x), ln(x**3)) and ig(0.5*ln(x+2), ln(sqrt(x+2))) and ig(ln(exp(2)), 2)",
+      "(exp(2)*t**3/sqrt(t+2) > 0) == (t > 0)"
+     ]
     },
     {
      "id": "d",
@@ -95,18 +111,23 @@
       },
       {
        "titulo": "Desenvolver o primeiro logaritmo",
-       "texto": "O produto separa-se em soma, o expoente 3 vem para a frente e $\\log_2 4=2$ (porque $2^{2}=4$):$$\\begin{aligned}&\\log_2(4x^{3}y)\\\\&=\\log_2 4+3\\log_2 x+\\log_2 y\\\\&=2+3\\log_2 x+\\log_2 y\\end{aligned}$$"
+       "texto": "O produto separa-se em soma, o expoente 3 vem para a frente e ${\\log_2 4=2}$ (porque ${2^{2}=4}$):$$\\begin{aligned}&\\log_2(4x^{3}y)\\\\&=\\log_2 4+3\\log_2 x+\\log_2 y\\\\&=2+3\\log_2 x+\\log_2 y\\end{aligned}$$"
       },
       {
        "titulo": "Mudar a base do segundo",
-       "texto": "O segundo logaritmo tem base 4. Mudamos para base 2, onde $\\log_2 4=2$:$$\\begin{aligned}\\log_4(x^{2}y^{2})&=\\dfrac{\\log_2(x^{2}y^{2})}{\\log_2 4}\\\\&=\\dfrac{2\\log_2 x+2\\log_2 y}{2}\\\\&=\\log_2 x+\\log_2 y\\end{aligned}$$No fim, o 2 do denominador cortou com o fator 2 do numerador."
+       "texto": "O segundo logaritmo tem base 4. Mudamos para base 2, onde ${\\log_2 4=2}$:$$\\begin{aligned}&\\log_4(x^{2}y^{2})\\\\&=\\dfrac{\\log_2(x^{2}y^{2})}{\\log_2 4}\\\\&=\\dfrac{2\\log_2 x+2\\log_2 y}{2}\\\\&=\\log_2 x+\\log_2 y\\end{aligned}$$No fim, o 2 do denominador cortou com o fator 2 do numerador."
       },
       {
        "titulo": "Subtrair com cuidado",
-       "texto": "Para a conta caber, escrevemos $X=\\log_2 x$ e $Y=\\log_2 y$. Subtraímos o segundo resultado ao primeiro. Os parênteses são essenciais: o sinal menos afeta as <em>duas</em> parcelas do segundo logaritmo.$$\\begin{aligned}&(2+3X+Y)-(X+Y)\\\\&=2+3X+Y-X-Y\\\\&=2+2X\\end{aligned}$$As parcelas em $Y$ cancelam-se: o resultado não depende de $y$. Voltando a $X=\\log_2 x$, obtemos $2+2\\log_2 x$."
+       "texto": "Para a conta caber, escrevemos ${X=\\log_2 x}$ e ${Y=\\log_2 y}$. Subtraímos o segundo resultado ao primeiro. Os parênteses são essenciais: o sinal menos afeta as <em>duas</em> parcelas do segundo logaritmo.$$\\begin{aligned}&(2+3X+Y)-(X+Y)\\\\&=2+3X+Y-X-Y\\\\&=2+2X\\end{aligned}$$As parcelas em $Y$ cancelam-se: o resultado não depende de $y$. Voltando a ${X=\\log_2 x}$, obtemos $2+2\\log_2 x$."
       }
      ],
-     "resposta": "Partindo do primeiro membro chegámos a $2+2\\log_2 x$, que é o segundo membro, para quaisquer $x,y\\gt 0$. Fica provado que $\\log_2(4x^{3}y)-\\log_4(x^{2}y^{2})=2+2\\log_2 x$."
+     "resposta": "Partindo do primeiro membro chegámos a $2+2\\log_2 x$, que é o segundo membro, para quaisquer $x,y\\gt 0$. Fica provado que $\\log_2(4x^{3}y)-\\log_4(x^{2}y^{2})=2+2\\log_2 x$.",
+     "verifica": [
+      "ig(logb(2, 4*x**3*y)-logb(4, x**2*y**2), 2+2*logb(2, x))",
+      "ig(logb(2, 4*x**3*y), 2+3*logb(2, x)+logb(2, y))",
+      "ig(logb(4, x**2*y**2), logb(2, x)+logb(2, y))"
+     ]
     }
    ]
   },
@@ -116,8 +137,8 @@
    "tema": "equacoes",
    "nivel": 2,
    "enunciado": "Resolve, em $\\mathbb{R}$, cada uma das equações. Dá a solução na forma exata e, quando for um logaritmo, um valor aproximado às centésimas (arredonda só no fim).",
-   "dica": "Procura uma potência que se repita. Na alínea a), $e^{2x}=(e^{x})^{2}$; na alínea b), $3^{x+1}=3\\times3^{x}$; na alínea c), escreve $\\frac14$ e $8$ como potências de 2.",
-   "erroComum": "Na alínea a), esquecer-se de rejeitar $u=-2$ e escrever $x=\\ln(-2)$, que não existe: $e^{x}$ nunca é negativo. Na alínea b), juntar $5\\times3^{x+1}$ numa só potência, «$15^{x+1}$»: o 5 multiplica a potência, não se junta à base.",
+   "dica": "Procura uma potência que se repita. Na alínea a), ${e^{2x}=(e^{x})^{2}}$; na alínea b), ${3^{x+1}=3\\times3^{x}}$; na alínea c), escreve $\\frac14$ e $8$ como potências de 2.",
+   "erroComum": "Na alínea a), esquecer-se de rejeitar ${u=-2}$ e escrever ${x=\\ln(-2)}$, que não existe: $e^{x}$ nunca é negativo. Na alínea b), juntar $5\\times3^{x+1}$ numa só potência, «$15^{x+1}$»: o 5 multiplica a potência, não se junta à base.",
    "verifica": [
     "ig(exp(t)-10/exp(t)-3, (exp(2*t)-3*exp(t)-10)/exp(t))",
     "ig(exp(2*t)-3*exp(t)-10, (exp(t)-5)*(exp(t)+2))",
@@ -130,15 +151,15 @@
    "alineas": [
     {
      "id": "a",
-     "enunciado": "$e^{x}-\\dfrac{10}{e^{x}}=3$",
+     "enunciado": "${e^{x}-\\dfrac{10}{e^{x}}=3}$",
      "passos": [
       {
        "titulo": "Eliminar a fração",
-       "texto": "A equação tem $e^{x}$ e $\\dfrac{1}{e^{x}}$, duas potências diferentes. Multiplicamos os dois membros por $e^{x}$ para tirar o denominador. Isto é permitido porque $e^{x}\\gt 0$ para todo o $x$: nunca multiplicamos por zero, por isso não aparecem nem desaparecem soluções.$$\\begin{aligned}&e^{x}\\times e^{x}-10=3e^{x}\\\\&\\Leftrightarrow e^{2x}-3e^{x}-10=0\\end{aligned}$$Usámos $e^{x}\\times e^{x}=e^{2x}$ (soma dos expoentes)."
+       "texto": "A equação tem $e^{x}$ e $\\dfrac{1}{e^{x}}$, duas potências diferentes. Multiplicamos os dois membros por $e^{x}$ para tirar o denominador. Isto é permitido porque $e^{x}\\gt 0$ para todo o $x$: nunca multiplicamos por zero, por isso não aparecem nem desaparecem soluções.$$\\begin{aligned}&e^{x}\\times e^{x}-10=3e^{x}\\\\&\\Leftrightarrow e^{2x}-3e^{x}-10=0\\end{aligned}$$Usámos ${e^{x}\\times e^{x}=e^{2x}}$ (soma dos expoentes)."
       },
       {
        "titulo": "Mudança de variável",
-       "texto": "Repara que $e^{2x}=(e^{x})^{2}$. Se chamarmos $u=e^{x}$, a equação passa a ser uma equação do 2.º grau em $u$:$$u^{2}-3u-10=0$$É só uma ajuda para resolver; no fim voltamos a $x$."
+       "texto": "Repara que ${e^{2x}=(e^{x})^{2}}$. Se chamarmos ${u=e^{x}}$, a equação passa a ser uma equação do 2.º grau em $u$:$$u^{2}-3u-10=0$$É só uma ajuda para resolver; no fim voltamos a $x$."
       },
       {
        "titulo": "Resolver o 2.º grau",
@@ -146,7 +167,7 @@
       },
       {
        "titulo": "Rejeitar o que não serve",
-       "texto": "Lembra-te de que $u=e^{x}$, e uma exponencial de base positiva é sempre positiva: $e^{x}\\gt 0$. Por isso $u=-2$ não serve, porque $e^{x}=-2$ é impossível (no gráfico, a curva $y=e^{x}$ nunca chega à reta $y=-2$). Só fica $u=5$.",
+       "texto": "Lembra-te de que ${u=e^{x}}$, e uma exponencial de base positiva é sempre positiva: $e^{x}\\gt 0$. Por isso ${u=-2}$ não serve, porque ${e^{x}=-2}$ é impossível (no gráfico, a curva ${y=e^{x}}$ nunca chega à reta ${y=-2}$). Só fica ${u=5}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -186,11 +207,11 @@
       },
       {
        "titulo": "Voltar a x com o logaritmo",
-       "texto": "$e^{x}=5$ significa que $x$ é o expoente a que se eleva $e$ para obter 5, ou seja, $x=\\ln 5$. Com a calculadora, $\\ln 5\\approx1{,}61$.$$e^{x}=5\\;\\Leftrightarrow\\;x=\\ln 5$$"
+       "texto": "${e^{x}=5}$ significa que $x$ é o expoente a que se eleva $e$ para obter 5, ou seja, ${x=\\ln 5}$. Com a calculadora, ${\\ln 5\\approx1{,}61}$.$$e^{x}=5\\;\\Leftrightarrow\\;x=\\ln 5$$"
       },
       {
        "titulo": "Verificar na equação original",
-       "texto": "Substituímos $x=\\ln 5$ e usamos $e^{\\ln 5}=5$:$$\\begin{aligned}e^{\\ln 5}-\\dfrac{10}{e^{\\ln 5}}&=5-\\dfrac{10}{5}\\\\&=5-2\\\\&=3\\ \\checkmark\\end{aligned}$$No gráfico, a curva de $g(x)=e^{x}-\\dfrac{10}{e^{x}}$ (o primeiro membro) corta a reta $y=3$ (o segundo membro) uma só vez, em $x=\\ln 5$.",
+       "texto": "Substituímos ${x=\\ln 5}$ e usamos ${e^{\\ln 5}=5}$:$$\\begin{aligned}e^{\\ln 5}-\\dfrac{10}{e^{\\ln 5}}&=5-\\dfrac{10}{5}\\\\&=5-2\\\\&=3\\ \\checkmark\\end{aligned}$$No gráfico, a curva de ${g(x)=e^{x}-\\dfrac{10}{e^{x}}}$ (o primeiro membro) corta a reta ${y=3}$ (o segundo membro) uma só vez, em ${x=\\ln 5}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -225,19 +246,26 @@
        }
       }
      ],
-     "resposta": "$S=\\{\\ln 5\\}$, com $\\ln 5\\approx1{,}61$."
+     "resposta": "${S=\\{\\ln 5\\}}$, com ${\\ln 5\\approx1{,}61}$.",
+     "verifica": [
+      "igl(raizes(lambda s: exp(s)-10/exp(s)-3, -10, 10), [ln(5)])",
+      "igl(raizes(lambda u: u*u-3*u-10, -10, 10), [-2, 5]) and ig((-3)**2-4*1*(-10), 49)",
+      "ig(round(ln(5), 2), 1.61)",
+      "(exp(t) > 0) and (exp(t) != -2)"
+     ],
+     "solucao": "raizes(lambda s: exp(s)-10/exp(s)-3, -10, 10)"
     },
     {
      "id": "b",
-     "enunciado": "$5\\times3^{x+1}-3^{x}=84$",
+     "enunciado": "${5\\times3^{x+1}-3^{x}=84}$",
      "passos": [
       {
        "titulo": "Separar a potência",
-       "texto": "Pela regra $a^{m+n}=a^{m}\\times a^{n}$, $3^{x+1}=3^{x}\\times3=3\\times3^{x}$. Assim a mesma potência, $3^{x}$, aparece nas duas parcelas:$$\\begin{aligned}&5\\times3\\times3^{x}-3^{x}=84\\\\&\\Leftrightarrow 15\\times3^{x}-3^{x}=84\\end{aligned}$$"
+       "texto": "Pela regra ${a^{m+n}=a^{m}\\times a^{n}}$, ${3^{x+1}=3^{x}\\times3=3\\times3^{x}}$. Assim a mesma potência, $3^{x}$, aparece nas duas parcelas:$$\\begin{aligned}&5\\times3\\times3^{x}-3^{x}=84\\\\&\\Leftrightarrow 15\\times3^{x}-3^{x}=84\\end{aligned}$$"
       },
       {
        "titulo": "Pôr a potência em evidência",
-       "texto": "Trata $3^{x}$ como se fosse uma letra: $15y-y=14y$. Do mesmo modo,$$\\begin{aligned}&(15-1)\\times3^{x}=84\\\\&\\Leftrightarrow 14\\times3^{x}=84\\end{aligned}$$"
+       "texto": "Trata $3^{x}$ como se fosse uma letra: ${15y-y=14y}$. Do mesmo modo,$$\\begin{aligned}&(15-1)\\times3^{x}=84\\\\&\\Leftrightarrow 14\\times3^{x}=84\\end{aligned}$$"
       },
       {
        "titulo": "Isolar a potência",
@@ -245,7 +273,7 @@
       },
       {
        "titulo": "Passar ao logaritmo",
-       "texto": "$3^{x}=6$ significa que $x$ é o expoente a que se eleva 3 para obter 6, ou seja, $x=\\log_3 6$. Como 6 não é uma potência de 3, deixamos o logaritmo.<br>Para o valor aproximado, a calculadora só tem $\\ln$ e $\\log$, por isso usamos a mudança de base:$$\\begin{aligned}x&=\\log_3 6=\\dfrac{\\ln 6}{\\ln 3}\\\\&\\approx1{,}63\\end{aligned}$$No gráfico, o primeiro membro $5\\times3^{x+1}-3^{x}$ cruza a reta $y=84$ uma só vez, nesse valor de $x$.",
+       "texto": "${3^{x}=6}$ significa que $x$ é o expoente a que se eleva 3 para obter 6, ou seja, ${x=\\log_3 6}$. Como 6 não é uma potência de 3, deixamos o logaritmo.<br>Para o valor aproximado, se a tua calculadora só tiver $\\ln$ e $\\log$, usamos a mudança de base:$$\\begin{aligned}x&=\\log_3 6=\\dfrac{\\ln 6}{\\ln 3}\\\\&\\approx1{,}63\\end{aligned}$$No gráfico, o primeiro membro $5\\times3^{x+1}-3^{x}$ cruza a reta ${y=84}$ uma só vez, nesse valor de $x$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -280,7 +308,13 @@
        }
       }
      ],
-     "resposta": "$S=\\{\\log_3 6\\}$, com $\\log_3 6=\\dfrac{\\ln 6}{\\ln 3}\\approx1{,}63$."
+     "resposta": "${S=\\{\\log_3 6\\}}$, com $\\log_3 6=\\dfrac{\\ln 6}{\\ln 3}\\approx1{,}63$.",
+     "verifica": [
+      "igl(raizes(lambda s: 5*3**(s+1)-3**s-84, -10, 10), [logb(3, 6)])",
+      "ig(round(logb(3, 6), 2), 1.63)",
+      "ig(84/14, 6) and ig(15-1, 14)"
+     ],
+     "solucao": "raizes(lambda s: 5*3**(s+1)-3**s-84, -10, 10)"
     },
     {
      "id": "c",
@@ -288,15 +322,15 @@
      "passos": [
       {
        "titulo": "Escolher uma base comum",
-       "texto": "$\\dfrac14=2^{-2}$ e $8=2^{3}$. Reescrevemos os dois membros como potências de 2 e, em cada um, multiplicamos os expoentes (potência de potência):$$\\begin{aligned}&\\left(2^{-2}\\right)^{x}=\\left(2^{3}\\right)^{x-1}\\\\&\\Leftrightarrow 2^{-2x}=2^{3x-3}\\end{aligned}$$"
+       "texto": "${\\dfrac14=2^{-2}}$ e ${8=2^{3}}$. Reescrevemos os dois membros como potências de 2 e, em cada um, multiplicamos os expoentes (potência de potência):$$\\begin{aligned}&\\left(2^{-2}\\right)^{x}=\\left(2^{3}\\right)^{x-1}\\\\&\\Leftrightarrow 2^{-2x}=2^{3x-3}\\end{aligned}$$"
       },
       {
        "titulo": "Igualar os expoentes",
-       "texto": "A função $t\\mapsto2^{t}$ nunca repete valores, por isso duas potências de base 2 só são iguais se os expoentes forem iguais: $2^{p}=2^{q}\\Leftrightarrow p=q$. Então$$-2x=3x-3$$"
+       "texto": "A função $t\\mapsto2^{t}$ nunca repete valores, por isso duas potências de base 2 só são iguais se os expoentes forem iguais: ${2^{p}=2^{q}\\Leftrightarrow p=q}$. Então$$-2x=3x-3$$"
       },
       {
        "titulo": "Resolver a equação do 1.º grau",
-       "texto": "Passamos os termos com $x$ para o mesmo lado e dividimos por $-5$:$$\\begin{aligned}&-2x-3x=-3\\\\&\\Leftrightarrow -5x=-3\\\\&\\Leftrightarrow x=\\dfrac35\\end{aligned}$$Confirma: $\\left(\\frac14\\right)^{0{,}6}=2^{-1{,}2}$ e $8^{-0{,}4}=2^{-1{,}2}$. No gráfico, uma curva decrescente e uma crescente só se cruzam uma vez, em $x=\\frac35$.",
+       "texto": "Passamos os termos com $x$ para o mesmo lado e dividimos por $-5$:$$\\begin{aligned}&-2x-3x=-3\\\\&\\Leftrightarrow -5x=-3\\\\&\\Leftrightarrow x=\\dfrac35\\end{aligned}$$Confirma: $\\left(\\frac14\\right)^{0{,}6}=2^{-1{,}2}$ e ${8^{-0{,}4}=2^{-1{,}2}}$. No gráfico, uma curva decrescente e uma crescente só se cruzam uma vez, em ${x=\\frac35}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -330,9 +364,21 @@
        }
       }
      ],
-     "resposta": "$S=\\left\\{\\dfrac35\\right\\}$"
+     "resposta": "$S=\\left\\{\\dfrac35\\right\\}$",
+     "verifica": [
+      "igl(raizes(lambda s: (1/4)**s-8**(s-1), -10, 10), [3/5])",
+      "ig((1/4)**0.6, 2**-1.2) and ig(8**-0.4, 2**-1.2)",
+      "ig(-2*0.6, -1.2) and ig(3*0.6-3, -1.2)"
+     ],
+     "solucao": "raizes(lambda s: (1/4)**s-8**(s-1), -10, 10)"
     }
-   ]
+   ],
+   "funcoes": {
+    "g": "exp(x)-10*exp(-x)",
+    "1.º membro": "5*3**(x+1)-3**x",
+    "(1/4)^x": "(1/4)**x",
+    "8^(x − 1)": "8**(x-1)"
+   }
   },
   {
    "id": "ex-03",
@@ -341,7 +387,7 @@
    "nivel": 3,
    "enunciado": "Resolve, em $\\mathbb{R}$, a equação da alínea a) e a inequação da alínea b). Em ambas, os logaritmos só existem para argumentos positivos: começa sempre por escrever a condição de existência.",
    "dica": "Antes de qualquer conta, pergunta-te: que valores de $x$ deixam positivo o argumento de cada logaritmo? Só depois mexes na equação ou na inequação.",
-   "erroComum": "Resolver a equação do 2.º grau e aceitar as duas raízes sem as testar no domínio ($x=-3$ não serve). Na inequação, esquecer que a base $\\frac12$ está entre 0 e 1 e escrever $2x-3\\gt 8$ (o sentido deve inverter-se), ou esquecer de cortar a solução com o domínio.",
+   "erroComum": "Resolver a equação do 2.º grau e aceitar as duas raízes sem as testar no domínio (${x=-3}$ não serve). Na inequação, esquecer que a base $\\frac12$ está entre 0 e 1 e escrever $2x-3\\gt 8$ (o sentido deve inverter-se), ou esquecer de cortar a solução com o domínio.",
    "verifica": [
     "ig(ln(5+2)+ln(5-4), ln(7))",
     "ig((x+2)*(x-4)-7, x**2-2*x-15)",
@@ -352,7 +398,7 @@
    "alineas": [
     {
      "id": "a",
-     "enunciado": "$\\ln(x+2)+\\ln(x-4)=\\ln 7$",
+     "enunciado": "${\\ln(x+2)+\\ln(x-4)=\\ln 7}$",
      "passos": [
       {
        "titulo": "Condição de existência",
@@ -394,11 +440,11 @@
       },
       {
        "titulo": "Juntar num só logaritmo",
-       "texto": "A soma de logaritmos é o logaritmo do produto: $\\ln a+\\ln b=\\ln(ab)$. A equação fica$$\\ln\\bigl((x+2)(x-4)\\bigr)=\\ln 7$$"
+       "texto": "A soma de logaritmos é o logaritmo do produto: ${\\ln a+\\ln b=\\ln(ab)}$. A equação fica$$\\ln\\bigl((x+2)(x-4)\\bigr)=\\ln 7$$"
       },
       {
        "titulo": "Igualar os argumentos",
-       "texto": "O $\\ln$ nunca repete valores, por isso $\\ln A=\\ln B\\Leftrightarrow A=B$ (com $A,B\\gt 0$). Então $(x+2)(x-4)=7$. Desenvolvendo o produto e passando tudo para o primeiro membro:$$\\begin{aligned}&x^{2}-2x-8=7\\\\&\\Leftrightarrow x^{2}-2x-15=0\\end{aligned}$$"
+       "texto": "O $\\ln$ nunca repete valores, por isso ${\\ln A=\\ln B\\Leftrightarrow A=B}$ (com $A,B\\gt 0$). Então ${(x+2)(x-4)=7}$. Desenvolvendo o produto e passando tudo para o primeiro membro:$$\\begin{aligned}&x^{2}-2x-8=7\\\\&\\Leftrightarrow x^{2}-2x-15=0\\end{aligned}$$"
       },
       {
        "titulo": "Resolver o 2.º grau",
@@ -406,7 +452,7 @@
       },
       {
        "titulo": "Confrontar com o domínio",
-       "texto": "$5\\in\\,]4,+\\infty[$, por isso serve. $-3\\notin\\,]4,+\\infty[$, por isso não serve: ficaria $\\ln(-1)$ e $\\ln(-7)$, que não existem. (O 2.º grau não deu por isso porque $(-1)\\times(-7)=7$; foi ao juntar os logaritmos que se perdeu a informação dos sinais, e é por isso que o domínio se escreve <em>primeiro</em>.)<br>Verificação: $\\ln 7+\\ln 1=\\ln 7+0=\\ln 7$ $\\checkmark$.",
+       "texto": "$5\\in\\,]4,+\\infty[$, por isso serve. $-3\\notin\\,]4,+\\infty[$, por isso não serve: ficaria $\\ln(-1)$ e $\\ln(-7)$, que não existem. (A equação do 2.º grau não distingue os sinais: com ${x=-3}$ os fatores são $-1$ e $-7$, e o produto ${(-1)\\times(-7)=7}$ até dá o valor certo. A informação dos sinais perdeu-se ao juntar os logaritmos, e é por isso que o domínio se escreve <em>primeiro</em>.)<br>Verificação: ${\\ln 7+\\ln 1=\\ln 7+0=\\ln 7}$ $\\checkmark$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -447,7 +493,19 @@
        }
       }
      ],
-     "resposta": "$S=\\{5\\}$"
+     "resposta": "${S=\\{5\\}}$",
+     "funcoes": {
+      "ln(x + 2)": "ln(x+2)",
+      "ln(x − 4)": "ln(x-4)",
+      "f": "ln(x+2)+ln(x-4)"
+     },
+     "verifica": [
+      "((t+2 > 0) and (t-4 > 0)) == (t > 4)",
+      "igl(raizes(lambda s: ln(s+2)+ln(s-4)-ln(7), 4.0001, 30), [5])",
+      "igl(raizes(lambda s: s*s-2*s-15, -10, 10), [-3, 5]) and ig((-2)**2-4*1*(-15), 64)",
+      "ig((-3+2)*(-3-4), 7) and ig(ln(7)+ln(1), ln(7))"
+     ],
+     "solucao": "raizes(lambda s: ln(s+2)+ln(s-4)-ln(7), 4.0001, 30)"
     },
     {
      "id": "b",
@@ -459,11 +517,11 @@
       },
       {
        "titulo": "Escrever −3 como logaritmo",
-       "texto": "Queremos um logaritmo em cada membro, para os poder comparar. Como $\\left(\\dfrac12\\right)^{-3}=2^{3}=8$, o expoente $-3$ é o logaritmo de 8 na base $\\frac12$: $-3=\\log_{\\frac12}8$. A inequação fica$$\\log_{\\frac12}(2x-3)\\gt\\log_{\\frac12}8$$"
+       "texto": "Queremos um logaritmo em cada membro, para os poder comparar. Como $\\left(\\dfrac12\\right)^{-3}=2^{3}=8$, o expoente $-3$ é o logaritmo de 8 na base $\\frac12$: ${-3=\\log_{\\frac12}8}$. A inequação fica$$\\log_{\\frac12}(2x-3)\\gt\\log_{\\frac12}8$$"
       },
       {
        "titulo": "Tirar os logaritmos: o sentido inverte-se",
-       "texto": "A base $\\frac12$ está entre 0 e 1, por isso $\\log_{\\frac12}$ é <strong>decrescente</strong>: ao argumento maior corresponde o logaritmo menor. Ao eliminar os logaritmos, o sentido da desigualdade inverte-se:$$\\begin{aligned}&\\log_{\\frac12}(2x-3)\\gt\\log_{\\frac12}8\\\\&\\Leftrightarrow 2x-3\\lt 8\\end{aligned}$$No gráfico, a curva está acima da reta $y=-3$ à esquerda de $x=\\frac{11}{2}$ (e à direita de $\\frac32$, onde existe).",
+       "texto": "A base $\\frac12$ está entre 0 e 1, por isso $\\log_{\\frac12}$ é <strong>decrescente</strong>: ao argumento maior corresponde o logaritmo menor. Ao eliminar os logaritmos (em $D$, onde os argumentos são positivos), o sentido da desigualdade inverte-se:$$\\begin{aligned}&\\log_{\\frac12}(2x-3)\\gt\\log_{\\frac12}8\\\\&\\Leftrightarrow 2x-3\\lt 8\\end{aligned}$$No gráfico, a curva está acima da reta ${y=-3}$ à esquerda de ${x=\\frac{11}{2}}$ (e à direita de $\\frac32$, onde existe).",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -509,10 +567,21 @@
       },
       {
        "titulo": "Cortar com o domínio",
-       "texto": "A solução tem de cumprir as duas condições, $x\\gt\\dfrac32$ e $x\\lt\\dfrac{11}{2}$:$$S=\\left]\\dfrac32,\\dfrac{11}{2}\\right[$$Teste rápido: $x=2$ está no intervalo e $\\log_{\\frac12}(1)=0\\gt -3$ $\\checkmark$; $x=6$ está fora e $\\log_{\\frac12}(9)\\approx-3{,}17$, que não é maior que $-3$ $\\checkmark$."
+       "texto": "A solução tem de cumprir as duas condições, $x\\gt\\dfrac32$ e $x\\lt\\dfrac{11}{2}$:$$S=\\left]\\dfrac32,\\dfrac{11}{2}\\right[$$Teste rápido: ${x=2}$ está no intervalo e ${\\log_{\\frac12}(1)=0\\gt -3}$ $\\checkmark$; ${x=6}$ está fora e ${\\log_{\\frac12}(9)\\approx-3{,}17}$, que não é maior que $-3$ $\\checkmark$."
       }
      ],
-     "resposta": "$S=\\left]\\dfrac32,\\dfrac{11}{2}\\right[$"
+     "resposta": "$S=\\left]\\dfrac32,\\dfrac{11}{2}\\right[$",
+     "funcoes": {
+      "f": "logb(0.5, 2*x-3)"
+     },
+     "verifica": [
+      "((2*x-3 > 0) == (x > 1.5))",
+      "ig(logb(0.5, 8), -3)",
+      "igl(raizes(lambda s: logb(0.5, 2*s-3)+3, 1.5001, 20), [5.5])",
+      "(logb(0.5, 2*x-3) > -3) == (1.5 < x < 5.5)",
+      "ig(round(logb(0.5, 9), 2), -3.17) and (logb(0.5, 1) > -3) and not (logb(0.5, 9) > -3)"
+     ],
+     "intervalo": "[1.5, raizes(lambda s: logb(0.5, 2*s-3)+3, 1.5001, 20)[0]]"
     }
    ]
   },
@@ -521,9 +590,9 @@
    "titulo": "Domínio, contradomínio e inversa",
    "tema": "funcao",
    "nivel": 3,
-   "enunciado": "Seja $f$ a função definida por $f(x)=1-2\\ln(x+3)$, no maior domínio possível.",
-   "dica": "Na alínea c), escreve $y=f(x)$, isola $x$ em função de $y$ e só no fim troca os nomes das variáveis. Depois lembra-te: o domínio de uma função é o contradomínio da outra.",
-   "erroComum": "Escrever que $f$ é crescente «porque tem $\\ln$»: o fator $-2$ torna-a decrescente. Outro erro típico é dar $D_f=\\mathbb{R}$ (ou $x\\neq-3$) em vez de exigir $x+3\\gt 0$, e, na inversa, trocar o domínio com o contradomínio.",
+   "enunciado": "Seja $f$ a função definida por ${f(x)=1-2\\ln(x+3)}$, no maior domínio possível.",
+   "dica": "Na alínea c), escreve ${y=f(x)}$, isola $x$ em função de $y$ e só no fim troca os nomes das variáveis. Depois lembra-te: o domínio de uma função é o contradomínio da outra.",
+   "erroComum": "Escrever que $f$ é crescente «porque tem $\\ln$»: o fator $-2$ torna-a decrescente. Outro erro típico é dar ${D_f=\\mathbb{R}}$ (ou ${x\\neq-3}$) em vez de exigir $x+3\\gt 0$, e, na inversa, trocar o domínio com o contradomínio.",
    "verifica": [
     "ig(1-2*ln((sqrt(e)-3)+3), 0)",
     "ig(1-2*ln((exp((1-t)/2)-3)+3), t)",
@@ -541,7 +610,7 @@
      "passos": [
       {
        "titulo": "Domínio: argumento positivo",
-       "texto": "O $\\ln$ só existe para números positivos, por isso o argumento $x+3$ tem de ser positivo:$$\\begin{aligned}&x+3\\gt 0\\\\&\\Leftrightarrow x\\gt-3\\end{aligned}$$O domínio é $D_f=\\,]-3,+\\infty[$. Quando $x$ se aproxima de $-3$ por valores maiores, $x+3\\to0^{+}$ e $\\ln(x+3)\\to-\\infty$: o gráfico encosta-se à reta vertical $x=-3$ (assíntota vertical), sem a tocar.",
+       "texto": "O $\\ln$ só existe para números positivos, por isso o argumento $x+3$ tem de ser positivo:$$\\begin{aligned}&x+3\\gt 0\\\\&\\Leftrightarrow x\\gt-3\\end{aligned}$$O domínio é ${D_f=\\,]-3,+\\infty[}$. Quando $x$ se aproxima de $-3$ por valores maiores, $x+3\\to0^{+}$ e $\\ln(x+3)\\to-\\infty$: o gráfico encosta-se à reta vertical ${x=-3}$ (assíntota vertical), sem a tocar.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -570,11 +639,11 @@
       },
       {
        "titulo": "Igualar a zero e isolar o ln",
-       "texto": "Um zero de $f$ é um $x$ do domínio com $f(x)=0$. Para isolar $\\ln(x+3)$, passamos o 1 para o outro lado e dividimos por $-2$:$$\\begin{aligned}&1-2\\ln(x+3)=0\\\\&\\Leftrightarrow -2\\ln(x+3)=-1\\\\&\\Leftrightarrow \\ln(x+3)=\\dfrac12\\end{aligned}$$"
+       "texto": "Um zero de $f$ é um $x$ do domínio com ${f(x)=0}$. Para isolar $\\ln(x+3)$, passamos o 1 para o outro lado e dividimos por $-2$:$$\\begin{aligned}&1-2\\ln(x+3)=0\\\\&\\Leftrightarrow -2\\ln(x+3)=-1\\\\&\\Leftrightarrow \\ln(x+3)=\\dfrac12\\end{aligned}$$"
       },
       {
        "titulo": "Passar à forma exponencial",
-       "texto": "Pela definição, $\\ln a=b\\Leftrightarrow a=e^{b}$. Então$$\\begin{aligned}&x+3=e^{\\frac12}\\\\&\\Leftrightarrow x=e^{\\frac12}-3=\\sqrt{e}-3\\end{aligned}$$Com a calculadora, $\\sqrt{e}-3\\approx-1{,}35$. Está em $]-3,+\\infty[$ $\\checkmark$, por isso é mesmo um zero.",
+       "texto": "Pela definição, ${\\ln a=b\\Leftrightarrow a=e^{b}}$. Então$$\\begin{aligned}&x+3=e^{\\frac12}\\\\&\\Leftrightarrow x=e^{\\frac12}-3=\\sqrt{e}-3\\end{aligned}$$Com a calculadora, ${\\sqrt{e}-3\\approx-1{,}35}$. Está em $]-3,+\\infty[$ $\\checkmark$, por isso é mesmo um zero.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -609,7 +678,13 @@
        }
       }
      ],
-     "resposta": "$D_f=\\,]-3,+\\infty[$ e o único zero de $f$ é $x=\\sqrt{e}-3\\approx-1{,}35$."
+     "resposta": "${D_f=\\,]-3,+\\infty[}$ e o único zero de $f$ é ${x=\\sqrt{e}-3\\approx-1{,}35}$.",
+     "verifica": [
+      "((t+3) > 0) == (t > -3)",
+      "igl(raizes(lambda s: 1-2*ln(s+3), -2.999, 10), [sqrt(e)-3])",
+      "ig(round(sqrt(e)-3, 2), -1.35)",
+      "limd(lambda s: 1-2*ln(s+3), -3) > 30"
+     ]
     },
     {
      "id": "b",
@@ -621,11 +696,11 @@
       },
       {
        "titulo": "O efeito do −2 e do 1",
-       "texto": "Multiplicar por $-2$, que é negativo, inverte a desigualdade:$$-2\\ln(x_1+3)\\gt-2\\ln(x_2+3)$$Somar 1 aos dois membros não altera a desigualdade, e $1-2\\ln(x_i+3)$ é precisamente $f(x_i)$:$$f(x_1)\\gt f(x_2)$$Logo $f$ é estritamente <strong>decrescente</strong> em todo o seu domínio, $]-3,+\\infty[$.<br>Confirmação com a derivada: $f'(x)=-\\dfrac{2}{x+3}$, que é negativa porque $x+3\\gt 0$."
+       "texto": "Multiplicar por $-2$, que é negativo, inverte a desigualdade:$$\\begin{aligned}&-2\\ln(x_1+3)\\\\&\\gt-2\\ln(x_2+3)\\end{aligned}$$Somar 1 aos dois membros não altera a desigualdade, e $1-2\\ln(x_i+3)$ é precisamente $f(x_i)$:$$f(x_1)\\gt f(x_2)$$Logo $f$ é estritamente <strong>decrescente</strong> em todo o seu domínio, $]-3,+\\infty[$.<br>Confirmação com a derivada: ${f'(x)=-\\dfrac{2}{x+3}}$, que é negativa porque $x+3\\gt 0$."
       },
       {
        "titulo": "Determinar o contradomínio",
-       "texto": "$f$ é contínua (é composta de funções contínuas) e, por ser decrescente, vai do maior valor ao menor sem voltar atrás. Nos dois extremos do domínio:$$\\begin{aligned}&\\lim_{x\\to-3^{+}}f(x)=+\\infty\\\\&\\lim_{x\\to+\\infty}f(x)=-\\infty\\end{aligned}$$Como passa de $+\\infty$ a $-\\infty$ sem saltos, toma todos os valores reais, cada um uma só vez: $D'_f=\\mathbb{R}$.",
+       "texto": "$f$ é contínua (é composta de funções contínuas) e, por ser decrescente, vai do maior valor ao menor sem voltar atrás. Nos dois extremos do domínio:$$\\begin{aligned}&\\lim_{x\\to-3^{+}}f(x)=+\\infty\\\\&\\lim_{x\\to+\\infty}f(x)=-\\infty\\end{aligned}$$Como passa de $+\\infty$ a $-\\infty$ sem saltos, toma todos os valores reais, cada um uma só vez: ${D'_f=\\mathbb{R}}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -653,7 +728,13 @@
        }
       }
      ],
-     "resposta": "$f$ é estritamente decrescente em $]-3,+\\infty[$ e $D'_f=\\mathbb{R}$."
+     "resposta": "$f$ é estritamente decrescente em $]-3,+\\infty[$ e ${D'_f=\\mathbb{R}}$.",
+     "verifica": [
+      "decresc(lambda s: 1-2*ln(s+3), -2.999, 50)",
+      "ig(der(lambda s: 1-2*ln(s+3), x), -2/(x+3))",
+      "limd(lambda s: 1-2*ln(s+3), -3) > 30 and lim(lambda s: 1-2*ln(s+3), inf) < -30",
+      "((1-2*ln(x+3)) > (1-2*ln(y+3))) == (x < y)"
+     ]
     },
     {
      "id": "c",
@@ -665,7 +746,7 @@
       },
       {
        "titulo": "Isolar x",
-       "texto": "Escrevemos $y=f(x)$ e resolvemos em ordem a $x$, passo a passo, desfazendo as operações pela ordem inversa:$$\\begin{aligned}y&=1-2\\ln(x+3)\\\\2\\ln(x+3)&=1-y\\\\\\ln(x+3)&=\\dfrac{1-y}{2}\\\\x+3&=e^{\\frac{1-y}{2}}\\\\x&=e^{\\frac{1-y}{2}}-3\\end{aligned}$$"
+       "texto": "Escrevemos ${y=f(x)}$ e resolvemos em ordem a $x$, passo a passo, desfazendo as operações pela ordem inversa:$$\\begin{aligned}y&=1-2\\ln(x+3)\\\\2\\ln(x+3)&=1-y\\\\\\ln(x+3)&=\\dfrac{1-y}{2}\\\\x+3&=e^{\\frac{1-y}{2}}\\\\x&=e^{\\frac{1-y}{2}}-3\\end{aligned}$$"
       },
       {
        "titulo": "Trocar os nomes das variáveis",
@@ -677,7 +758,7 @@
       },
       {
        "titulo": "Ver no gráfico",
-       "texto": "Os gráficos de $f$ e de $f^{-1}$ são simétricos em relação à reta $y=x$: o ponto $(a,b)$ de $f$ corresponde ao ponto $(b,a)$ de $f^{-1}$. O zero de $f$, $(\\sqrt{e}-3,\\,0)$, passa a $(0,\\,\\sqrt{e}-3)$, e a assíntota vertical $x=-3$ de $f$ passa a assíntota horizontal $y=-3$ de $f^{-1}$.",
+       "texto": "Os gráficos de $f$ e de $f^{-1}$ são simétricos em relação à reta ${y=x}$: o ponto $(a,b)$ de $f$ corresponde ao ponto $(b,a)$ de $f^{-1}$. O zero de $f$, $(\\sqrt{e}-3,\\,0)$, passa a $(0,\\,\\sqrt{e}-3)$, e a assíntota vertical ${x=-3}$ de $f$ passa a assíntota horizontal ${y=-3}$ de $f^{-1}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -723,7 +804,7 @@
          {
           "x": -1.351279,
           "y": 0,
-          "rotulo": "zero de f"
+          "rotulo": "zero"
          },
          {
           "x": 0,
@@ -735,11 +816,17 @@
        }
       }
      ],
-     "resposta": "$f^{-1}(x)=e^{\\frac{1-x}{2}}-3$, com $D_{f^{-1}}=\\mathbb{R}$ e $D'_{f^{-1}}=\\,]-3,+\\infty[$."
+     "resposta": "${f^{-1}(x)=e^{\\frac{1-x}{2}}-3}$, com ${D_{f^{-1}}=\\mathbb{R}}$ e ${D'_{f^{-1}}=\\,]-3,+\\infty[}$.",
+     "verifica": [
+      "ig(1-2*ln((exp((1-t)/2)-3)+3), t)",
+      "ig(exp((1-(1-2*ln(x+3)))/2)-3, x)",
+      "exp((1-t)/2)-3 > -3",
+      "ig(1-2*ln(sqrt(e)-3+3), 0) and ig(exp((1-0)/2)-3, sqrt(e)-3)"
+     ]
     },
     {
      "id": "d",
-     "enunciado": "Resolve a equação $f(x)=-3$.",
+     "enunciado": "Resolve a equação ${f(x)=-3}$.",
      "passos": [
       {
        "titulo": "Isolar o logaritmo",
@@ -747,7 +834,7 @@
       },
       {
        "titulo": "Passar à forma exponencial",
-       "texto": "$\\ln(x+3)=2$ significa $x+3=e^{2}$, logo$$x=e^{2}-3$$Com a calculadora, $e^{2}-3\\approx4{,}39$. Como $4{,}39\\gt-3$, está no domínio e serve.",
+       "texto": "${\\ln(x+3)=2}$ significa ${x+3=e^{2}}$, logo$$x=e^{2}-3$$Com a calculadora, ${e^{2}-3\\approx4{,}39}$. Como $4{,}39\\gt-3$, está no domínio e serve.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -789,12 +876,22 @@
       },
       {
        "titulo": "Confirmar com a inversa",
-       "texto": "Outra maneira: aplicando $f^{-1}$ aos dois membros, $f(x)=-3\\Leftrightarrow x=f^{-1}(-3)$. Pela alínea c):$$\\begin{aligned}f^{-1}(-3)&=e^{\\frac{1-(-3)}{2}}-3\\\\&=e^{2}-3\\end{aligned}$$O mesmo resultado, por um caminho diferente."
+       "texto": "Outra maneira: aplicando $f^{-1}$ aos dois membros, ${f(x)=-3\\Leftrightarrow x=f^{-1}(-3)}$. Pela alínea c):$$\\begin{aligned}f^{-1}(-3)&=e^{\\frac{1-(-3)}{2}}-3\\\\&=e^{2}-3\\end{aligned}$$O mesmo resultado, por um caminho diferente."
       }
      ],
-     "resposta": "$S=\\{e^{2}-3\\}$, com $e^{2}-3\\approx4{,}39$."
+     "resposta": "${S=\\{e^{2}-3\\}}$, com ${e^{2}-3\\approx4{,}39}$.",
+     "verifica": [
+      "igl(raizes(lambda s: 1-2*ln(s+3)+3, -2.999, 30), [exp(2)-3])",
+      "ig(round(exp(2)-3, 2), 4.39)",
+      "ig(exp((1-(-3))/2)-3, exp(2)-3)"
+     ],
+     "solucao": "raizes(lambda s: 1-2*ln(s+3)+3, -2.999, 30)"
     }
-   ]
+   ],
+   "funcoes": {
+    "f": "1-2*ln(x+3)",
+    "f⁻¹": "exp((1-x)/2)-3"
+   }
   },
   {
    "id": "ex-05",
@@ -815,11 +912,11 @@
    "alineas": [
     {
      "id": "a",
-     "enunciado": "Mostra que $f'(x)=(2x+3)\\,e^{2x}$, para todo o $x\\in\\mathbb{R}$.",
+     "enunciado": "Mostra que ${f'(x)=(2x+3)\\,e^{2x}}$, para todo o $x\\in\\mathbb{R}$.",
      "passos": [
       {
        "titulo": "Reconhecer a regra",
-       "texto": "$f(x)=(x+1)\\,e^{2x}$ é um <strong>produto</strong> de duas funções: $u(x)=x+1$ e $v(x)=e^{2x}$. Para derivar um produto usa-se $$(u\\,v)'=u'\\,v+u\\,v'.$$ Por isso o primeiro trabalho é calcular $u'$ e $v'$.",
+       "texto": "${f(x)=(x+1)\\,e^{2x}}$ é um <strong>produto</strong> de duas funções: ${u(x)=x+1}$ e ${v(x)=e^{2x}}$. Para derivar um produto usa-se $$(u\\,v)'=u'\\,v+u\\,v'.$$ Por isso o primeiro trabalho é calcular $u'$ e $v'$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -842,7 +939,7 @@
       },
       {
        "titulo": "Derivar cada fator",
-       "texto": "O primeiro fator é fácil: $u'(x)=(x+1)'=1$.<br>No segundo, o expoente não é $x$ mas $2x$, por isso $e^{2x}$ é uma função composta. Usa $(e^{w})'=w'\\,e^{w}$ com $w=2x$ e $w'=2$: $$v'(x)=(e^{2x})'=2\\,e^{2x}.$$ O fator $2$ aparece porque também derivas o expoente. Sem ele o resultado fica errado."
+       "texto": "O primeiro fator é fácil: ${u'(x)=(x+1)'=1}$.<br>No segundo, o expoente não é $x$ mas $2x$, por isso $e^{2x}$ é uma função composta. Usa ${(e^{w})'=w'\\,e^{w}}$ com ${w=2x}$ e ${w'=2}$: $$v'(x)=(e^{2x})'=2\\,e^{2x}.$$ O fator $2$ aparece porque também derivas o expoente. Sem ele o resultado fica errado."
       },
       {
        "titulo": "Aplicar a regra do produto",
@@ -853,8 +950,13 @@
        "texto": "Põe $e^{2x}$ em evidência e simplifica o que fica dentro do parêntese: $$\\begin{aligned}f'(x)&=e^{2x}\\big(1+2(x+1)\\big)\\\\ &=e^{2x}\\,(1+2x+2)\\\\ &=(2x+3)\\,e^{2x}\\end{aligned}$$ É a expressão pedida e vale para qualquer $x\\in\\mathbb{R}$."
       }
      ],
-     "resposta": "Fica mostrado que $f'(x)=(2x+3)\\,e^{2x}$, para todo o $x\\in\\mathbb{R}$.",
-     "erroComum": "Escrever $(e^{2x})'=e^{2x}$, esquecendo o fator $2$ que vem da derivada do expoente $2x$."
+     "resposta": "Fica mostrado que ${f'(x)=(2x+3)\\,e^{2x}}$, para todo o $x\\in\\mathbb{R}$.",
+     "erroComum": "Escrever ${(e^{2x})'=e^{2x}}$, esquecendo o fator $2$ que vem da derivada do expoente $2x$.",
+     "verifica": [
+      "ig(der(lambda s: (s+1)*exp(2*s), t), (2*t+3)*exp(2*t))",
+      "ig(der(lambda s: exp(2*s), t), 2*exp(2*t))",
+      "ig(1*exp(2*t)+(t+1)*2*exp(2*t), (2*t+3)*exp(2*t))"
+     ]
     },
     {
      "id": "b",
@@ -897,7 +999,7 @@
       },
       {
        "titulo": "Escrever a equação da reta",
-       "texto": "A reta que passa em $(a,\\,f(a))$ com declive $f'(a)$ tem equação $y=f'(a)\\,(x-a)+f(a)$. Aqui $a=0$, $f'(0)=3$ e $f(0)=1$: $$\\begin{aligned}y&=3\\,(x-0)+1\\\\ \\Leftrightarrow\\;y&=3x+1.\\end{aligned}$$",
+       "texto": "A reta que passa em $(a,\\,f(a))$ com declive $f'(a)$ tem equação ${y=f'(a)\\,(x-a)+f(a)}$. Aqui ${a=0}$, ${f'(0)=3}$ e ${f(0)=1}$: $$\\begin{aligned}y&=3\\,(x-0)+1\\\\ \\Leftrightarrow\\;y&=3x+1.\\end{aligned}$$",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -935,20 +1037,25 @@
       },
       {
        "titulo": "Conferir o resultado",
-       "texto": "Confirma: em $x=0$ a reta dá $y=3\\times0+1=1$, que é $f(0)$, logo passa mesmo em $P$. E o declive $3$ é igual a $f'(0)$. Está certo."
+       "texto": "Confirma: em ${x=0}$ a reta dá ${y=3\\times0+1=1}$, que é $f(0)$, logo passa mesmo em $P$. E o declive $3$ é igual a $f'(0)$. Está certo."
       }
      ],
-     "resposta": "A reta tangente ao gráfico de $f$ no ponto de abcissa $0$ tem equação $y=3x+1$.",
-     "erroComum": "Deixar $x$ no declive, escrevendo $f'(x)$ em vez do número $f'(0)$. O declive de uma reta tem de ser um número."
+     "resposta": "A reta tangente ao gráfico de $f$ no ponto de abcissa $0$ tem equação ${y=3x+1}$.",
+     "erroComum": "Deixar $x$ no declive, escrevendo $f'(x)$ em vez do número $f'(0)$. O declive de uma reta tem de ser um número.",
+     "verifica": [
+      "ig(der(lambda s: (s+1)*exp(2*s), 0), 3) and ig((0+1)*exp(2*0), 1)",
+      "ig(3*(0-0)+1, 1)",
+      "abs((0.001+1)*exp(0.002)-(3*0.001+1)) < 1e-5"
+     ]
     },
     {
      "id": "c",
-     "enunciado": "Existe um ponto do gráfico de $g$ em que a reta tangente é paralela à reta de equação $y=5x-3$. Determina a abcissa desse ponto.",
+     "enunciado": "Existe um ponto do gráfico de $g$ em que a reta tangente é paralela à reta de equação ${y=5x-3}$. Determina a abcissa desse ponto.",
      "dica": "Quando duas retas são paralelas, o que é que elas têm de igual? E o que te dá o declive da tangente num ponto?",
      "passos": [
       {
        "titulo": "Retas paralelas",
-       "texto": "Duas retas paralelas têm o mesmo declive. A reta $y=5x-3$ tem declive $5$, por isso procuras o ponto onde a tangente a $g$ tem declive $5$. Como o declive da tangente é a derivada, resolves $g'(x)=5$.",
+       "texto": "Duas retas paralelas têm o mesmo declive. A reta ${y=5x-3}$ tem declive $5$, por isso procuras o ponto onde a tangente a $g$ tem declive $5$. Como o declive da tangente é a derivada, resolves ${g'(x)=5}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -985,7 +1092,7 @@
       },
       {
        "titulo": "Derivar g",
-       "texto": "Deriva cada parcela de $g(x)=x^2-3\\ln x$, com $x>0$: $(x^2)'=2x$ e $(\\ln x)'=\\frac{1}{x}$. $$\\begin{aligned}g'(x)&=2x-3\\times\\frac{1}{x}\\\\ &=2x-\\frac{3}{x}.\\end{aligned}$$"
+       "texto": "Deriva cada parcela de ${g(x)=x^2-3\\ln x}$, com $x>0$: ${(x^2)'=2x}$ e ${(\\ln x)'=\\frac{1}{x}}$. $$\\begin{aligned}g'(x)&=2x-3\\times\\frac{1}{x}\\\\ &=2x-\\frac{3}{x}.\\end{aligned}$$"
       },
       {
        "titulo": "Resolver g'(x) = 5",
@@ -993,11 +1100,11 @@
       },
       {
        "titulo": "Verificar o domínio",
-       "texto": "O domínio de $g$ é $]0,+\\infty[$: o gráfico só tem pontos com $x>0$. A solução $x=-\\frac{1}{2}$ não pertence ao domínio (nem existe $\\ln\\!\\left(-\\frac{1}{2}\\right)$), por isso rejeita-se. Só serve $x=3$."
+       "texto": "O domínio de $g$ é $]0,+\\infty[$: o gráfico só tem pontos com $x>0$. A solução ${x=-\\frac{1}{2}}$ não pertence ao domínio (nem existe $\\ln\\!\\left(-\\frac{1}{2}\\right)$), por isso rejeita-se. Só serve ${x=3}$."
       },
       {
        "titulo": "O ponto e a tangente",
-       "texto": "A ordenada do ponto é $g(3)=3^2-3\\ln3=9-3\\ln3\\approx5{,}70$. A tangente nesse ponto tem declive $5$: $$\\begin{aligned}y&=5\\,(x-3)+9-3\\ln3\\\\ \\Leftrightarrow\\;y&=5x-6-3\\ln3.\\end{aligned}$$ Tem o mesmo declive da reta dada, por isso as duas são paralelas.",
+       "texto": "O ponto, a que chamamos $P$, tem ordenada $g(3)=3^2-3\\ln3=9-3\\ln3\\approx5{,}70$. A tangente nesse ponto tem declive $5$: $$\\begin{aligned}y&=5\\,(x-3)+9-3\\ln3\\\\ \\Leftrightarrow\\;y&=5x-6-3\\ln3.\\end{aligned}$$ Tem o mesmo declive da reta dada, por isso as duas são paralelas.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1025,7 +1132,8 @@
          {
           "declive": 5,
           "ordenada": -9.2958,
-          "cor": "tg"
+          "cor": "tg",
+          "rotulo": "t"
          }
         ],
         "retasV": [
@@ -1038,17 +1146,27 @@
          {
           "x": 3,
           "y": 5.7042,
-          "rotulo": "(3, 9 − 3 ln 3)"
+          "rotulo": "P"
          }
         ],
         "legenda": "Gráfico de g(x) = x² − 3 ln x, definido só para x > 0, com a assíntota vertical x = 0. Estão desenhadas a reta y = 5x − 3 e a tangente paralela, no ponto de abcissa 3."
        }
       }
      ],
-     "resposta": "A abcissa do ponto é $x=3$; o ponto é $\\big(3,\\,9-3\\ln3\\big)$.",
-     "erroComum": "Ficar com as duas soluções da equação do 2.º grau, sem ver que $-\\frac{1}{2}$ não pertence ao domínio $]0,+\\infty[$ de $g$."
+     "resposta": "A abcissa do ponto é ${x=3}$; o ponto é $\\big(3,\\,9-3\\ln3\\big)$.",
+     "erroComum": "Ficar com as duas soluções da equação do 2.º grau, sem ver que $-\\frac{1}{2}$ não pertence ao domínio $]0,+\\infty[$ de $g$.",
+     "verifica": [
+      "igl(raizes(lambda s: 2*s-3/s-5, 0.01, 20), [3])",
+      "ig(2*(-0.5)**2-5*(-0.5)-3, 0) and ig(2*3**2-5*3-3, 0)",
+      "ig(round(9-3*ln(3), 2), 5.70)",
+      "ig(5*(3-3)+9-3*ln(3), 5*3-6-3*ln(3))"
+     ]
     }
-   ]
+   ],
+   "funcoes": {
+    "f": "(x+1)*exp(2*x)",
+    "g": "x**2-3*ln(x)"
+   }
   },
   {
    "id": "ex-06",
@@ -1097,7 +1215,7 @@
       },
       {
        "titulo": "Zeros de f",
-       "texto": "Resolve $f(x)=0$: $$\\begin{aligned}(x-2)\\,e^{x}&=0\\\\ \\Leftrightarrow\\;x-2=0&\\;\\vee\\;e^{x}=0.\\end{aligned}$$ Mas $e^{x}>0$ para todo o $x$, nunca é $0$. Só resta $x-2=0$, ou seja, $x=2$. O gráfico corta o eixo $Ox$ apenas em $(2,0)$.",
+       "texto": "Resolve ${f(x)=0}$: $$\\begin{aligned}(x-2)\\,e^{x}&=0\\\\ \\Leftrightarrow\\;x-2=0&\\;\\vee\\;e^{x}=0.\\end{aligned}$$ Mas $e^{x}>0$ para todo o $x$, nunca é $0$. Só resta ${x-2=0}$, ou seja, ${x=2}$. O gráfico corta o eixo $Ox$ apenas em $(2,0)$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1118,7 +1236,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          }
         ],
         "legenda": "Gráfico de f(x) = (x−2) e^x. Está marcado o zero, no ponto (2, 0)."
@@ -1126,11 +1245,11 @@
       },
       {
        "titulo": "Sinal de f",
-       "texto": "Como $e^{x}>0$ para qualquer $x$, o sinal de $f(x)=(x-2)\\,e^{x}$ é o sinal do fator $x-2$: negativo antes de $2$ e positivo depois. $${\\small\\begin{array}{c|ccc}x&-\\infty&2&+\\infty\\\\[0.35em]\\hline f&-&0&+\\end{array}}$$ Logo $f(x)<0$ em $]{-}\\infty,2[$ e $f(x)>0$ em $]2,+\\infty[$."
+       "texto": "Como $e^{x}>0$ para qualquer $x$, o sinal de ${f(x)=(x-2)\\,e^{x}}$ é o sinal do fator $x-2$: negativo antes de $2$ e positivo depois. $${\\small\\begin{array}{c|ccc}x&-\\infty&2&+\\infty\\\\[0.35em]\\hline f&-&0&+\\end{array}}$$ Logo $f(x)<0$ em $]{-}\\infty,2[$ e $f(x)>0$ em $]2,+\\infty[$."
       },
       {
        "titulo": "Limite em menos infinito",
-       "texto": "Quando $x\\to-\\infty$, $(x-2)e^{x}$ dá $(-\\infty)\\times0$: é uma indeterminação. Muda de variável, $y=-x$. Se $x\\to-\\infty$ então $y\\to+\\infty$, e $x=-y$: $$\\begin{aligned}&\\lim_{x\\to-\\infty}(x-2)\\,e^{x}\\\\ &=\\lim_{y\\to+\\infty}\\frac{-y-2}{e^{y}}\\\\ &=-\\lim_{y\\to+\\infty}\\left(\\frac{y}{e^{y}}+\\frac{2}{e^{y}}\\right)\\\\ &=0.\\end{aligned}$$<br>Usaste o limite notável $\\lim_{y\\to+\\infty}\\frac{e^{y}}{y}=+\\infty$, de onde $\\frac{y}{e^{y}}\\to0$, e também $\\frac{2}{e^{y}}\\to0$. Como o limite é $0$, a reta $y=0$ é assíntota horizontal do gráfico quando $x\\to-\\infty$.",
+       "texto": "Quando $x\\to-\\infty$, $(x-2)e^{x}$ dá $(-\\infty)\\times0$: é uma indeterminação. Muda de variável, ${t=-x}$. Se $x\\to-\\infty$ então $t\\to+\\infty$, e ${x=-t}$: $$\\begin{aligned}&\\lim_{x\\to-\\infty}(x-2)\\,e^{x}\\\\ &=\\lim_{t\\to+\\infty}\\frac{-t-2}{e^{t}}\\\\ &=-\\lim_{t\\to+\\infty}\\left(\\frac{t}{e^{t}}+\\frac{2}{e^{t}}\\right)\\\\ &=0.\\end{aligned}$$<br>Usaste o limite notável $\\lim_{t\\to+\\infty}\\frac{e^{t}}{t}=+\\infty$, de onde $\\frac{t}{e^{t}}\\to0$, e também $\\frac{2}{e^{t}}\\to0$. Como o limite é $0$, a reta ${y=0}$ é assíntota horizontal do gráfico quando $x\\to-\\infty$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1158,7 +1277,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          }
         ],
         "legenda": "Gráfico de f(x) = (x−2) e^x. Está desenhada a assíntota horizontal y = 0 (do lado esquerdo)."
@@ -1166,11 +1286,17 @@
       },
       {
        "titulo": "Limite em mais infinito",
-       "texto": "Quando $x\\to+\\infty$: $\\lim(x-2)\\,e^{x}=(+\\infty)\\times(+\\infty)=+\\infty$. O limite não é um número real, por isso não há assíntota horizontal deste lado.<br>Vê se há assíntota oblíqua $y=mx+b$: $$\\begin{aligned}m&=\\lim_{x\\to+\\infty}\\frac{f(x)}{x}\\\\ &=\\lim_{x\\to+\\infty}\\left(1-\\frac{2}{x}\\right)e^{x}\\\\ &=1\\times(+\\infty)=+\\infty.\\end{aligned}$$ Como $m\\notin\\mathbb{R}$, não há assíntota oblíqua quando $x\\to+\\infty$."
+       "texto": "Quando $x\\to+\\infty$: $\\lim(x-2)\\,e^{x}=(+\\infty)\\times(+\\infty)=+\\infty$. O limite não é um número real, por isso não há assíntota horizontal deste lado.<br>Vê se há assíntota oblíqua ${y=mx+b}$: $$\\begin{aligned}m&=\\lim_{x\\to+\\infty}\\frac{f(x)}{x}\\\\ &=\\lim_{x\\to+\\infty}\\left(1-\\frac{2}{x}\\right)e^{x}\\\\ &=1\\times(+\\infty)=+\\infty.\\end{aligned}$$ Como $m\\notin\\mathbb{R}$, não há assíntota oblíqua quando $x\\to+\\infty$."
       }
      ],
-     "resposta": "O único zero de $f$ é $x=2$; $f(x)<0$ em $]{-}\\infty,2[$ e $f(x)>0$ em $]2,+\\infty[$. O gráfico não tem assíntotas verticais, tem a assíntota horizontal $y=0$ quando $x\\to-\\infty$ e não tem assíntota quando $x\\to+\\infty$.",
-     "erroComum": "Escrever $(-\\infty)\\times0=0$ no limite quando $x\\to-\\infty$. É uma indeterminação: tens de a levantar, aqui com a mudança de variável $y=-x$."
+     "resposta": "O único zero de $f$ é ${x=2}$; $f(x)<0$ em $]{-}\\infty,2[$ e $f(x)>0$ em $]2,+\\infty[$. O gráfico não tem assíntotas verticais, tem a assíntota horizontal ${y=0}$ quando $x\\to-\\infty$ e não tem assíntota quando $x\\to+\\infty$.",
+     "erroComum": "Escrever ${(-\\infty)\\times0=0}$ no limite quando $x\\to-\\infty$. É uma indeterminação: tens de a levantar, aqui com a mudança de variável ${t=-x}$.",
+     "verifica": [
+      "igl(raizes(lambda s: (s-2)*exp(s), -10, 10), [2])",
+      "((t-2)*exp(t) < 0) == (t < 2)",
+      "ig(lim(lambda s: (s-2)*exp(s), -inf), 0)",
+      "(700-2)*exp(700) > 1e300 and ((700-2)*exp(700))/700 > 1e300"
+     ]
     },
     {
      "id": "b",
@@ -1178,7 +1304,7 @@
      "passos": [
       {
        "titulo": "Calcular a derivada",
-       "texto": "Usa a regra do produto, com $u=x-2$ e $v=e^{x}$: $$\\begin{aligned}f'(x)&=1\\times e^{x}+(x-2)\\,e^{x}\\\\ &=e^{x}\\,(1+x-2)\\\\ &=(x-1)\\,e^{x}.\\end{aligned}$$",
+       "texto": "Usa a regra do produto, com ${u=x-2}$ e ${v=e^{x}}$: $$\\begin{aligned}f'(x)&=1\\times e^{x}+(x-2)\\,e^{x}\\\\ &=e^{x}\\,(1+x-2)\\\\ &=(x-1)\\,e^{x}.\\end{aligned}$$",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1206,7 +1332,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          }
         ],
         "legenda": "Gráfico de f(x) = (x−2) e^x. Estão marcados o zero e a assíntota já encontrados."
@@ -1214,7 +1341,7 @@
       },
       {
        "titulo": "Zeros da derivada",
-       "texto": "Resolve $f'(x)=0$: $$\\begin{aligned}(x-1)\\,e^{x}&=0\\\\ \\Leftrightarrow\\;x-1&=0\\\\ \\Leftrightarrow\\;x&=1,\\end{aligned}$$ porque $e^{x}$ nunca é $0$. É o único ponto de tangente horizontal, por isso é o único candidato a extremo."
+       "texto": "Resolve ${f'(x)=0}$: $$\\begin{aligned}(x-1)\\,e^{x}&=0\\\\ \\Leftrightarrow\\;x-1&=0\\\\ \\Leftrightarrow\\;x&=1,\\end{aligned}$$ porque $e^{x}$ nunca é $0$. É o único ponto de tangente horizontal, por isso é o único candidato a extremo."
       },
       {
        "titulo": "Tabela de variação",
@@ -1222,7 +1349,7 @@
       },
       {
        "titulo": "Valor do extremo",
-       "texto": "Em $x=1$ a derivada passa de negativa a positiva, ou seja, $f$ deixa de descer e passa a subir: é um <strong>mínimo</strong>. O seu valor é $$\\begin{aligned}f(1)&=(1-2)\\,e^{1}\\\\ &=-e\\approx-2{,}72.\\end{aligned}$$ Como $f$ desce até $x=1$ e sobe depois, $f(1)$ é o menor de todos os valores de $f$.",
+       "texto": "Em ${x=1}$ a derivada passa de negativa a positiva, ou seja, $f$ deixa de descer e passa a subir: é um <strong>mínimo</strong>. O seu valor é $$\\begin{aligned}f(1)&=(1-2)\\,e^{1}\\\\ &=-e\\approx-2{,}72.\\end{aligned}$$ Como $f$ desce até ${x=1}$ e sobe depois, $f(1)$ é o menor de todos os valores de $f$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1250,7 +1377,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          },
          {
           "x": 1,
@@ -1262,8 +1390,15 @@
        }
       }
      ],
-     "resposta": "$f$ é decrescente em $]{-}\\infty,1]$ e crescente em $[1,+\\infty[$. Tem um mínimo, que é o mínimo absoluto, igual a $f(1)=-e$, atingido em $x=1$. Não tem máximo.",
-     "erroComum": "Derivar só um dos fatores e escrever $f'(x)=e^{x}$. É um produto, por isso $(uv)'=u'v+uv'$.<br>Dar um extremo só porque $f'(x)=0$, sem ver se $f'$ muda de sinal. É a tabela que decide."
+     "resposta": "$f$ é decrescente em $]{-}\\infty,1]$ e crescente em $[1,+\\infty[$. Tem um mínimo, que é o mínimo absoluto, igual a ${f(1)=-e}$, atingido em ${x=1}$. Não tem máximo.",
+     "erroComum": "Derivar só um dos fatores e escrever ${f'(x)=e^{x}}$. É um produto, por isso ${(uv)'=u'v+uv'}$.<br>Dar um extremo só porque ${f'(x)=0}$. Com ${f'(x_0)=0}$ tens só um candidato a extremo: vê se $f'$ muda de sinal em $x_0$. É a tabela que decide.",
+     "verifica": [
+      "igl(raizes(lambda s: (s-1)*exp(s), -10, 10), [1])",
+      "ig(der(lambda s: (s-2)*exp(s), t), (t-1)*exp(t))",
+      "decresc(lambda s: (s-2)*exp(s), -10, 1) and cresc(lambda s: (s-2)*exp(s), 1, 10)",
+      "ig(valmin(lambda s: (s-2)*exp(s), -10, 10), -e) and ig(argmin(lambda s: (s-2)*exp(s), -10, 10), 1)",
+      "ig(round(e, 2), 2.72)"
+     ]
     },
     {
      "id": "c",
@@ -1271,7 +1406,7 @@
      "passos": [
       {
        "titulo": "Calcular a segunda derivada",
-       "texto": "Deriva $f'(x)=(x-1)\\,e^{x}$, outra vez com a regra do produto: $$\\begin{aligned}f''(x)&=1\\times e^{x}+(x-1)\\,e^{x}\\\\ &=e^{x}\\,(1+x-1)\\\\ &=x\\,e^{x}.\\end{aligned}$$",
+       "texto": "Deriva ${f'(x)=(x-1)\\,e^{x}}$, outra vez com a regra do produto: $$\\begin{aligned}f''(x)&=1\\times e^{x}+(x-1)\\,e^{x}\\\\ &=e^{x}\\,(1+x-1)\\\\ &=x\\,e^{x}.\\end{aligned}$$",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1299,7 +1434,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          },
          {
           "x": 1,
@@ -1316,11 +1452,11 @@
       },
       {
        "titulo": "Tabela das concavidades",
-       "texto": "Quando $f''<0$ a concavidade está voltada para baixo ($\\frown$); quando $f''>0$ está voltada para cima ($\\smile$). $${\\small\\begin{array}{c|ccccc}x&-\\infty&&0&&+\\infty\\\\[0.35em]\\hline f''&&-&0&+&\\\\[0.35em]\\hline f&&\\frown&-2&\\smile&\\end{array}}$$"
+       "texto": "Quando $f''<0$ a concavidade está voltada para baixo ($\\cap$); quando $f''>0$ está voltada para cima ($\\cup$). $${\\small\\begin{array}{c|ccccc}x&-\\infty&&0&&+\\infty\\\\[0.35em]\\hline f''&&-&0&+&\\\\[0.35em]\\hline f&&\\cap&-2&\\cup&\\end{array}}$$"
       },
       {
        "titulo": "Ponto de inflexão",
-       "texto": "Um ponto de inflexão é onde a concavidade <strong>muda</strong>, ou seja, onde $f''$ muda de sinal. Isso acontece em $x=0$. A ordenada é $$f(0)=(0-2)\\,e^{0}=-2.$$ O ponto de inflexão é $(0,\\,-2)$.",
+       "texto": "Um ponto de inflexão é onde a concavidade <strong>muda</strong>, ou seja, onde $f''$ muda de sinal. Isso acontece em ${x=0}$. A ordenada é $$f(0)=(0-2)\\,e^{0}=-2.$$ O ponto de inflexão é $(0,\\,-2)$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1348,7 +1484,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          },
          {
           "x": 1,
@@ -1366,7 +1503,12 @@
       }
      ],
      "resposta": "O gráfico de $f$ tem a concavidade voltada para baixo em $]{-}\\infty,0[$ e voltada para cima em $]0,+\\infty[$. O ponto $(0,\\,-2)$ é o único ponto de inflexão.",
-     "erroComum": "Dizer que há ponto de inflexão só porque $f''(x)=0$. Tem de haver mudança de sinal de $f''$, isto é, mudança de concavidade."
+     "erroComum": "Dizer que há ponto de inflexão só porque ${f''(x)=0}$. Tem de haver mudança de sinal de $f''$, isto é, mudança de concavidade.",
+     "verifica": [
+      "ig(der(lambda s: (s-1)*exp(s), t), t*exp(t))",
+      "((t*exp(t)) < 0) == (t < 0)",
+      "ig((0-2)*exp(0), -2)"
+     ]
     },
     {
      "id": "d",
@@ -1374,7 +1516,7 @@
      "passos": [
       {
        "titulo": "Marcar os elementos",
-       "texto": "Junta tudo o que descobriste e marca no sistema de eixos:<br>o zero $(2,0)$; a assíntota horizontal $y=0$ (do lado esquerdo); o mínimo $(1,-e)$, com $-e\\approx-2{,}72$; o ponto de inflexão $(0,-2)$.<br>Estes elementos são o esqueleto do gráfico.",
+       "texto": "Junta tudo o que descobriste e marca no sistema de eixos:<br>o zero $(2,0)$; a assíntota horizontal ${y=0}$ (do lado esquerdo); o mínimo $(1,-e)$, com ${-e\\approx-2{,}72}$; o ponto de inflexão $(0,-2)$.<br>Estes elementos são o esqueleto do gráfico.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1402,7 +1544,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          },
          {
           "x": 1,
@@ -1420,11 +1563,11 @@
       },
       {
        "titulo": "Desenhar a curva",
-       "texto": "Segue a curva da esquerda para a direita.<br>Para $x$ muito negativo o gráfico fica logo abaixo do eixo $Ox$ ($f<0$) e cola-se a ele, por causa da assíntota $y=0$. Desce, com a concavidade para baixo, até ao ponto de inflexão $(0,-2)$, onde a concavidade passa a ser para cima.<br>Continua a descer até ao mínimo $(1,-e)$ e depois sobe: corta o eixo $Ox$ em $x=2$ e cresce sem limite."
+       "texto": "Segue a curva da esquerda para a direita.<br>Para $x$ muito negativo o gráfico fica logo abaixo do eixo $Ox$ ($f<0$) e cola-se a ele, por causa da assíntota ${y=0}$. Desce, com a concavidade para baixo, até ao ponto de inflexão $(0,-2)$, onde a concavidade passa a ser para cima.<br>Continua a descer até ao mínimo $(1,-e)$ e depois sobe: corta o eixo $Ox$ em ${x=2}$ e cresce sem limite."
       },
       {
        "titulo": "Ler o contradomínio",
-       "texto": "O contradomínio são todos os valores que $f$ toma.<br>Em $]{-}\\infty,1]$ a função é contínua e decrescente: começa perto de $0$ (com valores negativos que se aproximam de $0$ sem lá chegar) e desce até $f(1)=-e$. Toma os valores de $[-e,0[$.<br>Em $[1,+\\infty[$ é contínua e crescente: vai de $-e$ até $+\\infty$ e toma os valores de $[-e,+\\infty[$.<br>Juntando as duas partes, o contradomínio é $[-e,+\\infty[$. O valor $-e$ está incluído porque é atingido, em $x=1$, e é o mínimo absoluto. Não há máximo, porque $f(x)\\to+\\infty$.",
+       "texto": "O contradomínio são todos os valores que $f$ toma.<br>Em $]{-}\\infty,1]$ a função é contínua e decrescente: começa perto de $0$ (com valores negativos que se aproximam de $0$ sem lá chegar) e desce até ${f(1)=-e}$. Toma os valores de $[-e,0[$.<br>Em $[1,+\\infty[$ é contínua e crescente: vai de $-e$ até $+\\infty$ e toma os valores de $[-e,+\\infty[$.<br>Juntando as duas partes, o contradomínio é $[-e,+\\infty[$. O valor $-e$ está incluído porque é atingido, em ${x=1}$, e é o mínimo absoluto. Não há máximo, porque $f(x)\\to+\\infty$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1456,7 +1599,8 @@
         "pontos": [
          {
           "x": 2,
-          "y": 0
+          "y": 0,
+          "rotulo": "(2, 0)"
          },
          {
           "x": 1,
@@ -1473,10 +1617,20 @@
        }
       }
      ],
-     "resposta": "O contradomínio de $f$ é $D'_f=[-e,+\\infty[$.",
-     "erroComum": "Escrever o contradomínio com o intervalo aberto em $-e$, isto é, $]{-}e,+\\infty[$. O valor $-e$ pertence ao contradomínio porque é atingido, em $x=1$."
+     "resposta": "O contradomínio de $f$ é ${D'_f=[-e,+\\infty[}$.",
+     "erroComum": "Escrever o contradomínio com o intervalo aberto em $-e$, isto é, $]{-}e,+\\infty[$. O valor $-e$ pertence ao contradomínio porque é atingido, em ${x=1}$.",
+     "verifica": [
+      "ig(valmin(lambda s: (s-2)*exp(s), -30, 10), -e)",
+      "all(((s-2)*exp(s) < 0) for s in range(-30, 2))",
+      "(t-2)*exp(t) >= -e",
+      "ig(round(e, 2), 2.72)"
+     ],
+     "intervalo": "[valmin(lambda s: (s-2)*exp(s), -30, 10), inf]"
     }
-   ]
+   ],
+   "funcoes": {
+    "f": "(x-2)*exp(x)"
+   }
   },
   {
    "id": "ex-07",
@@ -1502,7 +1656,7 @@
      "passos": [
       {
        "titulo": "Domínio da função",
-       "texto": "Uma fração só existe se o denominador for diferente de $0$. Resolve $e^{x}-1=0$: $$\\begin{aligned}e^{x}-1&=0\\\\ \\Leftrightarrow\\;e^{x}&=1\\\\ \\Leftrightarrow\\;e^{x}&=e^{0}\\\\ \\Leftrightarrow\\;x&=0.\\end{aligned}$$ Logo $D_f=\\mathbb{R}\\setminus\\{0\\}$.",
+       "texto": "Uma fração só existe se o denominador for diferente de $0$. Resolve ${e^{x}-1=0}$: $$\\begin{aligned}e^{x}-1&=0\\\\ \\Leftrightarrow\\;e^{x}&=1\\\\ \\Leftrightarrow\\;e^{x}&=e^{0}\\\\ \\Leftrightarrow\\;x&=0.\\end{aligned}$$ Logo ${D_f=\\mathbb{R}\\setminus\\{0\\}}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1517,7 +1671,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "legenda": "Gráfico de f(x) = (x−1)/(e^x − 1), definida para x diferente de 0."
@@ -1525,7 +1680,7 @@
       },
       {
        "titulo": "Onde procurar",
-       "texto": "$f$ é contínua em $D_f$, porque é o quociente de duas funções contínuas. Por isso só pode haver assíntota vertical num ponto que fique fora do domínio mas encostado a ele: aqui, $x=0$. Para decidir, calculam-se os limites laterais nesse ponto."
+       "texto": "$f$ é contínua em $D_f$, porque é o quociente de duas funções contínuas. Por isso só pode haver assíntota vertical num ponto que fique fora do domínio mas encostado a ele: aqui, ${x=0}$. Para decidir, calculam-se os limites laterais nesse ponto."
       },
       {
        "titulo": "Limite à direita de 0",
@@ -1537,7 +1692,7 @@
       },
       {
        "titulo": "Conclusão sobre x = 0",
-       "texto": "Basta um dos limites laterais ser infinito para a reta $x=0$ ser assíntota vertical. Aqui são os dois. Como $f$ é contínua em $D_f$, não há mais nenhuma assíntota vertical.",
+       "texto": "Basta um dos limites laterais ser infinito para a reta ${x=0}$ ser assíntota vertical. Aqui são os dois. Como $f$ é contínua em $D_f$, não há mais nenhuma assíntota vertical.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1552,7 +1707,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "retasV": [
@@ -1565,8 +1721,13 @@
        }
       }
      ],
-     "resposta": "$D_f=\\mathbb{R}\\setminus\\{0\\}$ e a reta $x=0$ é a única assíntota vertical do gráfico de $f$.",
-     "erroComum": "Escrever $\\frac{-1}{0}=-\\infty$ sem ver o sinal do zero: tens de decidir se o denominador tende para $0^{+}$ ou para $0^{-}$."
+     "resposta": "${D_f=\\mathbb{R}\\setminus\\{0\\}}$ e a reta ${x=0}$ é a única assíntota vertical do gráfico de $f$.",
+     "erroComum": "Escrever ${\\frac{-1}{0}=-\\infty}$ sem ver o sinal do zero: tens de decidir se o denominador tende para $0^{+}$ ou para $0^{-}$.",
+     "verifica": [
+      "ig(exp(0)-1, 0)",
+      "limd(lambda s: (s-1)/(exp(s)-1), 0) < -100000 and lime(lambda s: (s-1)/(exp(s)-1), 0) > 100000",
+      "(exp(t)-1 != 0) == (t != 0)"
+     ]
     },
     {
      "id": "b",
@@ -1589,7 +1750,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "retasV": [
@@ -1607,7 +1769,7 @@
       },
       {
        "titulo": "Conclusão sobre y = 0",
-       "texto": "O limite é $0$, que é um número real: a reta $y=0$ é assíntota horizontal quando $x\\to+\\infty$. Como já há assíntota horizontal neste sentido, não há oblíqua (o gráfico não se aproxima de duas retas ao mesmo tempo), e não é preciso calcular $m$.",
+       "texto": "O limite é $0$, que é um número real: a reta ${y=0}$ é assíntota horizontal quando $x\\to+\\infty$. Como já há assíntota horizontal neste sentido, não há oblíqua (o gráfico não se aproxima de duas retas ao mesmo tempo), e não é preciso calcular $m$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1622,7 +1784,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "retasV": [
@@ -1642,8 +1805,12 @@
        }
       }
      ],
-     "resposta": "Quando $x\\to+\\infty$, a reta $y=0$ é assíntota horizontal do gráfico de $f$ (e não há assíntota oblíqua nesse sentido).",
-     "erroComum": "Calcular logo $m$ e $b$ sem ver primeiro se existe assíntota horizontal. Se $\\lim f(x)$ é um número real, esse sentido fica resolvido."
+     "resposta": "Quando $x\\to+\\infty$, a reta ${y=0}$ é assíntota horizontal do gráfico de $f$ (e não há assíntota oblíqua nesse sentido).",
+     "erroComum": "Calcular logo $m$ e $b$ sem ver primeiro se existe assíntota horizontal. Se $\\lim f(x)$ é um número real, esse sentido fica resolvido.",
+     "verifica": [
+      "abs((100-1)/(exp(100)-1)) < 1e-9",
+      "ig((t-1)/(exp(t)-1), (t/exp(t)-1/exp(t))/(1-1/exp(t)))"
+     ]
     },
     {
      "id": "c",
@@ -1651,7 +1818,7 @@
      "passos": [
       {
        "titulo": "Há horizontal?",
-       "texto": "Quando $x\\to-\\infty$, $e^{x}\\to0$, por isso o denominador $e^{x}-1\\to-1$. $$\\lim_{x\\to-\\infty}f(x)=\\frac{-\\infty}{-1}=+\\infty.$$ Não é um número real, logo não há assíntota horizontal deste lado. Passa à oblíqua, $y=mx+b$.",
+       "texto": "Quando $x\\to-\\infty$, $e^{x}\\to0$, por isso o denominador $e^{x}-1\\to-1$. $$\\lim_{x\\to-\\infty}f(x)=\\frac{-\\infty}{-1}=+\\infty.$$ Não é um número real, logo não há assíntota horizontal deste lado. Passa à oblíqua, ${y=mx+b}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1666,7 +1833,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "retasV": [
@@ -1687,19 +1855,19 @@
       },
       {
        "titulo": "Calcular m",
-       "texto": "O declive é $m=\\lim_{x\\to-\\infty}\\frac{f(x)}{x}$. Separa $\\frac{x-1}{x\\,(e^{x}-1)}$ em duas frações e usa $\\frac{x-1}{x}=1-\\frac{1}{x}\\to1$: $$\\begin{aligned}&m=\\lim_{x\\to-\\infty}\\frac{x-1}{x\\,(e^{x}-1)}\\\\ &=\\lim_{x\\to-\\infty}\\left(1-\\frac{1}{x}\\right)\\times\\frac{1}{e^{x}-1}\\\\ &=1\\times\\frac{1}{0-1}=-1.\\end{aligned}$$ Como $m\\in\\mathbb{R}$, continua."
+       "texto": "O declive é $m=\\lim_{x\\to-\\infty}\\frac{f(x)}{x}$. Separa $\\frac{x-1}{x\\,(e^{x}-1)}$ em duas frações e usa ${\\frac{x-1}{x}=1-\\frac{1}{x}\\to1}$: $$\\begin{aligned}&m=\\lim_{x\\to-\\infty}\\frac{x-1}{x\\,(e^{x}-1)}\\\\ &=\\lim_{x\\to-\\infty}\\left(1-\\frac{1}{x}\\right)\\times\\frac{1}{e^{x}-1}\\\\ &=1\\times\\frac{1}{0-1}=-1.\\end{aligned}$$ Como $m\\in\\mathbb{R}$, continua."
       },
       {
        "titulo": "Calcular b",
        "texto": "A ordenada na origem é $b=\\lim_{x\\to-\\infty}\\big(f(x)-mx\\big)=\\lim_{x\\to-\\infty}\\big(f(x)+x\\big)$. Reduz ao mesmo denominador: $$\\begin{aligned}&f(x)+x=\\frac{x-1}{e^{x}-1}+x\\\\ &=\\frac{x-1+x\\,(e^{x}-1)}{e^{x}-1}\\\\ &=\\frac{x-1+x\\,e^{x}-x}{e^{x}-1}\\\\ &=\\frac{x\\,e^{x}-1}{e^{x}-1}.\\end{aligned}$$"
       },
       {
-       "titulo": "Limite de x e^x",
-       "texto": "O limite $\\lim_{x\\to-\\infty}x\\,e^{x}$ é do tipo $(-\\infty)\\times0$, outra indeterminação. Muda de variável: $y=-x$, com $y\\to+\\infty$. $$\\begin{aligned}\\lim_{x\\to-\\infty}x\\,e^{x}&=\\lim_{y\\to+\\infty}(-y)\\,e^{-y}\\\\ &=-\\lim_{y\\to+\\infty}\\frac{y}{e^{y}}=0.\\end{aligned}$$ Então $$b=\\frac{0-1}{0-1}=1.$$"
+       "titulo": "Limite de $x\\,e^{x}$",
+       "texto": "O limite $\\lim_{x\\to-\\infty}x\\,e^{x}$ é do tipo $(-\\infty)\\times0$, outra indeterminação. Muda de variável: ${t=-x}$, com $t\\to+\\infty$. $$\\begin{aligned}\\lim_{x\\to-\\infty}x\\,e^{x}&=\\lim_{t\\to+\\infty}(-t)\\,e^{-t}\\\\ &=-\\lim_{t\\to+\\infty}\\frac{t}{e^{t}}=0.\\end{aligned}$$ Então $$b=\\frac{0-1}{0-1}=1.$$"
       },
       {
        "titulo": "Conclusão sobre a oblíqua",
-       "texto": "Com $m=-1$ e $b=1$, a reta $y=-x+1$ é assíntota oblíqua do gráfico de $f$ quando $x\\to-\\infty$. No gráfico, a curva aproxima-se desta reta à esquerda.",
+       "texto": "Com ${m=-1}$ e ${b=1}$, a reta ${y=-x+1}$ é assíntota oblíqua do gráfico de $f$ quando $x\\to-\\infty$. No gráfico, a curva aproxima-se desta reta à esquerda.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1714,7 +1882,8 @@
          {
           "expr": "(x-1)/(exp(x)-1)",
           "rotulo": "f",
-          "cor": "exp"
+          "cor": "exp",
+          "posRotulo": "inicio"
          }
         ],
         "retas": [
@@ -1743,10 +1912,18 @@
        }
       }
      ],
-     "resposta": "Quando $x\\to-\\infty$, a reta $y=-x+1$ é assíntota oblíqua do gráfico de $f$ (não há assíntota horizontal nesse sentido).",
-     "erroComum": "Dar $(-\\infty)\\times0=0$ no limite de $x\\,e^{x}$. É uma indeterminação: levanta-a com a mudança de variável."
+     "resposta": "Quando $x\\to-\\infty$, a reta ${y=-x+1}$ é assíntota oblíqua do gráfico de $f$ (não há assíntota horizontal nesse sentido).",
+     "erroComum": "Dar ${(-\\infty)\\times0=0}$ no limite de $x\\,e^{x}$. É uma indeterminação: levanta-a com a mudança de variável.",
+     "verifica": [
+      "ig(lim(lambda s: (s-1)/(s*(exp(s)-1)), -inf), -1)",
+      "ig(lim(lambda s: (s-1)/(exp(s)-1)+s, -inf), 1)",
+      "ig((t-1)/(exp(t)-1)+t, (t*exp(t)-1)/(exp(t)-1))"
+     ]
     }
-   ]
+   ],
+   "funcoes": {
+    "f": "(x-1)/(exp(x)-1)"
+   }
   },
   {
    "id": "ex-08",
@@ -1771,7 +1948,7 @@
      "passos": [
       {
        "titulo": "Valor inicial",
-       "texto": "O instante em que o chá foi servido é $t=0$. $$\\begin{aligned}T(0)&=20+70\\,e^{-0{,}08\\times0}\\\\ &=20+70\\,e^{0}\\\\ &=20+70\\times1=90.\\end{aligned}$$ Usaste $e^{0}=1$. O chá foi servido a $90\\,^{\\circ}\\mathrm{C}$.",
+       "texto": "O instante em que o chá foi servido é ${t=0}$. $$\\begin{aligned}T(0)&=20+70\\,e^{-0{,}08\\times0}\\\\ &=20+70\\,e^{0}\\\\ &=20+70\\times1=90.\\end{aligned}$$ Usaste ${e^{0}=1}$. O chá foi servido a $90\\,^{\\circ}\\mathrm{C}$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1784,7 +1961,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -1803,7 +1981,7 @@
       },
       {
        "titulo": "Comportamento a longo prazo",
-       "texto": "«Com o passar do tempo» quer dizer $t\\to+\\infty$. O expoente $-0{,}08\\,t$ tende para $-\\infty$, e $e^{-\\infty}=0$ (a exponencial de um número muito negativo é quase $0$): $$\\begin{aligned}\\lim_{t\\to+\\infty}T(t)&=20+70\\times0\\\\ &=20.\\end{aligned}$$",
+       "texto": "«Com o passar do tempo» quer dizer $t\\to+\\infty$. O expoente $-0{,}08\\,t$ tende para $-\\infty$, e ${e^{-\\infty}=0}$ (a exponencial de um número muito negativo é quase $0$): $$\\begin{aligned}\\lim_{t\\to+\\infty}T(t)&=20+70\\times0\\\\ &=20.\\end{aligned}$$",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1816,7 +1994,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -1824,7 +2003,7 @@
         "retasH": [
          {
           "y": 20,
-          "rotulo": "y = 20",
+          "rotulo": "T = 20",
           "posRotulo": "esq"
          }
         ],
@@ -1837,16 +2016,21 @@
         ],
         "rotuloX": "t (min)",
         "rotuloY": "T (°C)",
-        "legenda": "Gráfico de T(t) = 20 + 70 e^(−0,08 t), com t em minutos. Está marcado o ponto (0, 90) e a assíntota horizontal y = 20."
+        "legenda": "Gráfico de T(t) = 20 + 70 e^(−0,08 t), com t em minutos. Está marcado o ponto (0, 90) e a assíntota horizontal T = 20."
        }
       },
       {
        "titulo": "Interpretar no contexto",
-       "texto": "A reta $y=20$ é assíntota horizontal do gráfico de $T$. No contexto: o chá arrefece e a sua temperatura aproxima-se de $20\\,^{\\circ}\\mathrm{C}$, a temperatura da sala. Como $70\\,e^{-0{,}08\\,t}>0$ para todo o $t$, tem-se $T(t)>20$ sempre: segundo o modelo, o chá aproxima-se da temperatura da sala mas nunca fica mais frio do que ela."
+       "texto": "A reta ${T=20}$ é assíntota horizontal do gráfico de $T$. No contexto: o chá arrefece e a sua temperatura aproxima-se de $20\\,^{\\circ}\\mathrm{C}$, a temperatura da sala. Como $70\\,e^{-0{,}08\\,t}>0$ para todo o $t$, tem-se $T(t)>20$ sempre: segundo o modelo, o chá aproxima-se da temperatura da sala mas nunca fica mais frio do que ela."
       }
      ],
      "resposta": "O chá foi servido a $90\\,^{\\circ}\\mathrm{C}$. Com o passar do tempo a sua temperatura tende para $20\\,^{\\circ}\\mathrm{C}$, a temperatura da sala, sem nunca ficar abaixo dela.",
-     "erroComum": "Dizer que o chá chega a $20\\,^{\\circ}\\mathrm{C}$. A exponencial nunca vale $0$, por isso, segundo o modelo, a temperatura aproxima-se de $20$ mas não chega lá."
+     "erroComum": "Dizer que o chá chega a $20\\,^{\\circ}\\mathrm{C}$. A exponencial nunca vale $0$, por isso, segundo o modelo, a temperatura aproxima-se de $20$ mas não chega lá.",
+     "verifica": [
+      "ig(20+70*exp(-0.08*0), 90)",
+      "ig(lim(lambda s: 20+70*exp(-0.08*s), inf), 20)",
+      "20+70*exp(-0.08*abs(t)) > 20"
+     ]
     },
     {
      "id": "b",
@@ -1855,7 +2039,7 @@
      "passos": [
       {
        "titulo": "Escrever a equação",
-       "texto": "Queres o instante $t$ em que $T(t)=50$: $$20+70\\,e^{-0{,}08\\,t}=50.$$",
+       "texto": "Queres o instante $t$ em que ${T(t)=50}$: $$20+70\\,e^{-0{,}08\\,t}=50.$$",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1868,7 +2052,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -1876,17 +2061,17 @@
         "retasH": [
          {
           "y": 20,
-          "rotulo": "y = 20",
+          "rotulo": "T = 20",
           "posRotulo": "esq"
          },
          {
           "y": 50,
-          "rotulo": "y = 50"
+          "rotulo": "T = 50"
          }
         ],
         "rotuloX": "t (min)",
         "rotuloY": "T (°C)",
-        "legenda": "Gráfico de T(t) = 20 + 70 e^(−0,08 t), com t em minutos. Estão marcadas a assíntota y = 20 e a reta y = 50."
+        "legenda": "Gráfico de T(t) = 20 + 70 e^(−0,08 t), com t em minutos. Estão marcadas a assíntota T = 20 e a reta T = 50."
        }
       },
       {
@@ -1899,11 +2084,11 @@
       },
       {
        "titulo": "Resolver em ordem a t",
-       "texto": "Divide por $-0{,}08$. Como $\\ln\\frac{3}{7}=-\\ln\\frac{7}{3}$, o sinal de menos desaparece: $$t=\\frac{\\ln\\frac{3}{7}}{-0{,}08}=\\frac{\\ln\\frac{7}{3}}{0{,}08}\\approx10{,}59.$$ Calcula tudo na calculadora, sem arredondar $\\ln\\frac{7}{3}$ antes. Só se arredonda o resultado final: $t\\approx10{,}6$."
+       "texto": "Divide por $-0{,}08$. Como ${\\ln\\frac{3}{7}=-\\ln\\frac{7}{3}}$, o sinal de menos desaparece: $$t=\\frac{\\ln\\frac{3}{7}}{-0{,}08}=\\frac{\\ln\\frac{7}{3}}{0{,}08}\\approx10{,}59.$$ Calcula tudo na calculadora, sem arredondar $\\ln\\frac{7}{3}$ antes. Só se arredonda o resultado final: ${t\\approx10{,}6}$."
       },
       {
        "titulo": "Interpretar e conferir",
-       "texto": "O chá está a $50\\,^{\\circ}\\mathrm{C}$ passados cerca de $10{,}6$ minutos, ou seja, uns $10$ minutos e $35$ segundos ($0{,}59\\times60\\approx35$). Confirma: $e^{-0{,}08\\times10{,}59}\\approx0{,}4286\\approx\\frac{3}{7}$, como devia ser.",
+       "texto": "O chá está a $50\\,^{\\circ}\\mathrm{C}$ passados cerca de $10{,}6$ minutos, ou seja, uns $10$ minutos e $35$ segundos (${0{,}59\\times60\\approx35}$). Confirma: $e^{-0{,}08\\times10{,}59}\\approx0{,}4286\\approx\\frac{3}{7}$, como devia ser.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1916,7 +2101,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -1924,12 +2110,12 @@
         "retasH": [
          {
           "y": 20,
-          "rotulo": "y = 20",
+          "rotulo": "T = 20",
           "posRotulo": "esq"
          },
          {
           "y": 50,
-          "rotulo": "y = 50"
+          "rotulo": "T = 50"
          }
         ],
         "pontos": [
@@ -1946,16 +2132,22 @@
       }
      ],
      "resposta": "O chá está a $50\\,^{\\circ}\\mathrm{C}$ passados, aproximadamente, $10{,}6$ minutos.",
-     "erroComum": "Arredondar cedo demais: com $\\ln\\frac{7}{3}\\approx0{,}8$ obtinhas $t=10$ em vez de $10{,}6$. Arredonda só no fim.<br>Aplicar o logaritmo a cada parcela de $20+70\\,e^{-0{,}08\\,t}$: $\\ln(a+b)$ não é $\\ln a+\\ln b$."
+     "erroComum": "Arredondar cedo demais: com ${\\ln\\frac{7}{3}\\approx0{,}8}$ obtinhas ${t=10}$ em vez de $10{,}6$. Arredonda só no fim.<br>Aplicar o logaritmo a cada parcela de $20+70\\,e^{-0{,}08\\,t}$: $\\ln(a+b)$ não é $\\ln a+\\ln b$.",
+     "verifica": [
+      "igl(raizes(lambda s: 20+70*exp(-0.08*s)-50, 0, 100), [ln(7/3)/0.08])",
+      "ig(round(ln(7/3)/0.08, 1), 10.6) and ig(round(ln(7/3)/0.08, 2), 10.59)",
+      "ig(round(ln(7/3), 1), 0.8) and ig(0.8/0.08, 10)",
+      "ig(round(exp(-0.08*10.59), 4), 0.4286) and ig(round(0.59*60), 35) and ig(round(ln(7/3)/0.08-10, 2), 0.59)"
+     ]
     },
     {
      "id": "c",
-     "enunciado": "Determina a taxa de variação instantânea da temperatura no instante $t=10$ e interpreta o resultado no contexto do problema. Arredonda às centésimas.",
+     "enunciado": "Determina a taxa de variação instantânea da temperatura no instante ${t=10}$ e interpreta o resultado no contexto do problema. Arredonda às centésimas.",
      "dica": "A taxa de variação instantânea num instante é o valor da derivada nesse instante.",
      "passos": [
       {
        "titulo": "O que se pede",
-       "texto": "A taxa de variação instantânea de $T$ no instante $t=10$ é a derivada $T'(10)$. Por isso começas por derivar $T$.",
+       "texto": "A taxa de variação instantânea de $T$ no instante ${t=10}$ é a derivada $T'(10)$. Por isso começas por derivar $T$.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -1968,7 +2160,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -1976,7 +2169,7 @@
         "retasH": [
          {
           "y": 20,
-          "rotulo": "y = 20",
+          "rotulo": "T = 20",
           "posRotulo": "esq"
          }
         ],
@@ -1994,11 +2187,11 @@
       },
       {
        "titulo": "Derivar T",
-       "texto": "$T(t)=20+70\\,e^{-0{,}08\\,t}$. A derivada de $20$ é $0$. Em $70\\,e^{-0{,}08\\,t}$ usa $(e^{w})'=w'\\,e^{w}$ com $w=-0{,}08\\,t$, logo $w'=-0{,}08$: $$\\begin{aligned}T'(t)&=70\\times(-0{,}08)\\,e^{-0{,}08\\,t}\\\\ &=-5{,}6\\,e^{-0{,}08\\,t}.\\end{aligned}$$"
+       "texto": "${T(t)=20+70\\,e^{-0{,}08\\,t}}$. A derivada de $20$ é $0$. Em $70\\,e^{-0{,}08\\,t}$ usa ${(e^{w})'=w'\\,e^{w}}$ com ${w=-0{,}08\\,t}$, logo ${w'=-0{,}08}$: $$\\begin{aligned}T'(t)&=70\\times(-0{,}08)\\,e^{-0{,}08\\,t}\\\\ &=-5{,}6\\,e^{-0{,}08\\,t}.\\end{aligned}$$"
       },
       {
        "titulo": "Calcular em t = 10",
-       "texto": "Substitui $t=10$: $$\\begin{aligned}T'(10)&=-5{,}6\\,e^{-0{,}08\\times10}\\\\ &=-5{,}6\\,e^{-0{,}8}\\\\ &\\approx-2{,}52.\\end{aligned}$$"
+       "texto": "Substitui ${t=10}$: $$\\begin{aligned}T'(10)&=-5{,}6\\,e^{-0{,}08\\times10}\\\\ &=-5{,}6\\,e^{-0{,}8}\\\\ &\\approx-2{,}52.\\end{aligned}$$"
       },
       {
        "titulo": "Dar as unidades",
@@ -2006,7 +2199,7 @@
       },
       {
        "titulo": "Interpretar o resultado",
-       "texto": "O sinal negativo diz que a temperatura está a descer. Ao fim de $10$ minutos, o chá está a arrefecer a um ritmo de cerca de $2{,}52$ graus Celsius por minuto. Geometricamente, $-2{,}52$ é o declive da tangente ao gráfico nesse instante. No início, $T'(0)=-5{,}6$: arrefecia mais depressa, e o arrefecimento vai abrandar com o tempo.",
+       "texto": "O sinal negativo diz que a temperatura está a descer. Ao fim de $10$ minutos, o chá está a arrefecer a um ritmo de cerca de $2{,}52$ graus Celsius por minuto. Geometricamente, $-2{,}52$ é o declive da tangente ao gráfico nesse instante. No início, ${T'(0)=-5{,}6}$: arrefecia mais depressa, e o arrefecimento vai abrandar com o tempo.",
        "figura": {
         "tipo": "grafico",
         "x": [
@@ -2019,7 +2212,8 @@
         ],
         "curvas": [
          {
-          "expr": "20+70*exp(-0.08*x)+0*sqrt(x)",
+          "expr": "20+70*exp(-0.08*x)",
+          "de": 0,
           "rotulo": "T",
           "cor": "exp"
          }
@@ -2035,7 +2229,7 @@
         "retasH": [
          {
           "y": 20,
-          "rotulo": "y = 20",
+          "rotulo": "T = 20",
           "posRotulo": "esq"
          }
         ],
@@ -2053,9 +2247,16 @@
       }
      ],
      "resposta": "$T'(10)\\approx-2{,}52\\,^{\\circ}\\mathrm{C}/\\text{min}$: ao fim de $10$ minutos, a temperatura do chá está a diminuir cerca de $2{,}52$ graus Celsius por minuto.",
-     "erroComum": "Esquecer o sinal de menos do $-0{,}08$ ao derivar, ou dar a taxa de variação sem unidades."
+     "erroComum": "Esquecer o sinal de menos do $-0{,}08$ ao derivar, ou dar a taxa de variação sem unidades.",
+     "verifica": [
+      "ig(der(lambda s: 20+70*exp(-0.08*s), t), -5.6*exp(-0.08*t))",
+      "ig(round(-5.6*exp(-0.08*10), 2), -2.52) and ig(70*(-0.08), -5.6) and ig(0.08*10, 0.8)"
+     ]
     }
-   ]
+   ],
+   "funcoes": {
+    "T": "20+70*exp(-0.08*x)"
+   }
   }
  ]
 }

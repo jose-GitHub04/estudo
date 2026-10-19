@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes das páginas de Probabilidades</title>
+<!-- Páginas reais de probabilidades/ e a página inicial da raiz, carregadas num <iframe> a 390 px e a 900 px:
+     arranque sem erros, menu e ligações, e a auditoria de layout de base.js (scroll horizontal, alvos de toque,
+     contraste, etiquetas de SVG, nomes acessíveis, regras de texto).
+     Abrir /probabilidades/tests/paginas.html ou, sem janela:
+       msedge --headless=new --virtual-time-budget=120000 --dump-dom http://127.0.0.1:8830/probabilidades/tests/paginas.html
+     O resultado fica no elemento com id resultado e em data-testes (ok ou falhou) no elemento html. -->
+<style>
+  body { margin: 0; font: 13px/1.4 monospace; }
+  #resultado { margin: 0; padding: 0.5rem 1rem; white-space: pre-wrap; }
+  #palco { opacity: 0.6; }
+</style>
+</head>
+<body>
+<pre id="resultado">A correr...</pre>
+<div id="palco"></div>
+<script type="module">
+import { criarTestes, carregarPagina, auditar, aplicarAuditoria, texto } from './base.js';
+
+const t = criarTestes('páginas');
+const PAGINAS = [
+  { f: 'index.html', pagina: 'inicio', titulo: 'Probabilidades · Mat100limites', h1: 'Probabilidades' },
+  { f: 'materia.html', pagina: 'materia', titulo: 'Matéria · Probabilidades · Mat100limites', h1: 'Matéria' },
+  { f: 'exercicios.html', pagina: 'exercicios', titulo: 'Exercícios · Probabilidades · Mat100limites', h1: 'Exercícios' },
+  { f: 'verdadeiro-falso.html', pagina: 'vf', titulo: 'Verdadeiro ou falso · Probabilidades · Mat100limites', h1: 'Verdadeiro ou falso' },
+];
+const MENU = ['materia.html', 'exercicios.html', 'verdadeiro-falso.html'];
+
+async function existe(url) {
+  try { return (await fetch(url, { method: 'GET' })).ok; } catch { return false; }
+}
+
+for (const { f, titulo, h1 } of PAGINAS) {
+  for (const largura of [390, 900]) {
+    await t.teste(`${f} a ${largura} px: arranque, estrutura e auditoria`, async (ok) => {
+      const p = await carregarPagina(`../${f}`, largura);
+      try {
+        ok(p.pronto, 'data-pronto="sim" não apareceu');
+        ok(p.doc.documentElement.lang === 'pt-PT', 'lang não é pt-PT');
+        ok(p.doc.title === titulo, `título «${p.doc.title}»`);
+        ok(texto(p.q('h1')) === h1, `h1 «${texto(p.q('h1'))}»`);
+        ok(p.erros.length === 0, `erros na consola: ${p.erros.join(' | ')}`);
+        const externos = p.win.performance.getEntriesByType('resource').map((r) => r.name).filter((u) => new URL(u).origin !== location.origin);
+        ok(externos.length === 0, `pedidos a outros sítios: ${externos.join(' ')}`);
+        ok(p.win.performance.getEntriesByType('resource').length > 2, 'a página não carregou recursos?');
+        ok(p.qa('.aviso-erro').length === 0, `.aviso-erro: ${p.qa('.aviso-erro').map(texto).join(' | ')}`);
+        ok(p.qa('.katex-error').length === 0, '.katex-error presente');
+        const sobra = /\$[^$\s][^$]*\$/.exec(texto(p.q('main')));
+        ok(!sobra, `fórmula por renderizar: ${sobra ? sobra[0].slice(0, 40) : ''}`);
+        const menu = p.qa('.menu a');
+        ok(menu.map((a) => a.getAttribute('href')).join() === MENU.join(), `menu: ${menu.map((a) => a.getAttribute('href')).join()}`);
+        const atual = p.qa('.menu a[aria-current="page"], .marca[aria-current="page"]');
+        ok(atual.length === 1, `aria-current: ${atual.length} itens`);
+        ok(p.q('.barra__temas').getAttribute('href') === '../', 'botão «Todos os temas» não aponta para ../');
+        ok(texto(p.q('.barra__temas')).includes('Todos os temas'), 'botão «Todos os temas» sem texto');
+        ok(p.q('.marca').getAttribute('href') === 'index.html', 'a marca não aponta para index.html');
+        const logo = p.q('img.marca__logo');
+        ok(!!logo && logo.complete && logo.naturalWidth > 0, 'logótipo não carregou');
+        ok(!!p.q('a.saltar[href="#conteudo"]') && !!p.q('#conteudo'), 'ligação «Saltar para o conteúdo» sem destino');
+        for (const a of p.qa('.indice a[href^="#"]')) ok(!!p.q(a.getAttribute('href')), `âncora ${a.getAttribute('href')} sem destino`);
+        aplicarAuditoria(auditar(p.doc, { nome: `${f}@${largura}`, largura }), ok, t);
+      } finally { p.fechar(); }
+    });
+  }
+}
+
+// 360 px é a largura de muitos telemóveis Android; o tema foi desenhado a 390, por isso aqui só se avisa
+await t.teste('as quatro páginas a 360 px (aviso, não falha): scroll horizontal e conteúdo cortado', async (ok) => {
+  for (const { f } of PAGINAS) {
+    const p = await carregarPagina(`../${f}`, 360);
+    try {
+      const r = auditar(p.doc, { nome: `${f}@360`, largura: 360 });
+      for (const e of r.erros.filter((x) => /scroll horizontal|sai do ecrã|cortad|sobrepostas/.test(x))) t.avisos.push(e);
+    } finally { p.fechar(); }
+  }
+  ok(true, '');
+});
+
+await t.teste('ligações do menu, de «Todos os temas» e do início respondem', async (ok) => {
+  for (const f of MENU) ok(await existe(`../${f}`), `${f} não responde`);
+  ok(await existe('../index.html'), 'index.html não responde');
+  ok(await existe('../../index.html'), 'index.html da raiz não responde');
+  const p = await carregarPagina('../index.html', 390);
+  try {
+    const d = p.qa('#destinos a.destino');
+    ok(d.length === 3, `${d.length} destinos no início (esperava 3)`);
+    ok(d.map((a) => a.getAttribute('href')).join() === MENU.join(), 'os destinos do início não são os do menu');
+    for (const a of d) {
+      ok(texto(a.querySelector('.destino__titulo')) !== '' && texto(a.querySelector('.destino__resumo')) !== '', 'destino sem título ou resumo');
+    }
+    const intro = texto(p.q('.seccao__intro'));
+    ok(!/para já há/i.test(intro), `o início ainda diz que há poucas partes: «${intro}»`);
+  } finally { p.fechar(); }
+});
+
+for (const largura of [390, 900]) {
+  await t.teste(`index.html da raiz a ${largura} px: três temas, ligações e auditoria`, async (ok) => {
+    const p = await carregarPagina('../../index.html', largura, 900, { esperarPronto: false });
+    try {
+      const ts = p.qa('a.tema');
+      ok(ts.length === 3, `${ts.length} temas`);
+      ok(ts.map((a) => a.getAttribute('href')).join() === 'trigonometria/,probabilidades/,logaritmos/', `ligações: ${ts.map((a) => a.getAttribute('href')).join()}`);
+      for (const a of ts) ok(await existe(`../../${a.getAttribute('href')}`), `${a.getAttribute('href')} não responde`);
+      ok(p.erros.length === 0, `erros na consola: ${p.erros.join(' | ')}`);
+      aplicarAuditoria(auditar(p.doc, { nome: `raiz@${largura}`, largura }), ok, t);
+    } finally { p.fechar(); }
+  });
+}
+
+t.fim();
+</script>
+</body>
+</html>

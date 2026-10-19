@@ -10,15 +10,38 @@
 // (por exemplo o logaritmo de um número negativo).
 // geradores.js carrega-se dentro de montar() (import dinâmico) e não no topo: se faltar ou tiver um erro,
 // só o treino mostra um aviso, e com extra.tipos (testes) nem chega a ser preciso.
+// Um gerador pode falhar com certos números sorteados: essa tentativa deita-se fora e sorteia-se outra (gerarNova).
+// Na resposta escrita, «x = 4» e «S = {4}» contam como «4» (limparResposta); listas não se aceitam.
+// Os textos passam por intervalos.js (]a,b[ com o espaçamento certo) antes de o KaTeX os ler.
 // Todo o estado vive dentro de montar(); nada fica no módulo.
 
 import * as M from '../../assets/motor/matematica.js';
 import { renderizar, tex } from '../../assets/motor/katex.js';
 import * as progresso from '../../assets/motor/progresso.js';
+import { intervalosTex, intervalosNoTexto } from './intervalos.js';
 
 const N_PERGUNTAS = 10;
 const MIN_PARA_REVER = 3;
-const AJUDA_ESCRITA = 'Escreve por exemplo 3/2, ln(2), log2(5) ou e^2. Se não existir, escreve «não existe».';
+const AJUDA_ESCRITA = 'Escreve, por exemplo, 3/2, ln(2), log2(5) ou e^2. Se não existir, escreve «não existe».';
+const AJUDA_EQUACAO = ' Numa equação, podes escrever só o valor ou «x = valor».';
+
+/** A resposta é um valor de x? (tipo exp-mesma-base, ou o enunciado fala de equação, solução ou «valor de x»; contar soluções não). */
+function pedeX(p) {
+  if (p.tipo === 'exp-mesma-base') return true;
+  const e = String(p.enunciado);
+  return !/quant/i.test(e) && /equa[çc][ãa]o|solu[çc][ãa]o|valor de \$?x/i.test(e);
+}
+
+/**
+ * Nas equações os alunos escrevem «x = 4» ou «S = {4}» em vez de «4». Tira o «x =» do princípio e, se a resposta for
+ * «S = {...}» com um só valor, tira também o «S =» e as chavetas. Listas («S = {1, 2}») ficam como estão: não se aceitam.
+ */
+export function limparResposta(texto) {
+  const t = String(texto).trim();
+  const conjunto = /^S\s*=\s*\{\s*([^{},;]+?)\s*\}$/i.exec(t);
+  if (conjunto) return conjunto[1];
+  return t.replace(/^x\s*=\s*/i, '');
+}
 
 /** O que dizer quando a resposta está certa mas em decimal, conforme o valor exato esperado. */
 function dicaDecimal(esperado) {
@@ -64,7 +87,7 @@ function colarPontuacao(raiz) {
 /** Texto com $...$ já convertido em fórmulas. */
 function comFormulas(tag, classe, texto) {
   const e = h(tag, { class: classe });
-  e.textContent = texto;
+  e.textContent = intervalosNoTexto(texto);
   renderizar(e);
   colarPontuacao(e);
   return e;
@@ -132,13 +155,26 @@ export async function montar(el, dados, extra = {}) {
     return seq.slice(0, N_PERGUNTAS);
   }
 
-  /** Gera uma pergunta nova do tipo, evitando repetir o enunciado numa mesma sessão. */
+  /**
+   * Gera uma pergunta nova do tipo, evitando repetir o enunciado numa mesma sessão. Um gerador pode
+   * falhar com certos números aleatórios (por exemplo, poucos distratores): essa tentativa deita-se
+   * fora e sorteia-se outra, para o aluno nunca ficar com o botão «Começar» sem resposta.
+   */
   function gerarNova(id, vistos) {
-    let p;
+    let p = null;
+    let ultimoErro = null;
     for (let tentativa = 0; tentativa < 30; tentativa++) {
-      p = gerar(id);
+      let nova;
+      try {
+        nova = gerar(id);
+      } catch (e) {
+        ultimoErro = e;
+        continue;
+      }
+      p = nova;
       if (!vistos.has(p.enunciado)) break;
     }
+    if (!p) throw ultimoErro || new Error(`não consegui gerar uma pergunta do tipo ${id}`);
     vistos.add(p.enunciado);
     return p;
   }
@@ -146,9 +182,18 @@ export async function montar(el, dados, extra = {}) {
   function iniciarSessao(sel, tipos = null) {
     const lista = tipos || (sel === 'misto' ? sequenciaMista() : Array(N_PERGUNTAS).fill(sel));
     const vistos = new Set();
+    let perguntas;
+    try {
+      perguntas = lista.map((id) => gerarNova(id, vistos));
+    } catch (e) {
+      console.error('treino: não consegui gerar as perguntas', e);
+      ecraInicio();
+      raiz.prepend(h('p', { class: 'aviso-erro', role: 'alert' }, 'Não consegui preparar as perguntas deste treino. Tenta outra vez ou escolhe outro tipo.'));
+      return;
+    }
     sessao = {
       selecao: sel,
-      perguntas: lista.map((id) => gerarNova(id, vistos)),
+      perguntas,
       indice: 0,
       respostas: [],
       respondida: false,
@@ -274,7 +319,7 @@ export async function montar(el, dados, extra = {}) {
         const marca = h('span', { class: 'tre-opcao__marca' });
         const b = h('button', { type: 'button', class: 'tre-opcao', onclick: () => escolher(i) },
           h('span', { class: 'tre-opcao__num', 'aria-hidden': 'true' }, String(i + 1)),
-          h('span', { class: 'tre-opcao__tex', html: tex(o.tex) }),
+          h('span', { class: 'tre-opcao__tex', html: tex(intervalosTex(o.tex)) }),
           marca);
         b.marca = marca;
         return b;
@@ -300,7 +345,7 @@ export async function montar(el, dados, extra = {}) {
         const mensagem = certa
           ? [h('p', { class: 'aviso-ok tre-aviso' }, '✓ Certo.')]
           : [h('p', { class: 'aviso-erro tre-aviso' }, '✗ Errado. A resposta certa é ',
-            h('span', { class: 'tre-certa', html: tex(p.opcoes[indiceCerta].tex) + '.' }))];
+            h('span', { class: 'tre-certa', html: tex(intervalosTex(p.opcoes[indiceCerta].tex)) + '.' }))];
         terminar(certa, mensagem);
       }
     }
@@ -320,14 +365,14 @@ export async function montar(el, dados, extra = {}) {
     const form = h('form', { class: 'tre-escrita', novalidate: true },
       h('label', { for: idCampo, class: 'tre-escrita__rotulo' }, 'A tua resposta'),
       h('div', { class: 'tre-escrita__linha' }, campo, verificar),
-      h('p', { class: 'nota', id: `${idCampo}-dica` }, AJUDA_ESCRITA));
+      h('p', { class: 'nota', id: `${idCampo}-dica` }, AJUDA_ESCRITA + (pedeX(p) ? AJUDA_EQUACAO : '')));
     corpo.append(form);
 
     /** A resposta certa para mostrar quando o aluno erra: LaTeX se houver `tex`, senão a expressão em texto. */
     function respostaCerta() {
       const e = h('span', { class: 'tre-certa' });
       if (p.esperado.naoDefinida) e.innerHTML = tex('\\text{não existe}') + '.';
-      else if (p.esperado.tex) e.innerHTML = tex(p.esperado.tex) + '.';
+      else if (p.esperado.tex) e.innerHTML = tex(intervalosTex(p.esperado.tex)) + '.';
       else e.textContent = `${p.esperado.expr}.`;
       return e;
     }
@@ -335,7 +380,8 @@ export async function montar(el, dados, extra = {}) {
     form.addEventListener('submit', (ev) => {
       ev.preventDefault();
       if (campo.readOnly) return;
-      const r = M.corrigir(campo.value, p.esperado);
+      const resposta = limparResposta(campo.value);
+      const r = M.corrigir(resposta, p.esperado);
       if (r.estado === 'invalido') {
         feedback.replaceChildren(h('p', { class: 'aviso-erro tre-aviso' }, 'Não consegui ler isto. Escreve, por exemplo, 3/2, ln(2), log2(5) ou e^2.'));
         campo.focus();
@@ -352,9 +398,9 @@ export async function montar(el, dados, extra = {}) {
         terminar(false, [h('p', { class: 'aviso-erro tre-aviso' }, '✗ Errado. A resposta certa é ', respostaCerta())]);
       } else if (r.estado === 'certo-forma') {
         // só aparece quando a resposta tem uma raiz no denominador; sem raiz não há nada a dizer sobre ela
-        const comRaiz = /√|sqrt|raiz/i.test(campo.value);
+        const comRaiz = /√|sqrt|raiz/i.test(resposta);
         terminar(true, [h('p', { class: 'aviso-ok tre-aviso' }, '✓ Certo. ',
-          p.esperado.tex ? ['A forma pedida é ', h('span', { html: tex(p.esperado.tex) }), '.'] : (comRaiz ? 'Escreve a raiz no numerador.' : null))]);
+          p.esperado.tex ? ['A forma pedida é ', h('span', { html: tex(intervalosTex(p.esperado.tex)) }), '.'] : (comRaiz ? 'Escreve a raiz no numerador.' : null))]);
       } else {
         terminar(true, [h('p', { class: 'aviso-ok tre-aviso' }, '✓ Certo.')]);
       }
@@ -381,7 +427,7 @@ export async function montar(el, dados, extra = {}) {
         : frac >= 0.5 ? 'Estás no bom caminho. Vê o que falhaste e tenta outra vez.'
           : 'Ainda há trabalho a fazer. Repete com calma, a prática resolve.';
 
-    const titulo = h('h4', { class: 'tre-titulo', tabindex: '-1' }, 'Resultado');
+    const titulo = h('h2', { class: 'tre-titulo', tabindex: '-1' }, 'Resultado');
     const botoes = h('div', { class: 'tre-acoes tre-acoes--fim' },
       h('button', { type: 'button', class: 'botao', onclick: () => iniciarSessao(s.selecao) }, 'Repetir'),
       falhadas.length > 0 ? h('button', { type: 'button', class: 'botao botao--suave', onclick: () => iniciarSessao(s.selecao, falhadas) },

@@ -387,7 +387,7 @@ function montarK(el) {
       linhas: [`${T(S.coef)}k=1-${T(S.cons)}`, `${T(S.coef)}k=${T(S.direita)}`],
     },
     {
-      parte: '1.1', frase: 'Divide-se os dois membros pelo número que multiplica $k$.',
+      parte: '1.1', frase: 'Dividem-se os dois membros pelo número que multiplica $k$.',
       linhas: [`k=${T(S.direita)}\\div${T(S.coef)}`, `k=${T(S.k)}`],
     },
     {

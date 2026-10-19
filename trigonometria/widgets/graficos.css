@@ -2,8 +2,8 @@
 
 .gra [hidden] { display: none !important; }
 
-/* alvos de toque de pelo menos 40 px */
-.gra .chip, .gra .botao { min-height: 2.5rem; }
+/* alvos de toque de pelo menos 44 px */
+.gra .chip, .gra .botao { min-height: 2.75rem; }
 .gra .chip { padding-inline: 1rem; }
 .gra .chips { margin-top: 0; }
 .gra .gra-fn { margin-bottom: 0.2rem; }
@@ -52,7 +52,7 @@
 /* controlos */
 .gra-controlos { gap: 0.4rem 1.5rem; }
 .gra-controlo__linha { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
-.gra-controlo input[type="range"] { height: 2.5rem; margin: 0; }
+.gra-controlo input[type="range"] { height: 2.75rem; margin: 0; }
 
 /* modo «Descobre» */
 .gra-descobre { margin-top: 0.9rem; padding: 0.7rem 0.9rem 0.9rem; border: 1px dashed var(--c-destaque); border-radius: 0.5rem; background: var(--creme); }

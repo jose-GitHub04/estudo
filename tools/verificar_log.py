@@ -4,6 +4,7 @@ Correr (a partir da raiz do site):
     python -X utf8 -I tools/verificar_log.py                 tudo o que existir
     python -X utf8 -I tools/verificar_log.py f1.json f2.json  só esses ficheiros
     opções: --sem-avisos (esconde os AVISO)   --semente N (outras amostras aleatórias)
+            --nao-lidas (lista as relações de LaTeX dos exercícios que o leitor não conferiu sozinhas)
 
 Imprime `FALHA: <ficheiro>: <id>: <o quê>` por cada problema e sai com código 1 se houver
 falhas. Os AVISO não fazem falhar (contagens por grupo, falta de erroComum, distribuição da
@@ -14,11 +15,33 @@ Verifica, por tipo:
   cartões    (dados/cartoes/<grupo>.json):   campos, ids, texto, `verifica`
   perguntas  (dados/perguntas/<grupo>.json): 4 opções distintas, `certa`, `nivel`, texto,
              `ref` + `valor` das opções, `verifica`, >= 60 % com verificação numérica
-  V/F        (dados/vf/<grupo>.json):        `verdadeira`, explicação, `verifica`, `figura`
+  V/F        (dados/vf/<grupo>.json):        `verdadeira`, explicação, `verifica`, `figura` (e, na `figura`, que cada
+             curva é a função do seu rótulo e do enunciado e cada ponto está numa curva, com as coordenadas do rótulo)
+  exercícios (dados/exercicios.json):        estrutura, texto, `verifica` de cada exercício e de cada alínea (a resposta
+             recalculada), todas as fórmulas de LaTeX dos passos que se conseguem ler (identidades, equivalências,
+             contas com «≈» arredondadas ao que está escrito), todos os números decimais escritos (têm de aparecer num
+             `verifica`) e as figuras (curvas = `funcoes`, pontos nas curvas, retas tangentes)
+Campos de cada exercício (e de cada alínea) que o verificador lê, além do que o widget usa:
+  verifica   afirmações Python que RECALCULAM a resposta final por outro caminho (zeros com raizes(f, a, b), mínimos com
+             valmin/argmin, limites com lim/limd/lime, derivadas com der, domínios com comparações...). Cada alínea (ou o
+             exercício, se não tem alíneas) tem de ter as suas.
+  funcoes    { rótulo da curva: expressão em x, em Python }: o que cada curva das figuras tem de ser (a curva desenhada
+             é comparada com isto em 400 pontos). O rótulo «y = ...» também se lê e confronta com a curva.
+  solucao    lista de números calculada à parte (ex.: raizes(...)): tem de ser o conjunto S={...} escrito na `resposta`.
+  intervalo  [a, b] (com inf) calculado à parte: tem de ser o intervalo escrito na `resposta`.
+Além disso confere-se sozinho: cada linha de LaTeX dos passos que o leitor lê (identidades, ⇔, ⇒, «≈» ao número de casas
+escrito); todo o decimal escrito que não é dado do enunciado (tem de aparecer num `verifica`); cada ponto das figuras
+(dentro da janela, numa curva ou reta, com as coordenadas do rótulo) e cada reta (a do rótulo; a de cor `tg` ou chamada
+«t»/«tangente» tem de ser a tangente num ponto marcado).
+
+Sem argumentos corre também os verificadores de equacoes.json (tools/verificar_equacoes.py) e de estudos.json
+(tools/verificar_estudos.py), para um só comando cobrir os dados todos.
 
 Verificação numérica (expressões Python dos campos `ref`, `valor` e `verifica`):
   nomes disponíveis: sqrt pi e exp ln log(base 10) logb(a, x) abs min max sin cos tan
                      ig(x, y) der(f, x) lim(f, x0) inf
+  para os exercícios (acrescentam): raizes(f, a, b) (zeros por varrimento e bisseção), valmin/valmax/argmin/argmax(f, a, b),
+                     cresc/decresc(f, a, b), der2(f, x), igl(lista, lista)
   extras (não estão no contrato; só acrescentam): limd(f, x0) e lime(f, x0) (limites
                      laterais), lim_existe(f, x0), atan asin acos floor ceil round sum all
                      any range len sorted float int
@@ -45,7 +68,7 @@ DADOS = RAIZ / "logaritmos" / "dados"
 
 PREFIXOS = {"exponencial": "exp", "logaritmo": "log", "propriedades": "pro", "funcao": "fun",
             "equacoes": "equ", "derivadas": "der", "limites": "lim", "estudo": "est"}
-TIPOS = ("cartoes", "perguntas", "vf")   # exercicios.json: extensão por acabar, desligada
+TIPOS = ("cartoes", "perguntas", "vf")   # exercicios.json tem o seu verificador (verificar_exercicios)
 LISTA = {"cartoes": "cartoes", "perguntas": "perguntas", "vf": "afirmacoes"}
 ROTULO = {"cartoes": "cartões", "perguntas": "perguntas", "vf": "afirmações"}
 CAMPO_TEMA = {"cartoes": "grupo", "perguntas": "tema", "vf": "tema"}
@@ -179,6 +202,7 @@ def _espaco(variaveis=None):
           "atan": math.atan, "asin": math.asin, "acos": math.acos, "floor": math.floor,
           "ceil": math.ceil, "round": round, "sum": sum, "all": all, "any": any, "range": range,
           "len": len, "sorted": sorted, "float": float, "int": int}
+    ns.update(EXTRAS_NUMERICOS)
     ns["__builtins__"] = {}
     if variaveis:
         ns.update(variaveis)
@@ -228,7 +252,7 @@ def _avaliar(code, ns, expr, com_variaveis=True):
         if not com_variaveis and nome in VARIAVEIS:
             raise ErroAutor(f"«{expr}» usa a variável «{nome}», mas ref e valor não podem ter variáveis")
         raise ErroAutor(f"«{expr}»: nome desconhecido «{nome}» (disponíveis: sqrt pi e exp ln log logb abs min max "
-                        "sin cos tan ig der lim inf; variáveis a b x y z t k n)")
+                        "sin cos tan ig der lim inf raizes valmin valmax argmin argmax cresc decresc der2 igl; variáveis a b x y z t k n)")
     except TypeError as exc:
         if "complex" in str(exc):
             raise ValueError("resultado complexo")
@@ -730,8 +754,1113 @@ def verificar_vf(nome, stem, itens, ids, est):
         _chaves_desconhecidas(nome, ident, a, CHAVES_VF)
         if "figura" in a:
             verificar_figura(nome, ident, a["figura"])
+            _verificar_figura_vf(nome, ident, a)
         if _verifica_lista(nome, ident, a, est):
             est["verif"] += 1
+
+
+# ====================================================================== matemática dos textos e das figuras
+# Funções numéricas extra para o `verifica` (só acrescentam ao espaço de nomes).
+def _raizes(f, a, b, n=20000):
+    """Zeros de f em [a, b] por varrimento (mudança de sinal) e bisseção; ignora saltos (assíntotas)."""
+    xs = [a + (b - a) * i / n for i in range(n + 1)]
+    vals = []
+    for x in xs:
+        try:
+            vals.append(float(f(x)))
+        except ERROS_DOMINIO:
+            vals.append(math.nan)
+    achados = []
+    for i in range(n):
+        y0, y1 = vals[i], vals[i + 1]
+        if y0 != y0 or y1 != y1:
+            continue
+        if y0 == 0.0:
+            achados.append(xs[i])
+        elif y0 * y1 < 0:
+            lo, hi, flo = xs[i], xs[i + 1], y0
+            for _ in range(90):
+                m = (lo + hi) / 2
+                try:
+                    fm = float(f(m))
+                except ERROS_DOMINIO:
+                    break
+                if (fm < 0) == (flo < 0):
+                    lo, flo = m, fm
+                else:
+                    hi = m
+            r = (lo + hi) / 2
+            try:
+                if abs(f(r)) < 1e-6:  # um salto (assíntota) não é um zero
+                    achados.append(r)
+            except ERROS_DOMINIO:
+                pass
+    if vals[-1] == 0.0:
+        achados.append(xs[-1])
+    achados.sort()
+    unicos = []
+    for r in achados:
+        if not unicos or abs(r - unicos[-1]) > 1e-7:
+            unicos.append(r)
+    return unicos
+
+
+def _varrer(f, a, b, n=20000):
+    pts = []
+    for i in range(n + 1):
+        x = a + (b - a) * i / n
+        try:
+            y = float(f(x))
+        except ERROS_DOMINIO:
+            continue
+        if math.isfinite(y):
+            pts.append((x, y))
+    if not pts:
+        raise ValueError("a função não está definida em nenhum ponto de [a, b]")
+    return pts
+
+
+def _valmin(f, a, b):
+    return min(y for _, y in _varrer(f, a, b))
+
+
+def _valmax(f, a, b):
+    return max(y for _, y in _varrer(f, a, b))
+
+
+def _argmin(f, a, b):
+    return min(_varrer(f, a, b), key=lambda p: p[1])[0]
+
+
+def _argmax(f, a, b):
+    return max(_varrer(f, a, b), key=lambda p: p[1])[0]
+
+
+def _cresc(f, a, b, n=2000):
+    ys = [y for _, y in _varrer(f, a, b, n)]
+    return all(q >= p - 1e-12 for p, q in zip(ys, ys[1:]))
+
+
+def _decresc(f, a, b, n=2000):
+    ys = [y for _, y in _varrer(f, a, b, n)]
+    return all(q <= p + 1e-12 for p, q in zip(ys, ys[1:]))
+
+
+def _der2(f, x):
+    """Segunda derivada numérica (diferença central de passo 1e-3)."""
+    h = 1e-3
+    return (f(x + h) - 2 * f(x) + f(x - h)) / (h * h)
+
+
+def _igl(xs, ys):
+    """Duas listas de números iguais (a menos de 1e-6 relativo), pela mesma ordem."""
+    return len(xs) == len(ys) and all(_ig(u, v) for u, v in zip(xs, ys))
+
+
+EXTRAS_NUMERICOS = {"raizes": _raizes, "valmin": _valmin, "valmax": _valmax, "argmin": _argmin, "argmax": _argmax,
+                    "cresc": _cresc, "decresc": _decresc, "der2": _der2, "igl": _igl}
+
+
+# --------------------------------------------------------------- texto matemático simples (rótulos)
+# Os rótulos das figuras são texto simples («y = e^(−x²)», «y = log_½ x», «(0, √e − 3)»). Lê-se com um
+# pequeno analisador e dá uma expressão de Python, para confrontar com o que está realmente desenhado.
+_SUBS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
+_SUPS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻", "0123456789-")
+_FRACOES = {"½": "(1/2)", "⅓": "(1/3)", "¼": "(1/4)", "¾": "(3/4)"}
+_TOK_TXT = re.compile(
+    r"\s*(?:(?P<num>\d+(?:,\d+)?)|(?P<nome>ln|log|exp|sqrt|abs|pi|[A-Za-z])|(?P<sub>_(?:\{[^}]*\}|[0-9½⅓¼¾]+)|[₀-₉]+)"
+    r"|(?P<sup>[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)|(?P<frac>[½⅓¼¾])|(?P<raiz>√)|(?P<op>[-+*/^()]))")
+
+
+class _ErroTexto(Exception):
+    pass
+
+
+def _tokens_texto(s):
+    s = s.strip().replace("−", "-").replace("×", "*").replace("·", "*")
+    toks, pos = [], 0
+    while pos < len(s):
+        m = _TOK_TXT.match(s, pos)
+        if not m or m.end() == pos:
+            if s[pos:].strip() == "":
+                break
+            raise _ErroTexto(f"símbolo desconhecido em «{s[pos:pos + 8]}»")
+        pos = m.end()
+        k = m.lastgroup
+        toks.append((k, m.group(k)))
+    return toks
+
+
+class _AnalisadorTexto:
+    def __init__(self, s):
+        self.t = _tokens_texto(s)
+        self.i = 0
+
+    def ver(self, k=0):
+        j = self.i + k
+        return self.t[j] if j < len(self.t) else (None, None)
+
+    def tirar(self):
+        if self.i >= len(self.t):
+            raise _ErroTexto("fim inesperado")
+        tok = self.t[self.i]
+        self.i += 1
+        return tok
+
+    def expressao(self):
+        a = self.termo()
+        while self.ver() in (("op", "+"), ("op", "-")):
+            op = self.tirar()[1]
+            a = f"({a}){op}({self.termo()})"
+        return a
+
+    def termo(self):
+        a = self.unario()
+        while True:
+            k, v = self.ver()
+            if (k, v) in (("op", "*"), ("op", "/")):
+                self.tirar()
+                a = f"({a}){v}({self.unario()})"
+            elif k in ("num", "nome", "frac", "raiz") or (k, v) == ("op", "("):
+                a = f"({a})*({self.unario()})"  # multiplicação implícita
+            else:
+                return a
+
+    def unario(self):
+        if self.ver() == ("op", "-"):
+            self.tirar()
+            return f"(-({self.unario()}))"
+        if self.ver() == ("op", "+"):
+            self.tirar()
+            return self.unario()
+        return self.potencia()
+
+    def potencia(self):
+        base = self.primario()
+        while self.ver()[0] == "sup":
+            base = f"({base})**({self.tirar()[1].translate(_SUPS)})"
+        if self.ver() == ("op", "^"):
+            self.tirar()
+            if self.ver() == ("op", "("):
+                self.tirar()
+                e = self.expressao()
+                if self.tirar() != ("op", ")"):
+                    raise _ErroTexto("falta )")
+            elif self.ver() == ("op", "-"):
+                self.tirar()
+                e = f"-({self.primario()})"
+            else:
+                e = self.primario()
+                while self.ver()[0] == "sup":
+                    e = f"({e})**({self.tirar()[1].translate(_SUPS)})"
+            base = f"({base})**({e})"
+        return base
+
+    def primario(self):
+        k, v = self.tirar()
+        if k == "num":
+            return v.replace(",", ".")
+        if k == "frac":
+            return _FRACOES[v]
+        if k == "raiz":
+            return f"sqrt({self.potencia_de_argumento()})"
+        if (k, v) == ("op", "("):
+            e = self.expressao()
+            if self.tirar() != ("op", ")"):
+                raise _ErroTexto("falta )")
+            return f"({e})"
+        if k == "nome":
+            if v in ("x", "e", "pi"):
+                return v
+            if v in ("ln", "exp", "sqrt", "abs"):
+                return f"{v}({self.potencia_de_argumento()})"
+            if v == "log":
+                if self.ver()[0] == "sub":
+                    sub = self.tirar()[1]
+                    base = sub[1:].strip("{}") if sub.startswith("_") else sub.translate(_SUBS)
+                    base = "".join(_FRACOES.get(c, c) for c in base)
+                    return f"logb({base}, {self.potencia_de_argumento()})"
+                return f"log({self.potencia_de_argumento()})"
+        raise _ErroTexto(f"não sei ler «{v}»")
+
+    def potencia_de_argumento(self):
+        """O argumento de ln, log, √...: um primário com os seus expoentes (ln x² é ln(x²))."""
+        return self.potencia()
+
+
+def _texto_para_py(s):
+    """Texto simples (sem «y =») -> expressão de Python em x, ou levanta _ErroTexto."""
+    p = _AnalisadorTexto(s)
+    e = p.expressao()
+    if p.i != len(p.t):
+        raise _ErroTexto(f"sobra «{p.t[p.i][1]}»")
+    return e
+
+
+def _rotulo_funcao(rotulo):
+    """«y = 2x + 1» -> código de Python em x; None se o rótulo não é da forma «y = ...»."""
+    if not isinstance(rotulo, str):
+        return None
+    m = re.match(r"^\s*(?:y|[fgh]\(x\))\s*=\s*(.+)$", rotulo.strip())
+    if not m:
+        return None
+    try:
+        return _texto_para_py(m.group(1))
+    except _ErroTexto:
+        return None
+
+
+# ------------------------------------------------------------------ leitor de LaTeX (reaproveita o de verificar_equacoes)
+_VEQ = None
+_LEITOR = None
+
+
+def _veq():
+    global _VEQ
+    if _VEQ is None:
+        spec = importlib.util.spec_from_file_location("_verificar_equacoes_log", RAIZ / "tools" / "verificar_equacoes.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _VEQ = mod
+    return _VEQ
+
+
+def _leitor():
+    """O leitor de LaTeX de verificar_equacoes, alargado ao que aparece nos passos dos exercícios."""
+    global _LEITOR
+    if _LEITOR is not None:
+        return _LEITOR
+    V = _veq()
+
+    class LeitorEx(V.Leitor):
+        def primario(self):
+            k, v = self.espreitar()
+            if k == "c" and v in ("\\frac", "\\tfrac", "\\dfrac") and self.espreitar(1)[0] in ("n", "i"):
+                # \frac32 quer dizer 3/2 (o TeX lê um símbolo por argumento)
+                self.seguinte()
+                k1, v1 = self.seguinte()
+                if k1 == "n" and len(v1) == 2 and v1.isdigit():
+                    return ("bin", "/", ("num", float(v1[0]), None), ("num", float(v1[1]), None))
+                a = ("num", float(v1.replace("{,}", ".")), None) if k1 == "n" else ("var", v1)
+                k2, v2 = self.seguinte()
+                b = ("num", float(v2.replace("{,}", ".")), None) if k2 == "n" else ("var", v2)
+                return ("bin", "/", a, b)
+            if k == "i" and v in "fghkT" and self.espreitar(1) == ("o", "("):
+                raise V.ErroTex("chamada de função (f(x), T(t)...) não se lê aqui")
+            return super().primario()
+
+        def argumento(self):
+            # \ln x^{2} e \ln e^{p} querem dizer ln(x²) e ln(eᵖ)
+            a = self.primario()
+            if self.espreitar() == ("o", "^"):
+                self.seguinte()
+                a = ("pow", a, self.simbolo_ou_grupo())
+            return a
+
+        def cadeia(self):
+            exprs, rels = [self.expr()], []
+            while self.espreitar() in V.RELACOES:
+                rels.append(V.NOME_REL[self.seguinte()[1]])
+                e = self.expr()
+                if rels[-1] == "~" and e[0] == "neg" and e[1][0] == "num":
+                    e = ("num", -e[1][1], e[1][2])  # «\approx-1{,}35»
+                if rels[-1] == "~" and e[0] == "num" and e[2] is None and float(e[1]).is_integer():
+                    e = ("num", e[1], 0)  # «\approx35»: arredonda às unidades
+                exprs.append(e)
+            if not rels:
+                raise V.ErroTex(f"falta uma relação em {self.s!r}")
+            for r, e in zip(rels, exprs[1:]):
+                if r == "~" and (e[0] != "num" or e[2] is None):
+                    raise V.ErroTex("depois de «\\approx» tem de vir um decimal escrito")
+            return ("cad", exprs, rels)
+
+    _LEITOR = LeitorEx
+    return _LEITOR
+
+
+def _ler_tex(tex):
+    return _leitor()(tex).formula()
+
+
+def _ler_expr_tex(tex):
+    r = _leitor()(tex)
+    e = r.expr()
+    r.fim()
+    return e
+
+
+REL_INICIO = re.compile(r"^(=|\\Leftrightarrow|\\Rightarrow|\\approx|<|>|\\leq|\\geq|\\neq|\\lor|\\vee|\\land)")
+
+
+def _linhas_do_bloco(math):
+    """Um bloco $$...$$ ou $...$ em fórmulas: as linhas de um aligned que continuam a anterior (começam por uma
+    relação) juntam-se a ela; as outras são fórmulas à parte."""
+    m = re.sub(r"\\begin\{aligned\}|\\end\{aligned\}", "", math.strip())
+    linhas = []
+    for r in re.split(r"\\\\(?:\[[^\]]*\])?", m):
+        r = r.replace("&", "").strip()
+        if not r:
+            continue
+        r2 = re.sub(r"^(\\;|\\,|\\ |\\quad)+", "", r)
+        if linhas and (REL_INICIO.match(r2) or re.match(r"^\\q?quad\b", r)):  # «\quad+...» continua a expressão
+            linhas[-1] += " " + r2
+        else:
+            linhas.append(r)
+    return linhas
+
+
+def _limpar_linha(l):
+    l = re.sub(r"\\text\{\s*ou\s*\}", r"\\lor", l.strip())
+    l = l.replace("\\vee", "\\lor").replace("\\wedge", "\\land").replace("\\checkmark", "")
+    l = re.sub(r"^\\Delta\s*=\s*", "", l.strip())  # «\Delta=b^2-4ac=...»: confere-se a conta
+    l = re.sub(r"\\(bigl|bigr|big|Bigl|Bigr|Big)(?![a-zA-Z])\s*", "", l)
+    l = l.replace("\\lt", "<").replace("\\gt", ">")
+    return re.sub(r"[.,;]\s*$", "", l.strip()).strip()
+
+
+def _amostras_de(nomes, n=700):
+    """Valores das variáveis: uma grelha fina de -8 a 8 se for uma só, pares aleatórios (sempre os mesmos) se forem várias."""
+    nomes = sorted(nomes)
+    if len(nomes) == 1:
+        return [{nomes[0]: -8 + 16 * i / n} for i in range(n + 1)]
+    rnd = random.Random(zlib.crc32("|".join(nomes).encode("utf-8")))
+    grande = [i / 8 for i in range(-64, 65)]
+    return [{v: rnd.choice(grande) for v in nomes} for _ in range(n)]
+
+
+_PREFIXO_FUNCAO = re.compile(r"^([A-Za-z])('*)(\^\{-1\})?\(([^()]*)\)\s*=\s*(.+)$")
+
+
+def _derivada_de(f, ordem, x):
+    """Derivada numérica de ordem 0, 1 ou 2 de f (x -> número ou None) em x; None fora do domínio."""
+    try:
+        if ordem == 0:
+            return f(x)
+        if ordem == 1:
+            return _der(f, x)
+        h = 0.01  # segunda derivada: diferenças centrais de 5 pontos
+        v = [f(x + k * h) for k in (-2, -1, 0, 1, 2)]
+        return (-v[4] + 16 * v[3] - 30 * v[2] + 16 * v[1] - v[0]) / (12 * h * h)
+    except (TypeError, ZeroDivisionError, ValueError, OverflowError):
+        return None
+
+
+def _conferir_linha_de_funcao(tex, funcs):
+    """Linhas como «f'(x)=1\times e^{2x}+...=(2x+3)e^{2x}» ou «f^{-1}(-3)=e^{...}-3=e^{2}-3»: cada expressão da
+    cadeia (até ao primeiro «\approx») tem de ser a função, a derivada (f', f'') ou a inversa de `funcoes` no
+    ponto. Devolve None se a linha não é deste tipo."""
+    m = _PREFIXO_FUNCAO.match(tex)
+    if not m or not funcs:
+        return None
+    nome_f, primas, inversa, arg, resto = m.groups()
+    chave = nome_f + ("\u207b\u00b9" if inversa else "")
+    if chave not in funcs or len(primas) > 2 or (inversa and primas):
+        return None
+    if re.search(r"\\(Leftrightarrow|Rightarrow|lor|land|text|mathrm)|<|>", resto):
+        return None
+    V = _veq()
+    try:
+        try:
+            cad = _ler_tex(resto)[1][0]
+            exprs, rels = cad[1], cad[2]
+        except V.ErroTex as exc:
+            if "falta uma relação" not in str(exc):
+                return "ignorada", str(exc)
+            exprs, rels = [_ler_expr_tex(resto)], []
+    except (V.ErroTex, ValueError, IndexError, TypeError) as exc:
+        return "ignorada", f"{type(exc).__name__}: {exc}"
+    variavel = arg.strip() if arg.strip() in ("x", "t") else None
+    if variavel and not V.variaveis(exprs[0]):
+        return "ignorada", "equação (f(x) = número): resolve-se, não se confere sozinha"
+    if variavel is None:
+        try:
+            pontos = [V.ev(_ler_expr_tex(arg), {})]
+        except (V.ErroTex, ValueError, IndexError, TypeError):
+            return "ignorada", "argumento que não se lê"
+    else:
+        pontos = [-3 + 8 * i / 400 for i in range(401)]
+    if V.variaveis(("cad", exprs, [])) - ({variavel} if variavel else set()):
+        return "ignorada", "outras variáveis na cadeia"
+    exatas = [exprs[0]]
+    for i, rel in enumerate(rels):
+        if rel != "=":
+            break
+        exatas.append(exprs[i + 1])
+    comparados = 0
+    for s_ in pontos:
+        env = {variavel: s_} if variavel else {}
+        if inversa:
+            # f^{-1}(s) é o x tal que f(x) = s: a função declarada para a inversa está em funcs[chave]
+            alvo = funcs[chave](s_)
+        else:
+            alvo = _derivada_de(funcs[chave], len(primas), s_)
+        if alvo is None or not math.isfinite(alvo):
+            continue
+        for e in exatas:
+            try:
+                v = V.ev(e, env)
+            except (V.ErroTex, ZeroDivisionError, OverflowError, ValueError):
+                continue
+            if v != v:
+                continue
+            comparados += 1
+            if not math.isclose(v, alvo, rel_tol=1e-6, abs_tol=1e-6):
+                return "falha", (f"em «{tex}», com {variavel or arg}={s_:.6g}, uma expressão vale {v:.8g} mas "
+                                 f"{nome_f}{primas}{'^{-1}' if inversa else ''}({arg}) vale {alvo:.8g}")
+    if comparados < (1 if variavel is None else 25):
+        return "ignorada", "quase sem pontos em que esteja definida"
+    # os passos seguintes da cadeia (as aproximações) conferem-se à parte, como qualquer cadeia
+    estado, msg = _conferir_linha(resto, funcs=None)
+    if estado == "falha":
+        return "falha", msg
+    return "ok", ""
+
+
+def _conferir_linha(tex, funcs=None):
+    """Confere uma linha de LaTeX de um passo. Devolve (estado, mensagem): estado «ok» | «ignorada» | «falha»."""
+    V = _veq()
+    de_funcao = _conferir_linha_de_funcao(tex, funcs)
+    if de_funcao is not None:
+        return de_funcao
+    try:
+        f = _ler_tex(tex)
+    except V.ErroTex as exc:
+        return "ignorada", str(exc)
+    except (ValueError, IndexError, TypeError) as exc:
+        return "ignorada", f"{type(exc).__name__}: {exc}"
+    nomes = V.variaveis(f)
+    if nomes & NOMES_DE_FUNCOES_E_PONTOS:
+        return "ignorada", "f, g, T, P... são nomes de funções ou pontos, não variáveis"
+    partes, ops = f[1], f[2]
+
+    def verdadeira(parte, env):
+        try:
+            return V.verdade(parte, env)
+        except (V.ErroTex, ZeroDivisionError, OverflowError, ValueError):
+            return None
+
+    if not nomes:  # uma afirmação só com números: tem de ser verdadeira
+        ts = [verdadeira(p, {}) for p in partes]
+        if any(t is None for t in ts):
+            return "ignorada", "fora do domínio"
+        if not ops:
+            return ("ok", "") if ts[0] else ("falha", f"a afirmação «{tex}» é falsa")
+        for i, op in enumerate(ops):
+            if op == "\\Leftrightarrow" and ts[i] != ts[i + 1]:
+                return "falha", f"equivalência falsa em «{tex}» (um lado é {ts[i]} e o outro {ts[i + 1]})"
+            if op == "\\Rightarrow" and ts[i] and not ts[i + 1]:
+                return "falha", f"implicação falsa em «{tex}»"
+        return "ok", ""
+
+    amostras = _amostras_de(nomes)
+    if ops:  # equivalências e implicações: a mesma verdade em todos os pontos (e nos zeros de cada igualdade)
+        if len(nomes) == 1:
+            (var,) = nomes
+            extra = []
+            for esq, dir_ in V.igualdades(f):
+                extra += V.raizes(lambda x, esq=esq, dir_=dir_: V.ev(esq, {var: x}) - V.ev(dir_, {var: x}), -8, 8, 4001)
+            amostras = amostras + [{var: x} for x in extra]
+        definidos = 0
+        for env in amostras:
+            ts = [verdadeira(p, env) for p in partes]
+            if any(t is None for t in ts):
+                continue
+            definidos += 1
+            for i, op in enumerate(ops):
+                if op == "\\Leftrightarrow" and ts[i] != ts[i + 1]:
+                    return "falha", f"equivalência falsa em «{tex}» com {env}: um lado é {ts[i]} e o outro {ts[i + 1]}"
+                if op == "\\Rightarrow" and ts[i] and not ts[i + 1]:
+                    return "falha", f"implicação falsa em «{tex}» com {env}"
+        if definidos < 25:
+            return "ignorada", f"quase sem pontos em que esteja definida ({definidos})"
+        return "ok", ""
+
+    p = partes[0]
+    if p[0] != "cad":
+        return "ignorada", "conjunção ou disjunção de relações (não se confere sozinha)"
+    exprs, rels = p[1], p[2]
+    verificadas = 0
+    for i, rel in enumerate(rels):
+        a, b = exprs[i], exprs[i + 1]
+        if rel not in ("=", "~"):
+            continue
+        if a[0] == "var" or b[0] == "var":
+            continue  # «x = e^{1/2} - 3»: uma solução ou uma definição, não uma identidade
+        va, vb = V.variaveis(a), V.variaveis(b)
+        if bool(va) != bool(vb):
+            continue  # «3^{x} = 6»: uma equação (um lado com x, o outro só números), não uma identidade
+        par = ("cad", [a, b], [rel])
+        definidos, falsos, exemplo = 0, 0, None
+        for env in amostras:
+            t = verdadeira(par, env)
+            if t is None:
+                continue
+            definidos += 1
+            if not t:
+                falsos += 1
+                exemplo = exemplo or env
+        if definidos < 25:
+            continue
+        if not falsos:
+            verificadas += 1  # é uma identidade, e confirma-se
+        elif not va and not vb:
+            return "falha", f"«{tex}» é falsa: os dois lados do {i + 1}.º sinal são números diferentes"
+        elif len(rels) >= 2:
+            return "falha", f"a cadeia «{tex}» tem um passo falso com {exemplo}: os dois lados do {i + 1}.º sinal diferem"
+        # uma só relação que não vale em todos os pontos é uma equação (ou uma definição): não se confere sozinha
+    if verificadas:
+        return "ok", ""
+    return "ignorada", "equação, definição ou desigualdade (não se confere sozinha)"
+
+
+NAO_LIDAS = []   # relações que o leitor de LaTeX não leu (para --verboso)
+NOMES_DE_FUNCOES_E_PONTOS = {"f", "g", "h", "k", "T", "P", "S", "D"}
+FORMULA_TEX = re.compile(r"\$\$([\s\S]+?)\$\$|\$([^$]+?)\$")
+
+
+def _formulas_de(texto):
+    for m in FORMULA_TEX.finditer(texto.replace("\\$", "")):
+        f = m.group(1) or m.group(2)
+        if m.group(2) and f.startswith("{") and f.endswith("}"):
+            f = f[1:-1]  # ${y=-x+1}$: as chavetas só impedem o KaTeX de partir a fórmula em duas linhas
+        yield f
+
+
+def _decimais_do_texto(t):
+    """Os números decimais escritos num texto (0{,}5 dentro de fórmulas, 0,5 fora), com ponto: {'0.5', ...}."""
+    achados = set()
+    for m in FORMULA_TEX.finditer(t):
+        for d in re.findall(r"\d+\{,\}\d+", m.group(0)):
+            achados.add(d.replace("{,}", "."))
+    fora = FORMULA_TEX.sub(" ", t)
+    for d in re.findall(r"(?<![\d.,])\d+,\d+(?!\d)", fora):
+        achados.add(d.replace(",", "."))
+    return achados
+
+
+def _numeros_do_codigo(afirmacoes):
+    """Os números escritos nas afirmações `verifica` (como texto, por exemplo '10.6')."""
+    achados = set()
+    for a in afirmacoes:
+        for d in re.findall(r"(?<![\w.])\d+\.\d+", a):
+            achados.add(d)
+            achados.add(str(float(d)).rstrip("0").rstrip("."))
+    return achados
+
+
+# ---------------------------------------------------------------- figuras: o que está desenhado é o que o texto diz
+def _y_em(code, ns, x):
+    """Valor de uma expressão compilada em x, ou None fora do domínio (ou se não for um real finito)."""
+    ns["x"] = x
+    try:
+        y = eval(code, ns)
+    except (ValueError, ZeroDivisionError, OverflowError, TypeError):
+        return None
+    if isinstance(y, bool) or not isinstance(y, (int, float)) or not math.isfinite(y):
+        return None
+    return float(y)
+
+
+def _codigo_site(expr, onde):
+    """Expressão na sintaxe do site (^ para potências) -> código de Python compilado."""
+    return _compilar(expr.replace("^", "**"), onde)
+
+
+def _comparar_funcoes(f1, f2, x0, x1, de=None, ate=None, n=400):
+    """f1, f2: x -> número ou None. Devolve (pontos comparados, primeira diferença ou None)."""
+    usados, primeira = 0, None
+    for i in range(n + 1):
+        x = x0 + (x1 - x0) * i / n
+        if (de is not None and x < de - 1e-12) or (ate is not None and x > ate + 1e-12):
+            continue
+        a, b = f1(x), f2(x)
+        if a is None and b is None:
+            continue
+        usados += 1
+        if a is None or b is None or not math.isclose(a, b, rel_tol=1e-7, abs_tol=1e-7):
+            return usados, (x, a, b)
+    return usados, primeira
+
+
+def _valor_do_texto(txt, ns):
+    """Valor de um texto como «10,6», «−1», «ln 5», «e² − 3», «11/2» (None se não se lê) e o número de casas
+    decimais se o texto for um decimal escrito por extenso."""
+    txt = txt.strip()
+    try:
+        w = eval(compile(_texto_para_py(txt), "<rotulo>", "eval"), dict(ns))
+    except (_ErroTexto, ValueError, ZeroDivisionError, SyntaxError, TypeError, NameError, OverflowError):
+        return None, None
+    if isinstance(w, bool) or not isinstance(w, (int, float)):
+        return None, None
+    m = re.fullmatch(r"[−-]?\d+,(\d+)", txt)
+    return float(w), (len(m.group(1)) if m else None)
+
+
+def _conferir_valor_do_rotulo(txt, v, ns, aprox=False):
+    """Mensagem de erro se o texto do rótulo lê um número diferente de v; None se bate ou se não se lê."""
+    w, casas = _valor_do_texto(txt, ns)
+    if w is None:
+        return None
+    tol = 0.5 * 10 ** -casas + 1e-9 if casas is not None else 1e-4 * max(1.0, abs(w))
+    if abs(w - v) > tol:
+        return f"o rótulo diz «{txt.strip()}» (= {w:.6g}) mas o desenho está em {v:.6g}"
+    return None
+
+
+def _conferir_rotulo_do_ponto(rotulo, px, py, ns):
+    r = rotulo.strip()
+    m = re.search(r"\((.+)\)\s*$", r)
+    if m:
+        inner = m.group(1)
+        partes = inner.split(";") if ";" in inner else inner.split(",", 1)
+        if len(partes) == 2:
+            return (_conferir_valor_do_rotulo(partes[0], px, ns) or _conferir_valor_do_rotulo(partes[1], py, ns))
+        return None
+    m = re.match(r"^\s*([xy])\s*(=|≈)\s*(.+)$", r)
+    if m:
+        return _conferir_valor_do_rotulo(m.group(3), px if m.group(1) == "x" else py, ns, aprox=m.group(2) == "≈")
+    return None
+
+
+def _funcoes_do_texto(texto):
+    """Funções definidas em fórmulas como $f(x)=\\ln(x+3)$ ou $y=2^x$ (só as que dependem de x): [(nome, ast)]."""
+    V = _veq()
+    achadas = []
+    for math_ in _formulas_de(texto):
+        m = re.match(r"^\s*(y|[fgh]\(x\))\s*=\s*(.+?)\s*$", math_.strip().rstrip(".,;"))
+        if not m:
+            continue
+        try:
+            ast = _ler_expr_tex(_limpar_linha(m.group(2)))
+        except (V.ErroTex, ValueError, IndexError, TypeError):
+            continue
+        if "x" in V.variaveis(ast):
+            achadas.append((m.group(1), ast, m.group(2)))
+    return achadas
+
+
+def _ast_como_funcao(ast):
+    V = _veq()
+
+    def f(x):
+        try:
+            y = V.ev(ast, {"x": x})
+        except (V.ErroTex, ZeroDivisionError, OverflowError, ValueError):
+            return None
+        return y if isinstance(y, float) and math.isfinite(y) else None
+    return f
+
+
+def _verificar_figura_semantica(nome, ident, fig, est, funcoes=None, enunciado_tex=None):
+    """A semântica de uma figura: cada curva é a função que o rótulo (e `funcoes`, nos exercícios, e o enunciado, nos
+    V/F) diz; cada ponto está numa curva ou numa reta e o seu rótulo diz as suas coordenadas; as retas dos exercícios
+    são as do rótulo e a reta que passa num ponto da curva é a tangente."""
+    if not isinstance(fig, dict) or not isinstance(fig.get("curvas"), list):
+        return
+    if not all(isinstance(fig.get(k), list) and len(fig[k]) == 2 and all(_eh_numero(v) for v in fig[k]) for k in ("x", "y")):
+        return
+    ns = _espaco()
+    (x0, x1), (y0, y1) = fig["x"], fig["y"]
+    exercicio = funcoes is not None
+    curvas = []
+    for c in fig["curvas"]:
+        if not isinstance(c, dict) or not isinstance(c.get("expr"), str):
+            continue
+        try:
+            code = _codigo_site(c["expr"], "curva")
+        except ErroAutor as exc:
+            R.falha(nome, ident, str(exc))
+            continue
+        de = c.get("de") if _eh_numero(c.get("de")) else None
+        ate = c.get("ate") if _eh_numero(c.get("ate")) else None
+        funcao = (lambda x, code=code: _y_em(code, ns, x))
+        curvas.append({"c": c, "f": funcao, "de": de, "ate": ate})
+        est["curvas"] += 1
+        rotulo = c.get("rotulo") if isinstance(c.get("rotulo"), str) else ""
+        # 1. a função declarada em `funcoes` (exercícios) e a do rótulo escrito na figura
+        esperadas = []
+        if exercicio:
+            chave = rotulo if rotulo in funcoes else c["expr"] if c["expr"] in funcoes else None
+            if chave is None:
+                if not _rotulo_funcao(rotulo):
+                    R.falha(nome, ident, f"a curva «{rotulo or c['expr']}» não tem função em `funcoes` para confrontar com o que está desenhado")
+            else:
+                try:
+                    esperadas.append((f"funcoes[{chave!r}]", _compilar(funcoes[chave], "funcoes")))
+                except ErroAutor as exc:
+                    R.falha(nome, ident, str(exc))
+        cod_rot = _rotulo_funcao(rotulo)
+        if cod_rot is not None:
+            try:
+                esperadas.append((f"o rótulo «{rotulo}»", compile(cod_rot, "<rotulo>", "eval")))
+            except SyntaxError:
+                pass
+        elif not exercicio and rotulo:
+            R.aviso(nome, ident, f"o rótulo «{rotulo}» da curva não se lê como «y = ...» (não se confere com o desenho)")
+        for origem, cod in esperadas:
+            usados, dif = _comparar_funcoes(funcao, lambda x, cod=cod: _y_em(cod, ns, x), x0, x1, de, ate)
+            if dif:
+                R.falha(nome, ident, f"a curva desenhada «{c['expr']}» não é {origem}: em x={dif[0]:.4g} dá {dif[1]} e devia dar {dif[2]}")
+            elif usados < 10:
+                R.falha(nome, ident, f"a curva «{c['expr']}» e {origem} quase não se comparam (só {usados} pontos definidos na janela)")
+            else:
+                est["curvas_conferidas"] += 1
+    # 2. as funções que o enunciado define têm de estar desenhadas (V/F)
+    if enunciado_tex:
+        for texto, grave in enunciado_tex:
+            for nome_f, ast, tex in _funcoes_do_texto(texto):
+                fa = _ast_como_funcao(ast)
+
+                def igual(k, fa=fa):
+                    usados, dif = _comparar_funcoes(k["f"], fa, x0, x1, k["de"], k["ate"])
+                    return usados >= 10 and dif is None
+                if not any(igual(k) for k in curvas):
+                    msg = f"o texto define {nome_f}={tex} mas nenhuma curva da figura é essa função"
+                    if grave:
+                        R.falha(nome, ident, msg)
+                    else:
+                        R.aviso(nome, ident, msg)
+    # 3. pontos
+    retasH = [r if _eh_numero(r) else r.get("y") for r in fig.get("retasH", []) or [] if _eh_numero(r) or isinstance(r, dict)]
+    retasV = [r if _eh_numero(r) else r.get("x") for r in fig.get("retasV", []) or [] if _eh_numero(r) or isinstance(r, dict)]
+    retas = [r for r in fig.get("retas", []) or [] if isinstance(r, dict) and _eh_numero(r.get("declive")) and _eh_numero(r.get("ordenada"))]
+    tol_y = 0.006 * (y1 - y0) + 1e-6
+    tol_x = 0.006 * (x1 - x0) + 1e-6
+    sobre_curva = []
+    for p in fig.get("pontos", []) or []:
+        if not isinstance(p, dict) or not _eh_numero(p.get("x")) or not _eh_numero(p.get("y")):
+            continue
+        px, py = p["x"], p["y"]
+        est["pontos"] += 1
+        rot = p.get("rotulo") if isinstance(p.get("rotulo"), str) else ""
+        etiqueta = f"o ponto ({px:.6g}; {py:.6g})" + (f" «{rot}»" if rot else "")
+        if not (x0 - 1e-9 <= px <= x1 + 1e-9 and y0 - 1e-9 <= py <= y1 + 1e-9):
+            R.falha(nome, ident, f"{etiqueta} está fora da janela da figura")
+        em = [k for k in curvas if (k["de"] is None or px >= k["de"] - 1e-9) and (k["ate"] is None or px <= k["ate"] + 1e-9)
+              and (lambda v: v is not None and abs(v - py) <= tol_y)(k["f"](px))]
+        nas_retas = (any(abs(py - h) <= tol_y for h in retasH) or any(abs(px - v) <= tol_x for v in retasV)
+                     or any(abs(r["declive"] * px + r["ordenada"] - py) <= tol_y for r in retas))
+        if not em and not nas_retas:
+            R.falha(nome, ident, f"{etiqueta} não está em nenhuma curva nem reta da figura")
+        else:
+            est["pontos_conferidos"] += 1
+        if em:
+            sobre_curva.append((px, py, em))
+        if rot:
+            msg = _conferir_rotulo_do_ponto(rot, px, py, ns)
+            if msg:
+                R.falha(nome, ident, f"{etiqueta}: {msg}")
+    # 4. guias e retas (exercícios)
+    for lista, eixo, valores in (("retasH", "y", retasH), ("retasV", "x", retasV)):
+        for r, v in zip([r for r in fig.get(lista, []) or [] if _eh_numero(r) or isinstance(r, dict)], valores):
+            if isinstance(r, dict) and isinstance(r.get("rotulo"), str):
+                m = re.match(r"^\s*[A-Za-z]\s*(?:=|≈)\s*(.+)$", r["rotulo"])  # a letra é a do eixo («y», «T», «t»)
+                if m and v is not None:
+                    msg = _conferir_valor_do_rotulo(m.group(1), v, ns)
+                    if msg:
+                        R.falha(nome, ident, f"a guia {eixo} = {v:.6g}: {msg}")
+    for r in retas:
+        est["retas"] += 1
+        cod = _rotulo_funcao(r.get("rotulo"))
+        if cod is not None:
+            f = lambda x, cod=cod: _y_em(compile(cod, "<rotulo>", "eval"), ns, x)
+            b, m = f(0.0), None
+            if b is not None and f(1.0) is not None:
+                m = f(1.0) - b
+            if b is None or m is None or abs(b - r["ordenada"]) > 1e-3 or abs(m - r["declive"]) > 1e-3:
+                R.falha(nome, ident, f"a reta «{r['rotulo']}» tem declive {r['declive']} e ordenada {r['ordenada']} nos dados")
+        # uma reta que passa num ponto marcado de uma curva é a tangente nesse ponto (e uma reta de cor `tg` ou chamada
+        # «t» ou «tangente» tem de ser a tangente a alguma curva num ponto marcado)
+        nome_da_reta = (r.get("rotulo") or "").strip().lower() if isinstance(r.get("rotulo"), str) else ""
+        diz_tangente = r.get("cor") == "tg" or nome_da_reta == "t" or nome_da_reta.startswith("tangente")
+        e_tangente = False
+        for px, py, em in sobre_curva:
+            if abs(r["declive"] * px + r["ordenada"] - py) <= tol_y:
+                for k in em:
+                    try:
+                        d = _der(lambda s, k=k: k["f"](s), px)
+                    except (TypeError, ZeroDivisionError, ValueError):
+                        continue
+                    if not math.isclose(d, r["declive"], rel_tol=2e-3, abs_tol=2e-3):
+                        R.falha(nome, ident, f"a reta de declive {r['declive']} passa em ({px:.6g}; {py:.6g}) mas a tangente à curva «{k['c'].get('rotulo') or k['c']['expr']}» aí tem declive {d:.5g}")
+                    else:
+                        est["tangentes"] += 1
+                        e_tangente = True
+        if diz_tangente and not e_tangente:
+            R.falha(nome, ident, f"a reta de declive {r['declive']} e ordenada {r['ordenada']} está marcada como tangente mas não é tangente a nenhuma curva num ponto marcado da figura")
+
+
+# ================================================================ exercícios (dados/exercicios.json)
+CHAVES_EXERCICIO = {"id", "titulo", "tema", "nivel", "enunciado", "alineas", "passos", "resposta", "dica", "erroComum", "verifica", "funcoes",
+                    "solucao", "intervalo"}
+CHAVES_ALINEA = {"id", "enunciado", "passos", "resposta", "dica", "erroComum", "verifica", "funcoes", "solucao", "intervalo"}
+CHAVES_PASSO = {"titulo", "texto", "figura"}
+CHAVES_FIGURA_EX = {"tipo", "x", "y", "curvas", "retas", "retasV", "retasH", "pontos", "area", "legenda", "rotuloX", "rotuloY", "marcasX", "marcasY"}
+
+
+def _estatisticas_figuras():
+    return {"curvas": 0, "curvas_conferidas": 0, "pontos": 0, "pontos_conferidos": 0, "retas": 0, "tangentes": 0}
+
+
+def _estatisticas_exercicios():
+    return {"exercicios": 0, "unidades": 0, "passos": 0, "afirmacoes": 0, "linhas": 0, "linhas_ignoradas": 0,
+            "decimais": 0, "figuras": 0, **_estatisticas_figuras()}
+
+
+def _verificar_figura_exercicio(nome, ident, fig, funcoes, est):
+    if not isinstance(fig, dict):
+        R.falha(nome, ident, "`figura` tem de ser um objeto")
+        return
+    est["figuras"] += 1
+    _chaves_desconhecidas(nome, ident, fig, CHAVES_FIGURA_EX)
+    if fig.get("tipo") != "grafico":
+        R.falha(nome, ident, f"figura.tipo tem de ser \"grafico\" (está {fig.get('tipo')!r})")
+    for eixo in ("x", "y"):
+        v = fig.get(eixo)
+        if not (isinstance(v, list) and len(v) == 2 and all(_eh_numero(n) for n in v) and v[0] < v[1]):
+            R.falha(nome, ident, f"figura.{eixo} tem de ser [mínimo, máximo], dois números com mínimo < máximo")
+            return
+    if not isinstance(fig.get("legenda"), str) or len(fig["legenda"].strip()) < 10:
+        R.falha(nome, ident, "a figura precisa de `legenda` (descrição para leitores de ecrã)")
+    else:
+        verificar_texto(nome, ident, "figura.legenda", fig["legenda"], opcoes=False)
+    if not isinstance(fig.get("curvas"), list) or not fig["curvas"]:
+        R.falha(nome, ident, "figura.curvas tem de ter pelo menos uma curva")
+        return
+    for c in fig["curvas"]:
+        if not isinstance(c, dict) or not isinstance(c.get("expr"), str) or not c["expr"].strip():
+            R.falha(nome, ident, "cada curva precisa de `expr` (texto)")
+            return
+        try:
+            ys = _avaliar_curva(c["expr"], *fig["x"])
+        except ErroAutor as exc:
+            R.falha(nome, ident, f"curva «{c['expr']}»: {exc}")
+            return
+        if len(ys) < 5:
+            R.falha(nome, ident, f"curva «{c['expr']}» só tem {len(ys)} valores finitos na janela")
+    _verificar_figura_semantica(nome, ident, fig, est, funcoes=funcoes)
+
+
+def _textos_da_unidade(u):
+    """(campo, texto) de tudo o que a aluna lê numa unidade."""
+    for i, p in enumerate(u.get("passos", [])):
+        if isinstance(p, dict):
+            yield f"passo {i + 1}.titulo", p.get("titulo")
+            yield f"passo {i + 1}.texto", p.get("texto")
+    yield "resposta", u.get("resposta")
+    for campo in ("enunciado", "dica", "erroComum"):
+        if campo in u:
+            yield campo, u.get(campo)
+
+
+def _extremo_tex(txt):
+    """Extremo de um intervalo escrito em LaTeX: número, ou ±inf."""
+    t = txt.replace("{-}", "-").replace("\\,", "").replace("\\;", "").strip()
+    if "infty" in t:
+        return -math.inf if t.startswith("-") else math.inf
+    return _veq().ev(_ler_expr_tex(t), {})
+
+
+def _conferir_resposta(nome, uid, u):
+    """`solucao` (lista de números calculada à parte) tem de ser o conjunto S={...} escrito na resposta e `intervalo`
+    ([a, b], com inf) o intervalo escrito: o que a aluna lê é o que o cálculo deu."""
+    V = _veq()
+    resposta = u.get("resposta") if isinstance(u.get("resposta"), str) else ""
+    for campo in ("solucao", "intervalo"):
+        if campo not in u:
+            continue
+        try:
+            valor = _avaliar(_compilar(u[campo], campo), _espaco(), u[campo])
+        except (ErroAutor, ValueError, ZeroDivisionError, OverflowError, IndexError) as exc:
+            R.falha(nome, uid, f"`{campo}`: {exc}")
+            continue
+        if campo == "solucao":
+            m = re.search(r"(?:\\left)?\\\{(.*?)(?:\\right)?\\\}", resposta)
+            if not m:
+                R.falha(nome, uid, "há `solucao` mas a resposta não tem um conjunto {...}")
+                continue
+            try:
+                escritos = sorted(V.ev(_ler_expr_tex(e), {}) for e in V.separar_virgulas(m.group(1)))
+            except (V.ErroTex, ValueError, IndexError, TypeError) as exc:
+                R.falha(nome, uid, f"não li o conjunto da resposta: {exc}")
+                continue
+            calculados = sorted(float(v) for v in valor)
+            if len(escritos) != len(calculados) or any(not math.isclose(a, b, rel_tol=1e-6, abs_tol=1e-6) for a, b in zip(escritos, calculados)):
+                R.falha(nome, uid, f"a resposta escreve o conjunto {escritos} mas o cálculo dá {calculados}")
+        else:
+            limpo = resposta.replace("\\left", "").replace("\\right", "")
+            m = re.search(r"[\]\[]([^\[\],]+),([^\[\],]+)[\]\[]", limpo)
+            if not m:
+                R.falha(nome, uid, "há `intervalo` mas a resposta não tem um intervalo ]a,b[")
+                continue
+            try:
+                a, b = _extremo_tex(m.group(1)), _extremo_tex(m.group(2))
+            except (V.ErroTex, ValueError, IndexError, TypeError) as exc:
+                R.falha(nome, uid, f"não li o intervalo da resposta: {exc}")
+                continue
+            ca, cb = float(valor[0]), float(valor[1])
+            if not all((x == y) if math.isinf(x) or math.isinf(y) else math.isclose(x, y, rel_tol=1e-6, abs_tol=1e-6) for x, y in ((a, ca), (b, cb))):
+                R.falha(nome, uid, f"a resposta escreve o intervalo de {a} a {b} mas o cálculo dá de {ca} a {cb}")
+
+
+def verificar_exercicios(nome, dados, ids, est):
+    exs = dados.get("exercicios") if isinstance(dados, dict) else None
+    if not isinstance(exs, list) or not exs:
+        R.falha(nome, "-", "falta a lista `exercicios`")
+        return
+    _chaves_desconhecidas(nome, "-", dados, {"exercicios"})
+    for n, e in enumerate(exs, 1):
+        ident = str(e.get("id")) if isinstance(e, dict) and e.get("id") else f"#{n}"
+        if not isinstance(e, dict):
+            R.falha(nome, ident, "o exercício tem de ser um objeto")
+            continue
+        est["exercicios"] += 1
+        verificar_caracteres(nome, ident, e)
+        _chaves_desconhecidas(nome, ident, e, CHAVES_EXERCICIO)
+        if not isinstance(e.get("id"), str) or not re.fullmatch(r"ex-\d\d", e["id"]):
+            R.falha(nome, ident, "o id tem de ser ex-NN")
+        elif e["id"] in ids:
+            R.falha(nome, ident, f"id repetido (também em {ids[e['id']]})")
+        else:
+            ids[e["id"]] = nome
+        if e.get("tema") not in PREFIXOS:
+            R.falha(nome, ident, f"`tema` «{e.get('tema')}» não é um dos grupos ({', '.join(PREFIXOS)})")
+        if isinstance(e.get("nivel"), bool) or e.get("nivel") not in (1, 2, 3):
+            R.falha(nome, ident, "`nivel` tem de ser 1, 2 ou 3")
+        if not isinstance(e.get("titulo"), str) or not e["titulo"].strip():
+            R.falha(nome, ident, "sem `titulo`")
+        else:
+            verificar_texto(nome, ident, "titulo", e["titulo"], opcoes=False)
+        for campo in ("enunciado", "dica", "erroComum"):
+            if campo in e:
+                if not isinstance(e[campo], str) or (campo != "enunciado" and not e[campo].strip()):
+                    R.falha(nome, ident, f"`{campo}` tem de ser texto")
+                else:
+                    verificar_texto(nome, ident, campo, e[campo], opcoes=False)
+        unidades = []
+        if "alineas" in e:
+            if not isinstance(e["alineas"], list) or not e["alineas"]:
+                R.falha(nome, ident, "`alineas` tem de ser uma lista não vazia")
+            else:
+                vistos = set()
+                for k, a in enumerate(e["alineas"]):
+                    if not isinstance(a, dict) or not isinstance(a.get("id"), str):
+                        R.falha(nome, ident, f"a alínea #{k + 1} precisa de `id` (a, b, c...)")
+                        continue
+                    if a["id"] in vistos:
+                        R.falha(nome, ident, f"alínea {a['id']} repetida")
+                    vistos.add(a["id"])
+                    if a["id"] != chr(97 + k):
+                        R.aviso(nome, ident, f"a alínea n.º {k + 1} chama-se «{a['id']}» (esperava «{chr(97 + k)}»)")
+                    _chaves_desconhecidas(nome, f"{ident}/{a['id']}", a, CHAVES_ALINEA)
+                    unidades.append((f"{ident}/{a['id']}", a))
+            if "passos" in e or "resposta" in e:
+                R.aviso(nome, ident, "o exercício tem alíneas: `passos` e `resposta` do exercício não se usam")
+        else:
+            unidades.append((ident, e))
+        funcoes_ex = e.get("funcoes", {})
+        if not isinstance(funcoes_ex, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in funcoes_ex.items()):
+            R.falha(nome, ident, "`funcoes` tem de ser um objeto { rótulo da curva: expressão em x (Python) }")
+            funcoes_ex = {}
+        verifica_ex = e.get("verifica") if isinstance(e.get("verifica"), list) else []
+        todas = list(verifica_ex)
+        for _, u in unidades:
+            if u is not e and isinstance(u.get("verifica"), list):
+                todas += u["verifica"]
+        numeros = _numeros_do_codigo(todas)
+        if verifica_ex or "verifica" in e:
+            _verifica_lista(nome, ident, e, est)
+        for uid, u in unidades:
+            est["unidades"] += 1
+            if u is not e:
+                verificar_caracteres(nome, uid, u)
+                if "enunciado" in u and (not isinstance(u["enunciado"], str) or not u["enunciado"].strip()):
+                    R.falha(nome, uid, "a alínea precisa de `enunciado`")
+                for campo in ("enunciado", "dica", "erroComum"):
+                    if isinstance(u.get(campo), str):
+                        verificar_texto(nome, uid, campo, u[campo], opcoes=False)
+                if "verifica" in u:
+                    _verifica_lista(nome, uid, u, est)
+            propria = u.get("verifica") if isinstance(u.get("verifica"), list) else []
+            if not propria:
+                R.falha(nome, uid, "sem `verifica` próprio: cada exercício ou alínea tem de ter afirmações que recalculem a resposta final (ex.: ig(raizes(lambda s: ..., -9, 9)[0], ln(5)))")
+            passos = u.get("passos")
+            if not isinstance(passos, list) or not passos:
+                R.falha(nome, uid, "faltam os `passos`")
+                continue
+            if not 3 <= len(passos) <= 6:
+                R.aviso(nome, uid, f"{len(passos)} passos (o contrato diz 3 a 6)")
+            if not isinstance(u.get("resposta"), str) or "$" not in u["resposta"]:
+                R.falha(nome, uid, "a `resposta` final tem de estar escrita em LaTeX")
+            else:
+                verificar_texto(nome, uid, "resposta", u["resposta"], opcoes=False)
+            _conferir_resposta(nome, uid, u)
+            funcoes = dict(funcoes_ex)
+            if isinstance(u.get("funcoes"), dict):
+                funcoes.update(u["funcoes"])
+            for i, p in enumerate(passos, 1):
+                est["passos"] += 1
+                if not isinstance(p, dict) or not isinstance(p.get("titulo"), str) or not p["titulo"].strip() \
+                        or not isinstance(p.get("texto"), str) or not p["texto"].strip():
+                    R.falha(nome, uid, f"o passo {i} precisa de `titulo` e `texto`")
+                    continue
+                _chaves_desconhecidas(nome, f"{uid}/passo {i}", p, CHAVES_PASSO)
+                verificar_texto(nome, uid, f"passo {i}.titulo", p["titulo"], opcoes=False)
+                verificar_texto(nome, uid, f"passo {i}.texto", p["texto"], opcoes=False)
+                if len(p["titulo"].replace("$", "").split()) > 8:
+                    R.aviso(nome, uid, f"o título do passo {i} tem mais de 8 palavras")
+                if "figura" in p:
+                    _verificar_figura_exercicio(nome, f"{uid}/passo {i}", p["figura"], funcoes, est)
+            # as fórmulas dos passos e da resposta, linha a linha
+            ns_f = _espaco()
+            funcs_exec = {}
+            for chave, expr in funcoes.items():
+                try:
+                    cod = _compilar(expr, "funcoes")
+                except ErroAutor:
+                    continue
+                funcs_exec[chave] = (lambda x, cod=cod: _y_em(cod, ns_f, x))
+            for campo, t in _textos_da_unidade(u):
+                if not isinstance(t, str) or not (campo.endswith(".texto") or campo == "resposta"):
+                    continue
+                for math_ in _formulas_de(t):
+                    for linha in _linhas_do_bloco(math_):
+                        tex = _limpar_linha(linha)
+                        if not tex:
+                            continue
+                        estado, msg = _conferir_linha(tex, funcs_exec)
+                        est["linhas"] += 1
+                        if estado == "falha":
+                            R.falha(nome, uid, f"{campo}: {msg}")
+                        elif estado == "ignorada":
+                            est["linhas_ignoradas"] += 1
+                            if not msg.startswith("falta uma relação"):
+                                est["linhas_nao_lidas"] = est.get("linhas_nao_lidas", 0) + 1
+                                if re.search(r"=|<|>|\\approx|\\Leftrightarrow|\\Rightarrow", tex):
+                                    NAO_LIDAS.append(f"{uid} {campo}: {tex}  [{msg[:60]}]")
+            # todos os decimais que o texto escreve (e que não são dados do enunciado) estão confirmados por um `verifica`
+            dados_do_enunciado = _decimais_do_texto(str(e.get("enunciado", ""))) | _decimais_do_texto(str(u.get("enunciado", "")))
+            escritos = set()
+            for campo, t in _textos_da_unidade(u):
+                if isinstance(t, str) and campo != "enunciado":
+                    escritos |= _decimais_do_texto(t)
+            for d in sorted(escritos - dados_do_enunciado):
+                est["decimais"] += 1
+                if d not in numeros and str(float(d)).rstrip("0").rstrip(".") not in numeros:
+                    R.falha(nome, uid, f"o número {d.replace('.', ',')} escrito no texto não está confirmado por nenhum `verifica` "
+                                       f"(ex.: ig(round(<conta>, {len(d.split('.')[1])}), {d}))")
+
+
+_EST_VF = _estatisticas_figuras()
+
+
+def _verificar_figura_vf(nome, ident, a, est=None):
+    """Os objetos `figura` dos V/F: curvas = a função do rótulo e do enunciado; pontos nas curvas, com as coordenadas dos rótulos."""
+    fig = a.get("figura")
+    if not isinstance(fig, dict) or not all(isinstance(fig.get(k), list) for k in ("x", "y", "curvas")):
+        return
+    textos = [(a.get("texto", ""), True), (a.get("explicacao", ""), False)]
+    _verificar_figura_semantica(nome, ident, fig, est if est is not None else _EST_VF, enunciado_tex=[(t, g) for t, g in textos if isinstance(t, str)])
 
 
 # --------------------------------------------------- ficheiros e corrida
@@ -758,7 +1887,30 @@ def _dica_json(exc):
     return ""
 
 
+def verificar_exercicios_ficheiro(caminho, detalhe):
+    nome = _rotulo(caminho)
+    try:
+        dados = json.loads(caminho.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError) as exc:
+        R.falha(nome, "-", f"não consegui ler o ficheiro ({exc})")
+        return
+    except json.JSONDecodeError as exc:
+        R.falha(nome, "-", f"JSON inválido ({exc.msg}, linha {exc.lineno}, coluna {exc.colno}).{_dica_json(exc)}")
+        return
+    est = _estatisticas_exercicios()
+    verificar_exercicios(nome, dados, {}, est)
+    _EST_EX.clear()
+    _EST_EX.update(est)
+    detalhe.append(f"{nome}: {est['exercicios']} exercícios, {est['unidades']} unidades, {est['passos']} passos")
+
+
+_EST_EX = {}
+
+
 def verificar_ficheiro(caminho, tipo, ids_por_tipo, estatisticas, detalhe):
+    if caminho.name == "exercicios.json":
+        verificar_exercicios_ficheiro(caminho, detalhe)
+        return
     nome = _rotulo(caminho)
     try:
         texto = caminho.read_text(encoding="utf-8-sig")
@@ -825,6 +1977,8 @@ def correr(ficheiros=None, avisos=True, semente=0, silencioso=False):
     global SEMENTE
     SEMENTE = semente
     R.falhas, R.avisos, R.mostrar_avisos = [], [], avisos
+    _EST_VF.update(_estatisticas_figuras())
+    _EST_EX.clear()
     ids = {t: {} for t in TIPOS}
     est = {t: {"total": 0, "verif": 0, "ficheiros": 0, "ref": 0, "verifica": 0, "afirmacoes": 0} for t in TIPOS}
     detalhe = []
@@ -845,6 +1999,10 @@ def correr(ficheiros=None, avisos=True, semente=0, silencioso=False):
             em_falta = [g for g in PREFIXOS if not any(p.stem == g for p in lista)]
             if em_falta:
                 print(f"{tipo}: ainda não existem os grupos {', '.join(em_falta)}")
+        if (DADOS / "exercicios.json").is_file():
+            verificar_exercicios_ficheiro(DADOS / "exercicios.json", detalhe)
+        else:
+            print("exercicios: ainda não existe (ignorado)")
     if not silencioso:
         for linha in detalhe:
             print(linha)
@@ -857,17 +2015,61 @@ def correr(ficheiros=None, avisos=True, semente=0, silencioso=False):
             print(f"resumo {ROTULO[tipo]}: {e['total']} em {e['ficheiros']} ficheiro(s); "
                   f"{e['verif']} ({pct:.0f}%) com verificação numérica{extra}; "
                   f"{e['afirmacoes']} afirmações `verifica` avaliadas")
+        if _EST_EX:
+            e = _EST_EX
+            print(f"resumo exercícios: {e['exercicios']} exercícios em {e['unidades']} unidades; {e['afirmacoes']} afirmações `verifica`; "
+                  f"{e['linhas'] - e['linhas_ignoradas']} linhas de LaTeX conferidas (mais {e.get('linhas_nao_lidas', 0)} equações, definições, limites e derivadas que não se conferem sozinhas, "
+                  f"cobertas pelos `verifica`); "
+                  f"{e['decimais']} decimais confirmados; {e['figuras']} figuras ({e['curvas_conferidas']} curvas, "
+                  f"{e['pontos_conferidos']} pontos e {e['tangentes']} tangentes conferidos)")
+        v = _EST_VF
+        if v["curvas"] or v["pontos"]:
+            print(f"resumo figuras dos V/F: {v['curvas_conferidas']} de {v['curvas']} curvas e {v['pontos_conferidos']} de {v['pontos']} pontos confrontados com os rótulos e os enunciados")
+    if not ficheiros:
+        _correr_outros_verificadores(silencioso)
+    if not silencioso:
         print(f"logaritmos: {len(R.falhas)} falha(s), {len(R.avisos)} aviso(s)")
     return list(R.falhas)
 
 
+def _correr_outros_verificadores(silencioso=False):
+    """equacoes.json e estudos.json têm o seu verificador (tools/verificar_equacoes.py, verificar_estudos.py): as falhas deles
+    contam aqui, para um só comando (tools/verificar.py) cobrir os dados todos."""
+    for nome_mod, ficheiro, quem in (("_verificar_equacoes_correr", "verificar_equacoes.py", "equacoes.json"),
+                                     ("_verificar_estudos_correr", "verificar_estudos.py", "estudos.json")):
+        caminho = RAIZ / "tools" / ficheiro
+        if not caminho.is_file():
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location(nome_mod, caminho)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if quem == "equacoes.json":
+                dados = mod.correr()
+                falhas = [f.replace("FALHA: ", "", 1) for f in mod.falhas]
+                if not silencioso and dados:
+                    print(f"equacoes.json: {len(dados['predefinidas'])} predefinidas, {mod.contagem['linhas']} linhas de LaTeX lidas, "
+                          f"{mod.contagem['curvas']} curvas, {mod.contagem['raizes']} zeros por bisseção")
+            else:
+                falhas = list(mod.correr())
+                if not silencioso:
+                    print(f"estudos.json: {len(mod._confirmado)} verificações")
+        except Exception as exc:  # noqa: BLE001
+            falhas = [f"{ficheiro} rebentou: {type(exc).__name__}: {exc}"]
+        for f in falhas:
+            R.falha(quem, "-", f)
+
+
 def main(argv):
     avisos, semente, ficheiros = True, 0, []
+    mostrar_nao_lidas = False
     i = 0
     while i < len(argv):
         a = argv[i]
         if a == "--sem-avisos":
             avisos = False
+        elif a == "--nao-lidas":
+            mostrar_nao_lidas = True
         elif a == "--semente" and i + 1 < len(argv):
             i += 1
             semente = int(argv[i])
@@ -878,6 +2080,10 @@ def main(argv):
             ficheiros.append(a)
         i += 1
     falhas = correr(ficheiros or None, avisos, semente)
+    if mostrar_nao_lidas:
+        print(f"{len(NAO_LIDAS)} relações de LaTeX que o leitor não conferiu sozinhas:")
+        for linha in NAO_LIDAS:
+            print("  ", linha)
     return 1 if falhas else 0
 
 

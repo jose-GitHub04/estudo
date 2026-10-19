@@ -218,13 +218,16 @@ export async function montar(el) {
     mostrar(E.r2, tem && alfa < 360);
 
     // rótulos «r»: o primeiro por baixo do eixo, o segundo para fora do setor
-    at(E.rotR1, { x: R / 2, y: 17 });
+    // com α grande, o espaço por baixo do eixo é onde cai o segundo «r»: o primeiro passa para cima
+    at(E.rotR1, { x: R / 2, y: alfa >= 300 && alfa < 360 ? -8 : 17 });
     if (tem && alfa < 360) {
       const a = M.grausParaRad(alfa);
       const mx = (R / 2) * Math.cos(a);
       const my = (-R / 2) * Math.sin(a);
-      // normal para fora do setor: rodar a direção do raio 90° para o lado de fora
-      at(E.rotR2, { x: n2(mx - 13 * Math.sin(a)), y: n2(my - 13 * Math.cos(a) + 5) });
+      // normal para fora do setor: rodar a direção do raio 90° para o lado de fora; quando a fresta
+      // entre o setor e o eixo é estreita (α perto de 360°), o rótulo passa para dentro do setor
+      const lado = alfa >= 335 ? -1 : 1;
+      at(E.rotR2, { x: n2(mx - lado * 13 * Math.sin(a)), y: n2(my - lado * 13 * Math.cos(a) + 5) });
       mostrar(E.rotR2, true);
     } else {
       mostrar(E.rotR2, false);
@@ -253,8 +256,10 @@ export async function montar(el) {
       at(E.umT1, { x1: n2(x1a), y1: n2(y1a), x2: n2(x1b), y2: n2(y1b) });
       const [rx, ry] = ponto(grau1, R);
       at(E.umRaio, { x1: 0, y1: 0, x2: n2(rx), y2: n2(ry) });
-      const [tx, ty] = ponto(grau1 / 2, R + 26);
-      at(E.umRot, { x: n2(tx), y: n2(ty + 5) });
+      // o rótulo fica a meio do arco, por fora; se o «c» do setor estiver lá perto, passa para o fim do arco
+      const perto = tem && Math.abs(alfa / 2 - grau1 / 2) < 16;
+      const [tx, ty] = perto ? ponto(grau1 + 6, R + 16) : ponto(grau1 / 2, R + 26);
+      at(E.umRot, { x: n2(tx), y: n2(ty + 5), 'text-anchor': perto ? 'start' : 'middle' });
     }
     legenda.hidden = !est.umRad;
     botaoUm.setAttribute('aria-pressed', String(est.umRad));

@@ -4,9 +4,9 @@
   {
    "id": "lim-imediatos",
    "grupo": "limites",
-   "frente": "Quanto valem os limites de $e^x$ e de $\\ln x$ nos extremos dos seus domínios?",
+   "frente": "Quanto valem os limites de $e^x$ e de $\\ln x$ nas extremidades dos seus domínios?",
    "verso": "$e^x$: $\\lim_{x\\to+\\infty}e^x=+\\infty$ e $\\lim_{x\\to-\\infty}e^x=0$ (sempre com valores positivos).<br>$\\ln x$: $\\lim_{x\\to0^+}\\ln x=-\\infty$ e $\\lim_{x\\to+\\infty}\\ln x=+\\infty$.",
-   "porque": "O $\\ln$ é a inversa de $e^x$, por isso os extremos trocam: $e^x\\to0^+$ quando $x\\to-\\infty$ corresponde a $\\ln y\\to-\\infty$ quando $y\\to0^+$. Em $\\ln x$ só te aproximas de 0 pela direita, porque não há logaritmo de números negativos.",
+   "porque": "O $\\ln$ é a inversa de $e^x$, por isso o domínio e o contradomínio trocam de papel: $e^x\\to0^+$ quando $x\\to-\\infty$ corresponde a $\\ln y\\to-\\infty$ quando $y\\to0^+$. Em $\\ln x$ só te aproximas de 0 pela direita, porque não há logaritmo de números negativos.",
    "verifica": [
     "exp(30+abs(t))>1e13",
     "0<exp(-30-abs(t))<1e-13",
@@ -29,8 +29,8 @@
   {
    "id": "lim-exp-vence",
    "grupo": "limites",
-   "frente": "Quando $x\\to+\\infty$, quem «ganha» entre $e^x$, uma potência $x^p$ ($p>0$) e $\\ln x$? Que limites o dizem?",
-   "verso": "A exponencial vence a potência e a potência vence o logaritmo:<br>$\\lim_{x\\to+\\infty}\\dfrac{e^x}{x^p}=+\\infty$ e $\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{x^p}=0$.",
+   "frente": "Quando $x\\to+\\infty$, quem «ganha» entre $e^x$, uma potência $x^p$ ($p>0$) e $\\ln x$?",
+   "verso": "A exponencial vence a potência e a potência vence o logaritmo. Em limites:<br>$\\lim_{x\\to+\\infty}\\dfrac{e^x}{x^p}=+\\infty$ e $\\lim_{x\\to+\\infty}\\dfrac{\\ln x}{x^p}=0$.",
    "porque": "$e^x$ ultrapassa qualquer potência, mesmo $x^{100}$, a partir de certo $x$. Com números: $\\dfrac{e^{30}}{30}\\approx3{,}6\\times10^{11}$ é enorme e $\\dfrac{\\ln10^{6}}{10^{6}}\\approx1{,}4\\times10^{-5}$ é minúsculo.",
    "verifica": [
     "exp(30)/30>3.5e11",
@@ -52,8 +52,8 @@
   {
    "id": "lim-xlnx",
    "grupo": "limites",
-   "frente": "Quanto vale $\\lim_{x\\to0^+}x\\ln x$? Que tipo de indeterminação é?",
-   "verso": "Vale $0$. É do tipo $0\\times(-\\infty)$. Com $y=\\dfrac1x$ (e $y\\to+\\infty$) fica $-\\lim_{y\\to+\\infty}\\dfrac{\\ln y}{y}=0$.",
+   "frente": "Quanto vale $\\lim_{x\\to0^+}x\\ln x$?",
+   "verso": "Vale $0$. À primeira vista é uma indeterminação do tipo $0\\times(-\\infty)$. Com $y=\\dfrac1x$ (e $y\\to+\\infty$) fica $-\\lim_{y\\to+\\infty}\\dfrac{\\ln y}{y}=0$.",
    "porque": "$x\\ln x=\\dfrac{\\ln\\frac1y}{y}=-\\dfrac{\\ln y}{y}$, que é outra vez «a potência vence o logaritmo»: $x$ vai para 0 mais depressa do que $\\ln x$ vai para $-\\infty$.",
    "verifica": [
     "abs(1e-100*ln(1e-100))<1e-97",
@@ -65,7 +65,7 @@
    "grupo": "limites",
    "frente": "Como se levanta cada uma destas indeterminações: $\\dfrac{\\infty}{\\infty}$, $\\infty-\\infty$ e $0\\times\\infty$?",
    "verso": "<strong>$\\dfrac{\\infty}{\\infty}$</strong>: usa $\\dfrac{e^x}{x^p}\\to+\\infty$ e $\\dfrac{\\ln x}{x^p}\\to0$, ou divide tudo pelo termo que manda.<br><strong>$\\infty-\\infty$</strong>: põe em evidência o termo que manda, por exemplo $e^x-x=x\\left(\\dfrac{e^x}{x}-1\\right)$.<br><strong>$0\\times\\infty$</strong>: passa a fração, por exemplo $x\\,e^{-x}=\\dfrac{x}{e^{x}}$.",
-   "porque": "O resultado depende de quem tende mais depressa, por isso não há resposta fixa. Em particular $\\infty\\times0$ não é «0»: $x\\cdot\\dfrac1x\\to1$, $x\\cdot\\dfrac{1}{x^2}\\to0$ e $x^2\\cdot\\dfrac1x\\to+\\infty$ são todos desse tipo.",
+   "porque": "O resultado depende de quem tende mais depressa, por isso não há resposta fixa. Em particular $\\infty\\times0$ não é «0»: $x\\times\\dfrac1x\\to1$, $x\\times\\dfrac{1}{x^2}\\to0$ e $x^2\\times\\dfrac1x\\to+\\infty$ são todos desse tipo.",
    "verifica": [
     "ig(x*exp(-x), x/exp(x))",
     "ig(exp(x)-x, x*(exp(x)/x-1))"
@@ -84,8 +84,8 @@
   {
    "id": "lim-vertical",
    "grupo": "limites",
-   "frente": "Onde podem estar as assíntotas verticais de uma função contínua no seu domínio? Como as confirmas?",
-   "verso": "Só nos extremos finitos do domínio que não lhe pertencem. Aí calculas os limites laterais: $x=a$ é assíntota vertical se algum deles for $+\\infty$ ou $-\\infty$.<br>Quando aparece $\\dfrac{k}{0}$ com $k\\neq0$, estuda o sinal do denominador: $\\dfrac{k}{0^+}$ e $\\dfrac{k}{0^-}$ dão infinitos de sinais contrários.",
+   "frente": "Onde podem estar as assíntotas verticais de uma função contínua no seu domínio?",
+   "verso": "Só nas extremidades finitas do domínio que não lhe pertencem. Para confirmar, calculas os limites laterais: $x=a$ é assíntota vertical se algum deles for $+\\infty$ ou $-\\infty$.<br>Quando aparece $\\dfrac{k}{0}$ com $k\\neq0$, estuda o sinal do denominador: $\\dfrac{k}{0^+}$ e $\\dfrac{k}{0^-}$ dão infinitos de sinais contrários.",
    "porque": "Num ponto onde $f$ é contínua o limite é $f(a)$, um número e não $\\infty$. Por isso $\\ln(x+3)$ não tem assíntota em $x=0$ (que está no domínio), mas tem em $x=-3$.",
    "verifica": [
     "ig(lim(lambda s: ln(s+3), 0), ln(3))",
@@ -95,7 +95,7 @@
   {
    "id": "lim-nao-verticais",
    "grupo": "limites",
-   "frente": "Como calculas as assíntotas não verticais $y=mx+b$? E o que muda se $m=0$?",
+   "frente": "Como calculas as assíntotas não verticais $y=mx+b$ do gráfico de uma função?",
    "verso": "Estuda $x\\to+\\infty$ e $x\\to-\\infty$ em separado: $m=\\lim\\dfrac{f(x)}{x}$ e $b=\\lim\\left(f(x)-mx\\right)$. Só há assíntota se $m$ e $b$ forem números reais.<br>Se $m=0$ é a assíntota horizontal $y=b$, com $b=\\lim f(x)$. Se $m=\\pm\\infty$, não há assíntota nesse sentido.",
    "porque": "Se $f(x)\\approx mx+b$ para $x$ grande, dividir por $x$ dá $m$, e o que sobra depois de tirares $mx$ é $b$. Os dois sentidos são independentes: $f(x)=x\\,e^{x}$ tem a assíntota $y=0$ quando $x\\to-\\infty$ e nenhuma quando $x\\to+\\infty$.",
    "verifica": [
@@ -106,8 +106,8 @@
   {
    "id": "lim-cauchy",
    "grupo": "limites",
-   "frente": "(Só se o teu professor permitir.) O que diz a regra de Cauchy sobre $\\lim\\dfrac{f(x)}{g(x)}$?",
-   "verso": "Se $\\lim\\dfrac{f(x)}{g(x)}$ é uma indeterminação $\\dfrac00$ ou $\\dfrac{\\infty}{\\infty}$ e existe $\\lim\\dfrac{f'(x)}{g'(x)}$, então $\\lim\\dfrac{f(x)}{g(x)}=\\lim\\dfrac{f'(x)}{g'(x)}$.",
+   "frente": "(Só se o teu professor permitir.) O que diz a regra de Cauchy (ou de L'Hôpital) sobre $\\lim\\dfrac{f(x)}{g(x)}$?",
+   "verso": "Regra de Cauchy (ou de L'Hôpital): se $\\lim\\dfrac{f(x)}{g(x)}$ é uma indeterminação $\\dfrac00$ ou $\\dfrac{\\infty}{\\infty}$ e existe $\\lim\\dfrac{f'(x)}{g'(x)}$, então $\\lim\\dfrac{f(x)}{g(x)}=\\lim\\dfrac{f'(x)}{g'(x)}$.",
    "porque": "Derivam-se o numerador e o denominador cada um por si, não o quociente. Confirma antes que é mesmo $\\frac00$ ou $\\frac{\\infty}{\\infty}$ e pergunta ao teu professor se a aceita: os limites notáveis fazem o mesmo trabalho.",
    "verifica": [
     "ig(der(lambda s: ln(s), x)/der(lambda s: s**2, x), 1/(2*x**2))",

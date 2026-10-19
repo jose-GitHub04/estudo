@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cenas para capturas de ecrã de Probabilidades</title>
+<!-- Ferramenta de desenvolvimento (não é um teste): abre uma página real num iframe com a largura pedida, leva-a a um
+     estado conhecido (a «cena») e mostra só a parte que interessa, para tirar capturas de ecrã a 390 px ou 900 px.
+     Uso: /probabilidades/tests/demo.html?cena=normal-cauda&w=390&alvo=.nor
+       cena   uma das chaves de CENAS (ver abaixo); sem cena mostra a página como está
+       w      largura do iframe em px (390 por omissão)
+       alvo   seletor CSS do elemento a pôr no topo (por omissão, o que a cena indica)
+       dy     deslocação extra, em px, para baixo (por omissão 0)
+     Sem janela:
+       msedge --headless=new --virtual-time-budget=20000 --window-size=500,900 --screenshot=cena.png "http://127.0.0.1:8830/probabilidades/tests/demo.html?cena=normal-cauda" -->
+<style>
+  body { margin: 0; background: #888; overflow: hidden; }
+  #palco { opacity: 1; }
+  #palco iframe { border: 0; display: block; background: #fff; }
+  #msg { position: fixed; top: 0; right: 0; background: #fff; font: 11px monospace; z-index: 9; }
+</style>
+</head>
+<body>
+<div id="msg"></div>
+<div id="palco"></div>
+<pre id="resultado" hidden></pre>
+<script type="module">
+import {
+  carregarPagina, esperar, clicar, escrever, tecla, slider, texto, formulas, avaliarTex,
+} from './base.js';
+
+const params = new URLSearchParams(location.search);
+const cena = params.get('cena');
+const largura = Number(params.get('w')) || 390;
+const botao = (raiz, txt) => [...raiz.querySelectorAll('button')].find((b) => texto(b) === txt);
+const submeter = (p, form) => form.dispatchEvent(new p.win.Event('submit', { bubbles: true, cancelable: true }));
+
+// cada cena: { pagina, alvo, fazer(p) }
+const CENAS = {
+  'tabela-soma': { pagina: 'materia', alvo: '.tab', fazer(p) {
+    const w = p.q('[data-widget="tabela"]');
+    escrever(w.querySelector('input.tab-campo'), '0,11', true);
+  } },
+  'tabela-k': { pagina: 'materia', alvo: '.tab-k', fazer(p) {
+    const w = p.q('[data-widget="tabela"]');
+    clicar(botao(w, 'Descobre o k'));
+    clicar(w.querySelectorAll('.tab-opcao')[0]);
+    const f = w.querySelector('.tab-passo--b form');
+    w.querySelector('.tab-campo-k').value = '7/9';
+    submeter(p, f);
+  } },
+  'tabela-k-resolucao': { pagina: 'materia', alvo: '.tab-k', fazer(p) {
+    const w = p.q('[data-widget="tabela"]');
+    clicar(botao(w, 'Descobre o k'));
+    const certa = w.querySelector('.tab-opcao[data-certa="sim"]');
+    clicar(certa);
+    const filas = w.querySelectorAll('.tab-enunciado tr');
+    const ps = [...filas[1].querySelectorAll('td')].map((td) => formulas(td)[0]);
+    const d = ps.map((tx) => avaliarTex(tx, { k: 0 }));
+    const c = ps.map((tx, j) => avaliarTex(tx, { k: 1 }) - d[j]);
+    const kv = (1 - d.reduce((a, b) => a + b, 0)) / c.reduce((a, b) => a + b, 0);
+    let n = 1; let dd = 1;
+    for (; dd <= 400; dd++) { n = Math.round(kv * dd); if (Math.abs(n / dd - kv) < 1e-12) break; }
+    w.querySelector('.tab-campo-k').value = `${n}/${dd}`;
+    submeter(p, w.querySelector('.tab-passo--b form'));
+  } },
+  'urna-hist': { pagina: 'materia', alvo: '.urn-grelha', fazer(p) {
+    const w = p.q('[data-widget="urna"]');
+    clicar(w.querySelector('[data-rep="1000"]'));
+    clicar(w.querySelectorAll('.urn-fila')[1].querySelector('button'));
+  } },
+  'jogo': { pagina: 'materia', alvo: '[data-painel="jogo"]', fazer(p) {
+    const w = p.q('[data-widget="urna"]');
+    clicar(botao(w, 'Jogo'));
+    slider(w.querySelector('.urn-premio'), -7);
+    clicar(w.querySelector('[data-r="sim"]'));
+    clicar(w.querySelector('.urn-cem'));
+  } },
+  'normal-cauda': { pagina: 'materia', alvo: '.nor', fazer(p) {
+    const w = p.q('[data-widget="normal"]');
+    slider(w.querySelector('input[id$="-mu"]'), 7.5);
+    slider(w.querySelector('input[id$="-sg"]'), 1.7);
+    clicar(w.querySelector('[data-modo="cauda"]'));
+    escrever(w.querySelector('.nor-in-c'), '9');
+  } },
+  'normal-estreita': { pagina: 'materia', alvo: '.nor', fazer(p) {
+    const w = p.q('[data-widget="normal"]');
+    slider(w.querySelector('input[id$="-mu"]'), -4);
+    slider(w.querySelector('input[id$="-sg"]'), 0.5);
+    clicar(w.querySelector('[data-modo="s3"]'));
+  } },
+  'normal-simetria': { pagina: 'materia', alvo: '.nor', fazer(p) {
+    const w = p.q('[data-widget="normal"]');
+    slider(w.querySelector('input[id$="-sg"]'), 2);
+    clicar(w.querySelector('.nor-comparar'));
+    clicar(w.querySelector('.nor-simetria'));
+  } },
+  'dados-media': { pagina: 'materia', alvo: '.dad', fazer(p) {
+    const w = p.q('[data-widget="dados"]');
+    slider(w.querySelector('input[type=range]'), 12);
+    clicar(botao(w, 'Média'));
+    clicar(w.querySelector('.dad-b1000'));
+  } },
+  'dados-2': { pagina: 'materia', alvo: '.dad', fazer(p) {
+    const w = p.q('[data-widget="dados"]');
+    slider(w.querySelector('input[type=range]'), 2);
+    clicar(w.querySelector('.dad-b100'));
+  } },
+  'ex1-resolucao': { pagina: 'exercicios', alvo: '#ex1', fazer(p) {
+    const w = p.q('[data-ex="k"]');
+    const b = w.querySelector('.exa-botao-res');
+    while (!b.hidden) clicar(b);
+    slider(w.querySelector('input[type=range]'), 20);
+  } },
+  'ex2-resolucao': { pagina: 'exercicios', alvo: '#ex2', fazer(p) {
+    const w = p.q('[data-ex="ab"]');
+    slider(w.querySelectorAll('input[type=range]')[0], 35);
+    slider(w.querySelectorAll('input[type=range]')[1], 40);
+    const b = w.querySelector('.exa-botao-res');
+    while (!b.hidden) clicar(b);
+  } },
+  'ex3-arvore': { pagina: 'exercicios', alvo: '#ex3', fazer(p) {
+    clicar(p.q('.exu-toda'));
+    clicar(p.qa('.exu-folha')[2]);
+  } },
+  'ex3-condicionada': { pagina: 'exercicios', alvo: 'h4[id$="-a2"]', fazer(p) {
+    clicar(p.q('.exu-abrir[data-al="2"]'));
+    clicar(p.q('[data-modo="ge2"]'));
+  } },
+  'ex3-mu': { pagina: 'exercicios', alvo: 'h4[id$="-a3"]', fazer(p) {
+    clicar(p.q('.exu-abrir[data-al="3"]'));
+    clicar(p.q('.exu-t-mu'));
+    clicar(p.q('.exu-t-parc'));
+    clicar(p.q('.exu-tab-mu .exu-btn-x'));
+  } },
+  'ex3-resolucao': { pagina: 'exercicios', alvo: '.exu-res', fazer(p) {
+    clicar(p.q('.exu-ver'));
+    while (!p.q('.exu-prox').disabled) clicar(p.q('.exu-prox'));
+  } },
+  'ex4-livre': { pagina: 'exercicios', alvo: '.exn', fazer(p) {
+    const w = p.q('[data-widget="ex-normal"]');
+    clicar(w.querySelector('[data-modo="livre"]'));
+  } },
+  'ex4-cauda': { pagina: 'exercicios', alvo: '.exn', fazer(p) {
+    clicar(p.q('[data-widget="ex-normal"] [data-modo="cauda"]'));
+  } },
+  'ex4-resolucao': { pagina: 'exercicios', alvo: 'h4[id$="-res"].exn-titulo', fazer(p) {
+    clicar(p.q('.exn-ver'));
+    while (!p.q('.exn-prox').disabled) clicar(p.q('.exn-prox'));
+  } },
+  'vf-barras': { pagina: 'verdadeiro-falso', alvo: '.vf-cartao', fazer(p) {
+    // responde a afirmações até aparecer uma com figura
+    for (let i = 0; i < 14; i++) {
+      clicar(p.qa('.vf-resp')[i % 2]);
+      if (p.q('.vf-fig')) return;
+      clicar(p.q('.vf-seguinte'));
+    }
+  } },
+  'vf-fim': { pagina: 'verdadeiro-falso', alvo: '.vf-cartao', fazer(p) {
+    for (let i = 0; i < 14; i++) { clicar(p.qa('.vf-resp')[i % 3 === 0 ? 0 : 1]); clicar(p.q('.vf-seguinte')); }
+  } },
+};
+
+const c = CENAS[cena] || { pagina: params.get('pagina') || 'materia', alvo: null, fazer() {} };
+const p = await carregarPagina(`../${c.pagina}.html`, largura, 24000);
+let falha = '';
+try { c.fazer(p); } catch (e) { falha = ` FALHA NA CENA: ${e.message}`; }
+await esperar(300);
+scrollTo(0, 0); // um scrollIntoView dentro do iframe pode ter deslocado esta página
+const alvo = params.get('alvo') || c.alvo;
+const el = alvo ? p.q(alvo) : null;
+const top = el ? el.getBoundingClientRect().top : 0;
+p.iframe.style.marginTop = `${-(top - 8) - (Number(params.get('dy')) || 0)}px`;
+document.getElementById('msg').textContent = `${cena || p.q('h1').textContent} ${largura}px ${p.erros.length ? 'ERROS: ' + p.erros.join(' | ') : ''}${falha}`;
+</script>
+</body>
+</html>

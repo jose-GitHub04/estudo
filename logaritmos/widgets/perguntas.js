@@ -5,12 +5,14 @@
 // Progresso guardado em progresso (o prefixo «log-» existe porque o armazenamento é partilhado com os outros temas):
 //   'log-perguntas'       { [idPergunta]: 1 | 0 }   último resultado de cada pergunta
 //   'log-perguntas-temas' [idTema, ...]             temas escolhidos no ecrã inicial
+// Os textos passam por intervalos.js (]a,b[ com o espaçamento certo) antes de o KaTeX os ler.
 // Todo o estado vive dentro de montar(); nada fica no módulo.
 
 import { GRUPOS } from '../grupos.js';
 import { renderizar } from '../../assets/motor/katex.js';
 import { baralhar, criarRng } from '../../assets/motor/matematica.js';
 import * as P from '../../assets/motor/progresso.js';
+import { intervalosNoTexto } from './intervalos.js';
 
 const LETRAS = ['A', 'B', 'C', 'D'];
 const TAMANHOS = [
@@ -40,7 +42,7 @@ function h(tag, props = {}, ...filhos) {
 // não HTML («$a<b$» seria lido como a etiqueta <b>), por isso escapam-se só aí.
 const FORMULA = /\$\$[\s\S]+?\$\$|\$[^$]+?\$/g;
 function seguro(texto) {
-  return String(texto === undefined || texto === null ? '' : texto).replace(FORMULA, (m) => m
+  return intervalosNoTexto(texto).replace(FORMULA, (m) => m
     .replace(/&(?![a-zA-Z]+;|#\d+;)/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;'));
@@ -453,9 +455,9 @@ export async function montar(el, dados, extra = {}) {
         : pct >= 50 ? 'Estás no bom caminho. Vê o que falhaste e tenta outra vez.'
           : 'Ainda há trabalho a fazer. Repete com calma, a prática resolve.';
 
-    const titulo = h('h4', { class: 'per-titulo', tabindex: '-1' }, 'Fim da ronda');
+    const titulo = h('h2', { class: 'per-titulo', tabindex: '-1' }, 'Fim da ronda');
     const lista_falhadas = falhadas.length === 0 ? null : h('div', { class: 'per-falhadas' },
-      h('h4', { class: 'per-subtitulo' }, `O que falhaste (${falhadas.length})`),
+      h('h3', { class: 'per-subtitulo' }, `O que falhaste (${falhadas.length})`),
       h('ol', { class: 'per-falhadas__lista' }, falhadas.map((i) => h('li', { class: 'per-falhada' },
         h('span', { class: 'per-falhada__tema' }, tituloTema(i.p.tema)),
         comFormulas('span', 'per-falhada__texto', i.p.enunciado)))));

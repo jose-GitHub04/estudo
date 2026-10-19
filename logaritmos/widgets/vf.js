@@ -6,6 +6,8 @@
 // `figura` segue o esquema comum do tema ({ tipo: 'grafico', x, y, curvas, retas, retasV, retasH, pontos, area,
 // legenda }) e desenha-se com assets/motor/grafico.js. Só aparece depois de se responder, porque pode revelar a
 // resposta (por exemplo a assíntota certa). Uma figura ilegível ou que falhe é ignorada: fica só a explicação.
+// Os rótulos da figura põe-nos rotulos.js, onde não tapam curvas, pontos nem números dos eixos; nos rótulos, «e^x» escreve
+// o expoente em cima (o SVG não leva KaTeX). Os textos passam por intervalos.js (]a,b[ com o espaçamento certo).
 // Progresso guardado em progresso (o prefixo «log-» existe porque o armazenamento é partilhado com os outros temas):
 //   'log-vf'       { [idAfirmacao]: 1 }   afirmações já acertadas à primeira (numa ronda normal)
 //   'log-vf-tema'  'todos' | idTema       último filtro escolhido
@@ -16,6 +18,8 @@ import { renderizar } from '../../assets/motor/katex.js';
 import { baralhar, criarRng } from '../../assets/motor/matematica.js';
 import { criarGrafico, formatarNumero } from '../../assets/motor/grafico.js';
 import * as P from '../../assets/motor/progresso.js';
+import { intervalosNoTexto } from './intervalos.js';
+import { colocarRotulos } from './rotulos.js';
 
 /** Cria um elemento: h('button', { class: 'x', onclick: fn }, 'texto', outroNo). */
 function h(tag, props = {}, ...filhos) {
@@ -36,7 +40,7 @@ function h(tag, props = {}, ...filhos) {
 // Dentro de $...$ um «<» ou «&» é matemática e não HTML, por isso escapam-se só aí.
 const FORMULA = /\$\$[\s\S]+?\$\$|\$[^$]+?\$/g;
 function seguro(texto) {
-  return String(texto === undefined || texto === null ? '' : texto).replace(FORMULA, (m) => m
+  return intervalosNoTexto(texto).replace(FORMULA, (m) => m
     .replace(/&(?![a-zA-Z]+;|#\d+;)/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;'));
@@ -107,93 +111,6 @@ function descricao(f) {
   return partes.join(' ');
 }
 
-const sobrepoe = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-
-/** O segmento (x0,y0)-(x1,y1) toca no retângulo r? (corte de Liang-Barsky) */
-function segmentoToca(x0, y0, x1, y1, r) {
-  let t0 = 0;
-  let t1 = 1;
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  for (const [p, q] of [[-dx, x0 - r.x], [dx, r.x + r.width - x0], [-dy, y0 - r.y], [dy, r.y + r.height - y0]]) {
-    if (p === 0) {
-      if (q < 0) return false;
-    } else {
-      const t = q / p;
-      if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
-    }
-  }
-  return true;
-}
-
-/**
- * Afasta os rótulos que ficaram uns sobre os outros, sobre um ponto, sobre os números e os eixos ou sobre uma
- * curva (duas curvas que acabam no mesmo sítio, dois pontos juntos...). Só mexe nos rótulos: na vertical e um pouco
- * na horizontal, sempre dentro da zona do gráfico. Precisa de o desenho já estar no documento, para medir o texto.
- * Se não conseguir medir, deixa como está.
- */
-function afastarRotulos(svg) {
-  try {
-    const visivel = (e) => e.getClientRects().length > 0;
-    const zona = (() => { // a zona do gráfico: fora dela os rótulos das curvas e das retas seriam cortados
-      const c = svg.querySelector('clipPath rect');
-      return { x: Number(c.getAttribute('x')) + 1, y: Number(c.getAttribute('y')) + 1, width: Number(c.getAttribute('width')) - 2, height: Number(c.getAttribute('height')) - 2 };
-    })();
-    const textosDe = (...nomes) => nomes.flatMap((n) => [...svg.querySelectorAll(`[data-camada="${n}"] text`)]).filter(visivel);
-    // quem fica no sítio primeiro: pontos, guias e rótulos soltos; os das curvas, que se encostam a qualquer sítio, cedem
-    const textos = textosDe('pontos', 'retas', 'texto', 'curvas');
-    const caixas = [...svg.querySelectorAll('[data-camada="base"] text, [data-camada="pontos"] circle')].filter(visivel).map((e) => e.getBBox());
-    const segmentos = [];
-    for (const l of svg.querySelectorAll('[data-camada="base"] > line')) { // eixos e marcas (a grelha está noutro grupo)
-      segmentos.push(['x1', 'y1', 'x2', 'y2'].map((a) => Number(l.getAttribute(a))));
-    }
-    for (const path of svg.querySelectorAll('[data-camada="curvas"] path')) {
-      let anterior = null;
-      for (const m of (path.getAttribute('d') || '').matchAll(/([ML])(-?[\d.]+) (-?[\d.]+)/g)) {
-        const ponto = [Number(m[2]), Number(m[3])];
-        if (m[1] === 'L' && anterior) segmentos.push([...anterior, ...ponto]);
-        anterior = ponto;
-      }
-    }
-    const PASSO = 13;
-    // Deslocamentos a experimentar, dos mais curtos para os mais compridos (mexer na vertical custa menos).
-    // Um ponto não larga o seu rótulo: só sobe ou desce uma linha, ou passa para o outro lado do ponto.
-    const candidatos = (b, deUmPonto, ancora) => {
-      const lista = [];
-      for (const dx of deUmPonto ? [0] : [0, -30, 30, -60, 60, -90]) {
-        for (const dy of deUmPonto ? [0, -PASSO, PASSO] : [0, -PASSO, PASSO, -2 * PASSO, 2 * PASSO, -3 * PASSO, 3 * PASSO]) lista.push([dx, dy, Math.abs(dx) * 1.5 + Math.abs(dy)]);
-      }
-      if (deUmPonto && ancora !== 'middle') { // o rótulo está à direita ('start') ou à esquerda ('end') do ponto
-        const dx = (ancora === 'end' ? 1 : -1) * (b.width + 19);
-        for (const dy of [0, -PASSO, PASSO]) lista.push([dx, dy, 20 + Math.abs(dy)]);
-      }
-      return lista.sort((p, q) => p[2] - q[2]);
-    };
-    const rotulos = []; // caixas dos rótulos já pousados
-    for (const t of textos) {
-      const b = t.getBBox();
-      const em = ([dx, dy]) => ({ x: b.x + dx, y: b.y + dy, width: b.width, height: b.height });
-      const cabe = (r) => r.x >= zona.x && r.y >= zona.y && r.x + r.width <= zona.x + zona.width && r.y + r.height <= zona.y + zona.height;
-      // quanto custa pousar aqui: outros rótulos pesam mais, depois números e pontos, depois o traço das curvas
-      const custo = (r) => 100 * rotulos.filter((o) => sobrepoe(r, o)).length + 30 * caixas.filter((o) => sobrepoe(r, o)).length
-        + Math.min(10, segmentos.filter(([x0, y0, x1, y1]) => segmentoToca(x0, y0, x1, y1, r)).length);
-      let melhor = [0, 0, 0];
-      let menor = Infinity;
-      for (const d of candidatos(b, !!t.closest('[data-camada="pontos"]'), t.getAttribute('text-anchor'))) {
-        if (!cabe(em(d))) continue;
-        const c = custo(em(d)) + d[2] / 50; // com custos iguais, o mais perto
-        if (c < menor) { menor = c; melhor = d; }
-        if (c < 1) break; // livre de tudo, e sem se ter afastado
-      }
-      if (melhor[0] || melhor[1]) {
-        t.setAttribute('x', String(+(Number(t.getAttribute('x')) + melhor[0]).toFixed(2)));
-        t.setAttribute('y', String(+(Number(t.getAttribute('y')) + melhor[1]).toFixed(2)));
-      }
-      rotulos.push(em(melhor));
-    }
-  } catch (e) { /* sem medidas: os rótulos ficam onde o gráfico os pôs */ }
-}
-
 /** Desenha o campo `figura` de uma afirmação, ou devolve null se for ilegível ou der erro. */
 function figura(f) {
   if (!f || typeof f !== 'object' || f.tipo !== 'grafico') return null;
@@ -202,32 +119,44 @@ function figura(f) {
     const g = criarGrafico({
       x: f.x, y: f.y, largura: 300, altura: 225, // 300 de largura: a 390 px o texto fica perto do tamanho real
       aria: limpo(f.legenda) || limpo(f.aria) || descricao(f),
+      rotuloX: '', rotuloY: '', // os nomes dos eixos põe-nos rotulos.js
     });
+    // Tudo se desenha sem rótulos; no fim, rotulos.js escolhe para cada um o sítio onde não tapa nada.
+    const pedidos = [];
+    const rotulo = (v, porOmissao) => (v === undefined || v === null ? porOmissao : limpo(v)); // um rotulo vazio quer dizer sem rótulo
     if (f.area) {
       if (typeof f.area.expr !== 'string' || !ehNumero(f.area.de) || !ehNumero(f.area.ate)) throw new Error('área mal definida');
       g.area(f.area.expr, f.area.de, f.area.ate);
     }
     for (const r of emLista(f.retas)) {
       if (!r || !ehNumero(r.declive) || !ehNumero(r.ordenada)) throw new Error('reta mal definida');
-      g.reta(r.declive, r.ordenada, { rotulo: r.rotulo, cor: r.cor });
+      g.reta(r.declive, r.ordenada, { cor: r.cor });
+      pedidos.push({ tipo: 'reta', declive: r.declive, ordenada: r.ordenada, texto: rotulo(r.rotulo, ''), cor: r.cor || 'id' });
     }
     for (const r of emLista(f.retasV)) {
       const o = guia(r, 'x');
-      g.retaVertical(o.x, { rotulo: o.rotulo ?? `x = ${num(o.x)}`, cor: o.cor, posRotulo: o.posRotulo });
+      g.retaVertical(o.x, { cor: o.cor });
+      // a guia x = 0 cai sobre o eixo dos yy, cujo nome está em cima: prefere-se o rótulo em baixo
+      pedidos.push({ tipo: 'retaV', x: o.x, texto: rotulo(o.rotulo, `x = ${num(o.x)}`), cor: o.cor || 'assint', pref: o.posRotulo ?? (o.x === 0 ? 'baixo' : 'cima') });
     }
     for (const r of emLista(f.retasH)) {
       const o = guia(r, 'y');
-      g.retaHorizontal(o.y, { rotulo: o.rotulo ?? `y = ${num(o.y)}`, cor: o.cor });
+      g.retaHorizontal(o.y, { cor: o.cor });
+      pedidos.push({ tipo: 'retaH', y: o.y, texto: rotulo(o.rotulo, `y = ${num(o.y)}`), cor: o.cor || 'assint', pref: o.posRotulo });
     }
     emLista(f.curvas).forEach((c, i) => {
       if (!c || typeof c.expr !== 'string' || c.expr.trim() === '') throw new Error('curva sem expressão');
-      const item = g.curva(c.expr, { cor: c.cor || COR_DAS_CURVAS[i % COR_DAS_CURVAS.length], rotulo: c.rotulo });
+      const cor = c.cor || COR_DAS_CURVAS[i % COR_DAS_CURVAS.length];
+      const item = g.curva(c.expr, { cor });
       if (item.tracos === 0) throw new Error(`curva fora da janela: ${c.expr}`); // um gráfico sem a curva enganava
+      pedidos.push({ tipo: 'curva', fn: c.expr, texto: rotulo(c.rotulo, ''), cor, pref: c.posRotulo === 'inicio' ? 'inicio' : 'fim' });
     });
     for (const p of emLista(f.pontos)) {
       if (!p || !ehNumero(p.x) || !ehNumero(p.y)) throw new Error('ponto mal definido');
-      g.ponto(p.x, p.y, { rotulo: p.rotulo, cor: p.cor });
+      g.ponto(p.x, p.y, { cor: p.cor });
+      pedidos.push({ tipo: 'ponto', x: p.x, y: p.y, raio: 4.5, texto: rotulo(p.rotulo, ''), cor: p.cor, pref: p.posRotulo });
     }
+    colocarRotulos(g, pedidos, { nomesEixos: { x: 'x', y: 'y' } });
     return h('div', { class: 'vf-fig' }, g.svg);
   } catch (e) {
     console.warn('vf: figura ignorada', e);
@@ -397,7 +326,6 @@ export async function montar(el, dados, extra = {}) {
         fig,
         a.erroComum ? h('div', { class: 'vf-erro' }, h('p', { class: 'vf-erro__titulo' }, 'Erro comum'), comFormulas('p', 'vf-erro__texto', a.erroComum)) : null,
         h('div', { class: 'vf-rodape' }, seguinte)].filter(Boolean));
-      if (fig) afastarRotulos(fig.querySelector('svg'));
       // Com a figura o resultado fica alto: o foco no botão sem deslizar a página (senão o veredito
       // saía do ecrã) e depois só o necessário para ver o resultado, se couber.
       seguinte.focus({ preventScroll: true });
@@ -435,13 +363,13 @@ export async function montar(el, dados, extra = {}) {
     const frase = erradas.length === 0 ? 'Sem falhas. Muito bem!'
       : certas * 2 >= total ? 'Estás no bom caminho. Vê as que falhaste e tenta outra vez.'
         : 'Ainda há trabalho a fazer. Lê as explicações com calma e repete.';
-    const titulo = h('h3', { class: 'vf-titulo', tabindex: '-1' }, `Acertaste ${certas} de ${total}`);
+    const titulo = h('h2', { class: 'vf-titulo', tabindex: '-1' }, `Acertaste ${certas} de ${total}`);
 
     palco.replaceChildren(h('div', { class: 'vf-cartao vf-fim' }, // h() ignora os null
       titulo,
       h('p', {}, frase),
       erradas.length ? h('div', { class: 'vf-erradas' },
-        h('h4', { class: 'vf-subtitulo' }, `Para rever (${erradas.length})`),
+        h('h3', { class: 'vf-subtitulo' }, `Para rever (${erradas.length})`),
         h('ol', { class: 'vf-erradas__lista' }, erradas.map((i) => h('li', { class: 'vf-errada' },
           h('span', { class: 'vf-errada__tema' }, nomeTema(i.a.tema)),
           comFormulas('span', 'vf-errada__texto', i.a.texto),

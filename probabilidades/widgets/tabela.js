@@ -178,7 +178,7 @@ export async function montar(el) {
     const anel = criar('circle', { class: 'tab-anel', cx: posX(x), r: 14 });
     const bola = criar('circle', { class: 'tab-bola', cx: posX(x), r: 7 });
     const pega = criar('g', {
-      class: 'tab-pega', tabindex: 0, role: 'slider',
+      class: 'tab-pega', tabindex: 0, role: 'slider', 'data-alvo': 'figura', // o desenho todo reage ao toque (arrastar)
       'aria-valuemin': 0, 'aria-valuemax': 1, 'aria-orientation': 'vertical',
     }, [anel, bola]);
     pega.addEventListener('keydown', (e) => {

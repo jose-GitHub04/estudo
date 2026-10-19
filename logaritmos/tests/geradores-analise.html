@@ -5,9 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Testes dos geradores de análise (logaritmos)</title>
 <!-- Abrir /logaritmos/tests/geradores-analise.html ou: msedge --headless=new --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8825/logaritmos/tests/geradores-analise.html
-     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. Só testa os tipos que existem em TIPOS_ANALISE. -->
+     O resultado fica em <pre id="resultado"> e em <html data-testes="ok|falhou">. Só testa os tipos que existem em TIPOS_ANALISE.
+     Para cada tipo de pergunta o recálculo é independente do gerador: o texto LaTeX mostrado ao aluno (enunciado e opções)
+     é traduzido para uma expressão e comparado com derivadas e valores obtidos por diferenças finitas e por amostragem.
+     Depuração: ?n=300 (menos sementes), ?ver=derivada:1-20 (mostra perguntas geradas), ?vista=tangente:2:1 (o treino com essa pergunta respondida). -->
 <style>body { font: 14px/1.4 monospace; padding: 1rem; } pre { white-space: pre-wrap; }</style>
 <script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
 </head>
 <body>
 <h1>Testes dos geradores de análise (logaritmos)</h1>
@@ -31,6 +35,45 @@ async function teste(nome, fn) {
   else { nFalhas++; linhas.push('FALHOU: ' + nome + ' | ' + erros.join(' | ') + (total > erros.length ? ` (+${total - erros.length} falhas)` : '')); }
 }
 
+// Depuração: ?ver=tipo:semente (ou tipo:de-ate) mostra as perguntas geradas (ou o erro) e não corre os testes.
+const ver = new URLSearchParams(location.search).get('ver');
+if (ver) {
+  const [id, sem] = ver.split(':');
+  const [de, ate] = sem.split('-').map(Number);
+  const blocos = [];
+  for (let sm = de; sm <= (ate || de); sm++) {
+    try {
+      const q = TIPOS_ANALISE.find((x) => x.id === id).gerar(M.criarRng(sm), {});
+      blocos.push(`#${sm} ${q.enunciado}\n` + q.opcoes.map((o) => `   ${o.correta ? '*' : ' '} ${o.tex}`).join('\n') + `\n   Expl: ${q.explicacao}\n   [${q.verificacao.familia}]`);
+    } catch (e) { blocos.push(`#${sm} ERRO ${e.message}`); }
+  }
+  saida.textContent = blocos.join('\n\n');
+  document.documentElement.dataset.testes = 'depuracao';
+  throw new Error('depuração');
+}
+
+// Vista: ?vista=tipo:semente:opcao mostra no treino, a 390 px de largura, a pergunta gerada e a correção (para capturas de ecrã).
+const vistaPar = new URLSearchParams(location.search).get('vista');
+if (vistaPar) {
+  const [id, sem, op] = vistaPar.split(':');
+  for (const href of ['../../assets/katex/katex.min.css', '../../assets/estilo.css', '../tema.css', '../widgets/treino.css']) {
+    await new Promise((r) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = l.onerror = r; document.head.append(l); });
+  }
+  document.body.style.cssText = 'margin: 0; padding: 0;';
+  document.body.replaceChildren();
+  const el = document.createElement('div');
+  const env = document.createElement('div');
+  env.className = 'envolve';
+  env.append(el);
+  document.body.append(env);
+  const treino = await import('../widgets/treino.js');
+  await treino.montar(el, {}, { tipos: [TIPOS_ANALISE.find((x) => x.id === id)], semente: Number(sem) });
+  el.querySelector('.tre-comecar').click();
+  if (op !== undefined && op !== '') el.querySelectorAll('.tre-opcao')[Number(op)].click();
+  document.documentElement.dataset.testes = 'vista';
+  throw new Error('vista');
+}
+
 const dolaresPares = (t) => (t.match(/\$/g) || []).length % 2 === 0;
 const semFormulas = (t) => t.replace(/\$[^$]*\$/g, '');
 const jaRenderizadas = new Set();
@@ -40,6 +83,234 @@ function renderiza(src) {
   jaRenderizadas.add(src);
   try { window.katex.renderToString(src, { throwOnError: true, strict: () => 'ignore' }); } catch (e) { errosKatex.push(`${src} -> ${e.message}`); }
 }
+
+// ---------- tradutor do LaTeX que os geradores usam para a sintaxe de M.criarFuncao ----------
+// Só conhece \dfrac \frac \sqrt \ln \log_{a} \cdot \times \left \right \, e chavetas/expoentes.
+// É independente dos geradores: lê o texto que o aluno vê.
+
+function texParaExpr(src) {
+  const s = src.replace(/\\left|\\right/g, '').replace(/\\[,;!]/g, ' ');
+  let k = 0;
+  const grupo = () => {
+    if (s[k] !== '{') throw new Error('esperava { em ' + s.slice(k, k + 12));
+    k++;
+    const r = seq(true);
+    k++; // a chaveta que fecha
+    return r;
+  };
+  const arg = () => {
+    while (s[k] === ' ') k++;
+    return s[k] === '{' ? grupo() : s[k++];
+  };
+  function seq(dentro) {
+    let out = '';
+    while (k < s.length) {
+      const c = s[k];
+      if (c === '}') {
+        if (dentro) return out;
+        throw new Error('} a mais');
+      }
+      if (c === '{') { out += '(' + grupo() + ')'; continue; }
+      if (c === '\\') {
+        const m = /^\\([a-zA-Z]+)/.exec(s.slice(k));
+        if (!m) throw new Error('comando inesperado: ' + s.slice(k, k + 8));
+        k += m[0].length;
+        switch (m[1]) {
+          case 'dfrac': case 'frac': { const a = arg(); const b = arg(); out += `((${a})/(${b}))`; break; }
+          case 'sqrt': out += `sqrt(${arg()})`; break;
+          case 'ln': out += ' ln '; break;
+          case 'log':
+            if (s[k] === '_') { k++; out += ` log_(${arg()}) `; } else out += ' log ';
+            break;
+          case 'cdot': case 'times': out += '*'; break;
+          default: throw new Error('comando desconhecido: ' + m[1]);
+        }
+        continue;
+      }
+      out += c;
+      k++;
+    }
+    if (dentro) throw new Error('falta }');
+    return out;
+  }
+  return seq(false);
+}
+const funcTex = (s) => M.criarFuncao(texParaExpr(s));
+function numTex(s) {
+  const r = M.avaliar(texParaExpr(s));
+  if (!r.ok) throw new Error(`não avalia: ${s} (${r.erro})`);
+  return r.valor;
+}
+/** Lê um intervalo escrito à portuguesa: ]-\infty,-1], \left[\dfrac{1}{e},e\right[, \mathbb{R}. */
+function parseIntervalo(tex) {
+  const t = tex.replace(/\\left|\\right/g, '').trim();
+  if (t === '\\mathbb{R}') return { lo: -Infinity, hi: Infinity, loC: false, hiC: false };
+  if (t === '\\mathbb{R}^{+}') return { lo: 0, hi: Infinity, loC: false, hiC: false };
+  const ab = t[0];
+  const fe = t[t.length - 1];
+  if (!'[]'.includes(ab) || !'[]'.includes(fe)) throw new Error('intervalo ilegível: ' + tex);
+  const corpo = t.slice(1, -1);
+  let prof = 0;
+  let idx = -1;
+  for (let i = 0; i < corpo.length; i++) {
+    const c = corpo[i];
+    if (c === '{') prof++;
+    else if (c === '}') prof--;
+    else if (c === ',' && prof === 0) { idx = i; break; }
+  }
+  if (idx < 0) throw new Error('intervalo sem vírgula: ' + tex);
+  const val = (x) => {
+    const y = x.trim();
+    if (y === '+\\infty') return Infinity;
+    if (y === '-\\infty') return -Infinity;
+    return numTex(y);
+  };
+  return { lo: val(corpo.slice(0, idx)), hi: val(corpo.slice(idx + 1)), loC: ab === '[', hiC: fe === ']' };
+}
+
+// ---------- numérica ----------
+const perto = (a, b, tol = 1e-6) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
+/** Derivada numérica (5 pontos); NaN se f não está definida à volta de x. */
+function dnum(f, x) {
+  const h = 1e-3;
+  const v = [f(x - 2 * h), f(x - h), f(x + h), f(x + 2 * h)];
+  if (!v.every(Number.isFinite)) return NaN;
+  return (v[0] - 8 * v[1] + 8 * v[2] - v[3]) / (12 * h);
+}
+/** Pontos de -10 a 10 onde f e a sua derivada numérica existem. */
+function pontosDeriv(f) {
+  const xs = [];
+  for (let x = -10; x <= 10.0001; x += 0.25) {
+    if (Number.isFinite(f(x)) && Number.isFinite(dnum(f, x))) xs.push(x);
+  }
+  return xs;
+}
+// texto degenerado: sinais duplos, expoentes 1 ou 0, coeficientes 1x, 0x, chavetas vazias
+const DEGENERADO = /\+-|--|\^\{1\}|\^\{0\}|\{\}|\(\)|(?<![\d.,])1x|(?<![\d.,])0x|(?<![\d.,])1e\^|\\cdot1(?!\d)|\+0(?!\d)|-0(?!\d)/;
+
+// ---------- testes de uma ponte: o próprio tradutor ----------
+await teste('tradutor de LaTeX: casos conhecidos', (ok) => {
+  const casos = [
+    [String.raw`\dfrac{x^{2}-1}{x}`, 3, 8 / 3],
+    [String.raw`2x\,e^{-x}`, 1, 2 / Math.E],
+    [String.raw`\ln(x^{2}+1)`, 2, Math.log(5)],
+    [String.raw`(\ln x)^{2}`, Math.E, 1],
+    [String.raw`\log_{2}(x+1)`, 7, 3],
+    [String.raw`\log_{3} x`, 9, 2],
+    [String.raw`\log x`, 1000, 3],
+    [String.raw`\dfrac{1}{\sqrt{e}}`, 0, Math.exp(-0.5)],
+    [String.raw`3\times2^{3x}\ln 2`, 1, 24 * Math.log(2)],
+    [String.raw`\dfrac{e^{x}(x-1)}{x^{2}}`, 2, Math.exp(2) / 4],
+    [String.raw`x^{2}\,e^{-x}`, 2, 4 * Math.exp(-2)],
+    [String.raw`-\dfrac{2x}{3e}`, 3, -2 / Math.E],
+    [String.raw`\dfrac{1}{x\ln 5}`, 5, 1 / (5 * Math.log(5))],
+    [String.raw`x\ln x-x`, Math.E, 0],
+    [String.raw`\left(x+1\right)e^{x^{2}-3x}`, 1, 2 * Math.exp(-2)],
+    [String.raw`-x^{2}+2x`, 3, -3],
+    [String.raw`e^{-x}+x`, 1, Math.exp(-1) + 1],
+    [String.raw`\dfrac{2\ln x}{x}`, 2, Math.log(2)],
+  ];
+  for (const [t, x, esperado] of casos) {
+    let v;
+    try { v = funcTex(t)(x); } catch (e) { ok(false, `${t}: ${e.message}`); continue; }
+    ok(perto(v, esperado, 1e-12), `${t} em ${x}: ${v} != ${esperado}`);
+  }
+  const I1 = parseIntervalo(String.raw`\left]0,\dfrac{1}{e}\right]`);
+  ok(I1.lo === 0 && !I1.loC && perto(I1.hi, 1 / Math.E, 1e-12) && I1.hiC, 'intervalo 1');
+  const I2 = parseIntervalo(String.raw`[-\dfrac{1}{2e},+\infty[`);
+  ok(perto(I2.lo, -1 / (2 * Math.E), 1e-12) && I2.loC && I2.hi === Infinity && !I2.hiC, 'intervalo 2');
+  const I3 = parseIntervalo(String.raw`]-\infty,\ln 2[`);
+  ok(I3.lo === -Infinity && perto(I3.hi, Math.log(2), 1e-12) && !I3.hiC && !I3.loC, 'intervalo 3');
+  const d = dnum(funcTex(String.raw`x\ln x`), 2);
+  ok(perto(d, Math.log(2) + 1, 1e-9), 'derivada numérica de x ln x');
+});
+
+// ---------- testes genéricos, para todos os tipos ----------
+
+const ESPERADOS = ['limite', 'derivada', 'tangente', 'monotonia-contradominio'];
+await teste('lista de tipos completa', (ok) => {
+  ok(TIPOS_ANALISE.length >= 1, 'sem tipos');
+  ok(TIPOS_ANALISE.every((t) => t.id && t.nome && t.tema && typeof t.gerar === 'function'), 'tipo incompleto');
+  ok(new Set(TIPOS_ANALISE.map((t) => t.id)).size === TIPOS_ANALISE.length, 'ids repetidos');
+  for (const id of ESPERADOS) ok(TIPOS_ANALISE.some((t) => t.id === id), `falta o tipo ${id}`);
+});
+
+for (const tipo of TIPOS_ANALISE) {
+  const vistos = new Set();
+  await teste(`${tipo.id}: estrutura, texto, KaTeX, determinismo (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      let p;
+      try { p = tipo.gerar(M.criarRng(s), {}); } catch (e) { ok(false, `semente ${s}: exceção ${e.message}`); continue; }
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 80)}]`);
+      vistos.add(p.enunciado);
+      aqui(p.tipo === tipo.id && (p.modo === 'escolha' || p.modo === 'escrita'), 'tipo ou modo');
+      aqui(typeof p.explicacao === 'string' && p.explicacao.length > 10 && p.verificacao && typeof p.verificacao === 'object', 'explicação ou verificacao');
+      for (const campo of ['enunciado', 'explicacao']) {
+        aqui(dolaresPares(p[campo]), `$ desemparelhados em ${campo}`);
+        aqui(!TRACO.test(p[campo]), `travessão em ${campo}`);
+        aqui(!/[\\^_{}]/.test(semFormulas(p[campo])), `LaTeX solto fora de $ em ${campo}`);
+        aqui(!/\d,\d/.test(semFormulas(p[campo])) && !/\d\.\d/.test(p[campo].replace(/\$[^$]*\$/g, '')), `decimal sem vírgula em ${campo}`);
+        for (const m of p[campo].matchAll(/\$([^$]+)\$/g)) renderiza(m[1]);
+      }
+      if (p.modo === 'escolha') {
+        aqui(p.opcoes.length === 4, `${p.opcoes.length} opções`);
+        aqui(p.opcoes.filter((o) => o.correta === true).length === 1, 'não há exatamente 1 correta');
+        aqui(new Set(p.opcoes.map((o) => o.tex)).size === 4, 'opções com o mesmo texto');
+        for (const o of p.opcoes) { aqui(!TRACO.test(o.tex), 'travessão numa opção'); renderiza(o.tex); }
+      }
+      if (s <= 100) aqui(JSON.stringify(tipo.gerar(M.criarRng(s), {}), (k, v) => (typeof v === 'function' ? 'fn' : v)) === JSON.stringify(p, (k, v) => (typeof v === 'function' ? 'fn' : v)), 'mesma semente, perguntas diferentes');
+    }
+  });
+  await teste(`${tipo.id}: variedade de enunciados (>= 30 em ${SEMENTES} sementes)`, (ok) => {
+    ok(vistos.size >= 30, `só ${vistos.size} enunciados distintos`);
+  });
+}
+
+await teste('KaTeX sem erros em ' + jaRenderizadas.size + ' fórmulas distintas', (ok) => {
+  ok(jaRenderizadas.size > 20, 'poucas fórmulas: ' + jaRenderizadas.size);
+  ok(errosKatex.length === 0, errosKatex.slice(0, 3).join(' ; '));
+});
+
+const tipoDe = (id) => TIPOS_ANALISE.find((t) => t.id === id);
+
+
+// ---------- as contas escritas nas explicações ----------
+// Para cada fórmula «f(a)=...=...», «f'(a)=...=...» (a = x ou um número) e «A=B=...» só com números, confere
+// numericamente cada igualdade que se consiga avaliar (as que têm símbolos como u, u' ficam de fora).
+function contasErradas(expl, nome, f) {
+  const t = expl.replace(/\\left|\\right/g, '');
+  const erros = [];
+  const xs = pontosDeriv(f).filter((_, i, a) => i % Math.max(1, Math.floor(a.length / 6)) === 0);
+  const cabeca = new RegExp(`^${nome}('?)\\((.+)\\)$`);
+  for (const m of t.matchAll(/\$([^$]+)\$/g)) {
+    const partes = m[1].split('=');
+    if (partes.length < 2) continue;
+    const cab = cabeca.exec(partes[0].trim());
+    if (cab) {
+      const deriv = cab[1] === "'";
+      const alvoEm = (x) => (deriv ? dnum(f, x) : f(x));
+      for (const seg of partes.slice(1)) {
+        try {
+          if (cab[2] === 'x') {
+            const g = funcTex(seg);
+            for (const x of xs) if (!perto(g(x), alvoEm(x), 1e-6)) { erros.push(`${m[1]}: em x=${x} dá ${g(x)} e devia dar ${alvoEm(x)}`); break; }
+          } else {
+            const c = numTex(cab[2]);
+            const v = numTex(seg);
+            if (!perto(v, alvoEm(c), 1e-6)) erros.push(`${m[1]}: ${seg} vale ${v} e devia valer ${alvoEm(c)}`);
+          }
+        } catch (e) { /* símbolos que não se avaliam (u, u', desigualdades): fica de fora */ }
+      }
+      continue;
+    }
+    let vals;
+    try { vals = partes.map((x) => numTex(x)); } catch (e) { continue; }
+    if (!vals.every((v) => perto(v, vals[0], 1e-9))) erros.push(`${m[1]}: valores diferentes ${vals.join(' ; ')}`);
+  }
+  return erros;
+}
+
+// ---------- limite ----------
 
 // classifica o limite a partir da função, sem usar `alvo`
 function classeLimite(v) {
@@ -59,47 +330,8 @@ function classeLimite(v) {
 }
 const TEX_DE = { inf: '+\\infty', zero: '0', um: '1', menosInf: '-\\infty', nao: '\\text{não existe}' };
 
-await teste('lista de tipos completa', (ok) => {
-  ok(TIPOS_ANALISE.length >= 1, 'sem tipos');
-  ok(TIPOS_ANALISE.every((t) => t.id && t.nome && t.tema && typeof t.gerar === 'function'), 'tipo incompleto');
-});
-
-for (const tipo of TIPOS_ANALISE) {
-  const vistos = new Set();
-  await teste(`${tipo.id}: estrutura, texto, KaTeX, determinismo (${SEMENTES} sementes)`, (ok) => {
-    for (let s = 1; s <= SEMENTES; s++) {
-      const p = tipo.gerar(M.criarRng(s), {});
-      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${String(p.enunciado).slice(0, 80)}]`);
-      vistos.add(p.enunciado);
-      aqui(p.tipo === tipo.id && (p.modo === 'escolha' || p.modo === 'escrita'), 'tipo ou modo');
-      aqui(typeof p.explicacao === 'string' && p.explicacao.length > 10 && p.verificacao && typeof p.verificacao === 'object', 'explicação ou verificacao');
-      for (const campo of ['enunciado', 'explicacao']) {
-        aqui(dolaresPares(p[campo]), `$ desemparelhados em ${campo}`);
-        aqui(!TRACO.test(p[campo]), `travessão em ${campo}`);
-        aqui(!/[\\^_{}]/.test(semFormulas(p[campo])), `LaTeX solto fora de $ em ${campo}`);
-        for (const m of p[campo].matchAll(/\$([^$]+)\$/g)) renderiza(m[1]);
-      }
-      if (p.modo === 'escolha') {
-        aqui(p.opcoes.length === 4, `${p.opcoes.length} opções`);
-        aqui(p.opcoes.filter((o) => o.correta === true).length === 1, 'não há exatamente 1 correta');
-        aqui(new Set(p.opcoes.map((o) => o.tex)).size === 4, 'opções com o mesmo texto');
-        for (const o of p.opcoes) renderiza(o.tex);
-      }
-      if (s <= 100) aqui(JSON.stringify(tipo.gerar(M.criarRng(s), {}), (k, v) => (typeof v === 'function' ? 'fn' : v)) === JSON.stringify(p, (k, v) => (typeof v === 'function' ? 'fn' : v)), 'mesma semente, perguntas diferentes');
-    }
-  });
-  await teste(`${tipo.id}: variedade de enunciados (>= 30 em ${SEMENTES} sementes)`, (ok) => {
-    ok(vistos.size >= 30, `só ${vistos.size} enunciados distintos`);
-  });
-}
-
-await teste('KaTeX sem erros em ' + jaRenderizadas.size + ' fórmulas distintas', (ok) => {
-  ok(jaRenderizadas.size > 20, 'poucas fórmulas: ' + jaRenderizadas.size);
-  ok(errosKatex.length === 0, errosKatex.slice(0, 3).join(' ; '));
-});
-
-if (TIPOS_ANALISE.some((t) => t.id === 'limite')) {
-  const gerar = TIPOS_ANALISE.find((t) => t.id === 'limite').gerar;
+if (tipoDe('limite')) {
+  const gerar = tipoDe('limite').gerar;
   await teste('limite: recálculo independente da opção certa (valores muito grandes ou muito pequenos)', (ok) => {
     for (let s = 1; s <= SEMENTES; s++) {
       const p = gerar(M.criarRng(s), {});
@@ -109,6 +341,432 @@ if (TIPOS_ANALISE.some((t) => t.id === 'limite')) {
     }
   });
 }
+
+// ---------- derivada ----------
+
+if (tipoDe('derivada')) {
+  const gerar = tipoDe('derivada').gerar;
+  const familias = new Set();
+  await teste(`derivada: a opção certa é a derivada numérica de f e as outras não (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = gerar(M.criarRng(s), {});
+      const v = p.verificacao;
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${v.familia}: ${v.f}]`);
+      familias.add(v.familia);
+      aqui(p.enunciado.includes(`${v.nome}(x)=${v.f}`), 'o enunciado não traz a função');
+      aqui(!DEGENERADO.test(v.f) && p.opcoes.every((o) => !DEGENERADO.test(o.tex)), 'texto degenerado');
+      let f;
+      try { f = funcTex(v.f); } catch (e) { aqui(false, 'f ilegível: ' + e.message); continue; }
+      const xs = pontosDeriv(f);
+      aqui(xs.length >= 6, `poucos pontos no domínio (${xs.length})`);
+      if (v.dominio === 'R+') aqui(xs.every((x) => x > 0) && Number.isNaN(f(-1)), 'o enunciado diz x>0 mas f existe para x<0');
+      const gs = p.opcoes.map((o) => {
+        try { return funcTex(o.tex); } catch (e) { aqui(false, `opção ilegível ${o.tex}: ${e.message}`); return () => NaN; }
+      });
+      const casam = gs.map((g) => xs.every((x) => perto(g(x), dnum(f, x), 1e-6)));
+      aqui(casam.filter(Boolean).length === 1, `${casam.filter(Boolean).length} opções são a derivada`);
+      const i = p.opcoes.findIndex((o) => o.correta);
+      aqui(casam[i], `a marcada como certa (${p.opcoes[i].tex}) não é a derivada`);
+      for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) {
+        aqui(!xs.every((x) => perto(gs[a](x), gs[b](x), 1e-9)), `opções ${a + 1} e ${b + 1} são a mesma função`);
+      }
+      aqui(p.explicacao.includes(p.opcoes[i].tex), 'a explicação não traz a resposta certa');
+      aqui(p.explicacao.includes(`${v.nome}'(x)`), 'a explicação não fala de f\'(x)');
+      for (const e of contasErradas(p.explicacao, v.nome, f)) aqui(false, 'conta errada na explicação: ' + e);
+    }
+  });
+  await teste('derivada: todas as famílias aparecem', (ok) => {
+    ok(familias.size >= 12, 'famílias: ' + [...familias].join(','));
+  });
+}
+
+// ---------- tangente ----------
+
+if (tipoDe('tangente')) {
+  const gerar = tipoDe('tangente').gerar;
+  const familias = new Set();
+  let horizontais = 0;
+  await teste(`tangente: a opção certa é y=f(a)+f'(a)(x-a) com f(a) e f'(a) numéricos (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = gerar(M.criarRng(s), {});
+      const v = p.verificacao;
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${v.familia}: ${v.f} em ${v.aTex}]`);
+      familias.add(v.familia);
+      aqui(p.enunciado.includes(`${v.nome}(x)=${v.f}`) && p.enunciado.includes(`$${v.aTex}$`), 'o enunciado não traz a função ou a abcissa');
+      aqui(!DEGENERADO.test(v.f) && p.opcoes.every((o) => !DEGENERADO.test(o.tex)), 'texto degenerado');
+      let f;
+      let a;
+      try { f = funcTex(v.f); a = numTex(v.aTex); } catch (e) { aqui(false, 'f ou a ilegíveis: ' + e.message); continue; }
+      aqui(perto(a, v.a, 1e-9), `abcissa ${v.aTex} dá ${a} mas verificacao.a=${v.a}`);
+      const y0 = f(a);
+      const m = dnum(f, a);
+      aqui(Number.isFinite(y0) && Number.isFinite(m), 'f ou f\' não estão definidas em a');
+      if (/\\mathbb\{R\}\^\{\+\}|x>0/.test(p.enunciado)) aqui(a > 0 && Number.isNaN(f(-1)), 'o enunciado diz x>0 mas a ou f não respeitam');
+      if (Math.abs(m) < 1e-9) horizontais++;
+      aqui(perto(m, v.m, 1e-6) && perto(y0 - m * a, v.b, 1e-6), `verificacao (m=${v.m}, b=${v.b}) != numérico (m=${m}, b=${y0 - m * a})`);
+      const retas = [-3, -1.5, 0, 1, 2.5, 4];
+      const gs = p.opcoes.map((o) => {
+        if (!/^y=/.test(o.tex)) { aqui(false, `opção sem «y=»: ${o.tex}`); return () => NaN; }
+        try { return funcTex(o.tex.replace(/^y=/, '')); } catch (e) { aqui(false, `opção ilegível ${o.tex}: ${e.message}`); return () => NaN; }
+      });
+      const casam = gs.map((g) => retas.every((x) => perto(g(x), y0 + m * (x - a), 1e-6)));
+      aqui(casam.filter(Boolean).length === 1, `${casam.filter(Boolean).length} opções são a tangente`);
+      const i = p.opcoes.findIndex((o) => o.correta);
+      aqui(casam[i], `a marcada como certa (${p.opcoes[i].tex}) não é a tangente`);
+      for (let x = 0; x < 4; x++) for (let z = x + 1; z < 4; z++) {
+        aqui(!retas.every((t) => perto(gs[x](t), gs[z](t), 1e-9)), `opções ${x + 1} e ${z + 1} são a mesma reta`);
+      }
+      aqui(p.explicacao.includes(p.opcoes[i].tex), 'a explicação não traz a resposta certa');
+      for (const e of contasErradas(p.explicacao, v.nome, f)) aqui(false, 'conta errada na explicação: ' + e);
+    }
+  });
+  await teste('tangente: todas as famílias aparecem e há tangentes horizontais', (ok) => {
+    ok(familias.size >= 9, 'famílias: ' + [...familias].join(','));
+    ok(horizontais > 0, 'nenhuma tangente horizontal');
+  });
+}
+
+// ---------- monotonia, extremos e contradomínio ----------
+
+const FAR_INF = [1e2, 1e3, 1e5, 1e10, 1e50, 1e100, 1e300];
+
+function grade(dom, N = 1200) {
+  const fl = Number.isFinite(dom.lo);
+  const fh = Number.isFinite(dom.hi);
+  const A = fl ? dom.lo : (fh ? dom.hi - 12 : -12);
+  const B = fh ? dom.hi : (fl ? dom.lo + 12 : 12);
+  const xs = [];
+  for (let i = 1; i < N; i++) xs.push(A + ((B - A) * i) / N);
+  return xs;
+}
+/**
+ * Pontos cada vez mais perto de cada ponta do domínio (ou cada vez mais longe, se for infinita),
+ * do menos extremo para o mais extremo: servem para ver os limites nas pontas.
+ */
+function sequenciasLimite(dom) {
+  const perto0 = [1e-3, 1e-6, 1e-9, 1e-12, 1e-50, 1e-100, 1e-300];
+  const aprox = (b, lado) => (b === 0 ? perto0 : perto0.slice(0, 4).map((t) => t * Math.max(1, Math.abs(b)))).map((t) => b + lado * t);
+  return {
+    esq: Number.isFinite(dom.lo) ? aprox(dom.lo, 1) : FAR_INF.map((t) => -t),
+    dir: Number.isFinite(dom.hi) ? aprox(dom.hi, -1) : FAR_INF,
+  };
+}
+const pontosLimite = (dom) => { const q = sequenciasLimite(dom); return [...q.esq, ...q.dir]; };
+/** Valor para onde f tende ao longo de `xs` ({ val }), ou { div: ±1 } se cresce sem limite (ou estoura). */
+function limiteAo(f, xs, ref) {
+  const v = xs.map(f);
+  let ultimo = -1;
+  for (let i = 0; i < v.length; i++) {
+    if (Number.isFinite(v[i])) ultimo = i;
+    else return { div: Math.sign(ultimo >= 0 ? v[ultimo] : ref) || 1 }; // estourou
+  }
+  if (ultimo < 1) return { val: v[0] };
+  const a = v[ultimo - 1];
+  const b = v[ultimo];
+  if (Math.abs(b - a) > 1e-3 * Math.max(1, Math.abs(b))) return { div: Math.sign(b) };
+  return { val: b };
+}
+/** Zeros da derivada onde ela muda de sinal (por bisseção), ignorando derivadas só de ruído. */
+function criticos(f, xs) {
+  const out = [];
+  let ant = null; // último ponto com derivada claramente não nula
+  for (const x of xs) {
+    const d = dnum(f, x);
+    if (!Number.isFinite(d) || Math.abs(d) <= 1e-10 * (1 + Math.abs(f(x)))) continue;
+    if (ant && Math.sign(ant.d) !== Math.sign(d)) {
+      let lo = ant.x;
+      let hi = x;
+      const sl = Math.sign(ant.d);
+      for (let it = 0; it < 80; it++) {
+        const mid = (lo + hi) / 2;
+        const dm = dnum(f, mid);
+        if (Math.sign(dm) === sl) lo = mid; else hi = mid;
+      }
+      out.push((lo + hi) / 2);
+    }
+    ant = { x, d };
+  }
+  return out;
+}
+/** Contradomínio estimado: { inf, infC, sup, supC } (±Infinity quando sem limite; C = é atingido). */
+function contradominio(f, dom, xs) {
+  const crit = criticos(f, xs);
+  const atingiveis = [...crit];
+  if (Number.isFinite(dom.lo) && dom.loC) atingiveis.push(dom.lo);
+  if (Number.isFinite(dom.hi) && dom.hiC) atingiveis.push(dom.hi);
+  const q = sequenciasLimite(dom);
+  const lims = [limiteAo(f, q.esq, f(xs[0])), limiteAo(f, q.dir, f(xs[xs.length - 1]))];
+  const valores = [...xs.map(f), ...atingiveis.map(f), ...lims.filter((l) => 'val' in l).map((l) => l.val)].filter(Number.isFinite);
+  const L = Math.min(...valores);
+  const U = Math.max(...valores);
+  const divNeg = lims.some((l) => l.div === -1);
+  const divPos = lims.some((l) => l.div === 1);
+  const atinge = (y) => atingiveis.some((x) => Math.abs(f(x) - y) <= 1e-9 * Math.max(1, Math.abs(y)));
+  return {
+    inf: divNeg ? -Infinity : L,
+    infC: !divNeg && atinge(L),
+    sup: divPos ? Infinity : U,
+    supC: !divPos && atinge(U),
+  };
+}
+const mesmoLimite = (a, b) => (Number.isFinite(a) || Number.isFinite(b) ? Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 1e-7 * Math.max(1, Math.abs(a), Math.abs(b)) : a === b);
+
+if (tipoDe('monotonia-contradominio')) {
+  const gerar = tipoDe('monotonia-contradominio').gerar;
+  const pedidos = {};
+  const familias = new Set();
+  await teste(`monotonia-contradominio: monotonia, extremo e contradomínio recalculados por amostragem (${SEMENTES} sementes)`, (ok) => {
+    for (let s = 1; s <= SEMENTES; s++) {
+      const p = gerar(M.criarRng(s), {});
+      const v = p.verificacao;
+      const dom = v.dominio;
+      const aqui = (c, m) => ok(c, `semente ${s}: ${m} [${v.pedido} ${v.familia}: ${v.f} em ${dom.tex}]`);
+      pedidos[v.pedido] = (pedidos[v.pedido] || 0) + 1;
+      familias.add(v.familia);
+      aqui(p.enunciado.includes(`${v.nome}(x)=${v.f}`) && p.enunciado.includes(`$${dom.tex}$`), 'o enunciado não traz a função ou o domínio');
+      aqui(!DEGENERADO.test(v.f) && p.opcoes.every((o) => !DEGENERADO.test(o.tex)), 'texto degenerado');
+      let f;
+      try { f = funcTex(v.f); } catch (e) { aqui(false, 'f ilegível: ' + e.message); continue; }
+      const fx = M.criarFuncao(v.fx);
+      const xs = grade(dom);
+      // o domínio dito é mesmo o domínio, e a expressão fx do gerador é a mesma que o LaTeX
+      aqui(xs.every((x) => Number.isFinite(f(x))), 'f não está definida em todo o domínio indicado');
+      aqui(xs.filter((_, i) => i % 40 === 0).every((x) => perto(f(x), fx(x), 1e-9)), 'fx do gerador != f em LaTeX');
+      if (dom.natural) {
+        if (Number.isFinite(dom.lo)) aqui(Number.isNaN(f(dom.lo - 1e-6)) && Number.isNaN(f(dom.lo)), 'f existe fora do domínio natural (esquerda)');
+        if (Number.isFinite(dom.hi)) aqui(Number.isNaN(f(dom.hi + 1e-6)) && Number.isNaN(f(dom.hi)), 'f existe fora do domínio natural (direita)');
+      } else {
+        if (dom.loC) aqui(Number.isFinite(f(dom.lo)), 'f não existe no extremo fechado');
+        if (dom.hiC) aqui(Number.isFinite(f(dom.hi)), 'f não existe no extremo fechado');
+      }
+      const ds = xs.map((x) => dnum(f, x));
+
+      const monotona = (I, sg) => {
+        let n = 0;
+        for (let i = 0; i < xs.length; i++) {
+          if (xs[i] > I.lo && xs[i] < I.hi) {
+            n++;
+            if (sg * ds[i] < -1e-7 * (1 + Math.abs(ds[i]))) return false;
+          }
+        }
+        return n >= 20;
+      };
+      const maximalDe = (e, lado, sg) => { // lado -1: extremo esquerdo; +1: direito
+        const fronteira = lado < 0 ? dom.lo : dom.hi;
+        const fechadoDom = lado < 0 ? dom.loC : dom.hiC;
+        const fechado = lado < 0 ? e.loC : e.hiC;
+        const x = lado < 0 ? e.lo : e.hi;
+        if (x === fronteira) return fechado === fechadoDom;
+        if (!Number.isFinite(x)) return false;
+        if (!fechado) return false;
+        const d = dnum(f, x + lado * 0.01);
+        return sg * d < -1e-6; // logo depois do extremo a monotonia quebra
+      };
+      const intervaloMaximal = (I, sg) => I.lo < I.hi && monotona(I, sg) && maximalDe(I, -1, sg) && maximalDe(I, 1, sg);
+      // as contas da explicação: valores de f, derivadas e abcissas onde f' se anula
+      for (const e of contasErradas(p.explicacao, v.nome, f)) aqui(false, 'conta errada na explicação: ' + e);
+      for (const m of p.explicacao.matchAll(/\$x=([^$]+)\$/g)) {
+        try { const c = numTex(m[1]); aqui(Math.abs(dnum(f, c)) < 1e-6 * Math.max(1, Math.abs(f(c))), `«x=${m[1]}» na explicação, mas f' não se anula aí`); } catch (e) { aqui(false, `abcissa ilegível ${m[1]}`); }
+      }
+
+      if (v.pedido === 'monotonia') {
+        const sg = v.dir === '+' ? 1 : -1;
+        // cada intervalo de monotonia citado na explicação é mesmo um intervalo maximal desse sentido
+        let citados = 0;
+        for (const m of p.explicacao.matchAll(/(decrescente|crescente) em \$([^$]+)\$/g)) {
+          citados++;
+          try { aqui(intervaloMaximal(parseIntervalo(m[2]), m[1] === 'crescente' ? 1 : -1), `a explicação diz ${m[1]} em ${m[2]} mas não é o maior intervalo`); } catch (e) { aqui(false, `intervalo ilegível na explicação ${m[2]}`); }
+        }
+        aqui(citados >= 2, 'a explicação não cita os intervalos de monotonia');
+        const casam = p.opcoes.map((o) => {
+          try { return intervaloMaximal(parseIntervalo(o.tex), sg); } catch (e) { aqui(false, `intervalo ilegível ${o.tex}: ${e.message}`); return false; }
+        });
+        aqui(casam.filter(Boolean).length === 1, `${casam.filter(Boolean).length} opções são o maior intervalo ${v.dir === '+' ? 'crescente' : 'decrescente'}`);
+        const i = p.opcoes.findIndex((o) => o.correta);
+        aqui(casam[i], `a marcada como certa (${p.opcoes[i].tex}) não é o maior intervalo`);
+        aqui(new Set(p.opcoes.map((o) => { const I = parseIntervalo(o.tex); return `${I.lo}|${I.loC}|${I.hi}|${I.hiC}`; })).size === 4, 'intervalos repetidos');
+      } else if (v.pedido === 'extremo-valor' || v.pedido === 'extremo-abcissa') {
+        const min = v.tipoExt === 'min';
+        const melhor = (a, b) => (min ? a < b : a > b);
+        let k = 0;
+        const vals = xs.map(f);
+        for (let i = 1; i < xs.length; i++) if (melhor(vals[i], vals[k])) k = i;
+        aqui(k > 5 && k < xs.length - 6, 'o extremo cai nas pontas da grade (não é interior)');
+        const sl = min ? -1 : 1; // sinal da derivada antes do extremo
+        let lo = xs[Math.max(k - 1, 0)];
+        let hi = xs[Math.min(k + 1, xs.length - 1)];
+        for (let it = 0; it < 100; it++) {
+          const mid = (lo + hi) / 2;
+          if (Math.sign(dnum(f, mid)) === sl) lo = mid; else hi = mid;
+        }
+        const xStar = (lo + hi) / 2;
+        const yStar = f(xStar);
+        const longe = pontosLimite(dom).map(f).filter(Number.isFinite);
+        const folga = 1e-9 * Math.max(1, Math.abs(yStar));
+        aqui(longe.every((y) => !melhor(y, min ? yStar - folga : yStar + folga)), 'há valores melhores que o extremo longe ou perto da fronteira');
+        const alvo = v.pedido === 'extremo-valor' ? yStar : xStar;
+        const tol = v.pedido === 'extremo-valor' ? 1e-7 : 1e-5;
+        const casam = p.opcoes.map((o) => {
+          try { return perto(numTex(o.tex), alvo, tol); } catch (e) { aqui(false, `opção ilegível ${o.tex}: ${e.message}`); return false; }
+        });
+        aqui(casam.filter(Boolean).length === 1, `${casam.filter(Boolean).length} opções valem ${alvo}`);
+        const i = p.opcoes.findIndex((o) => o.correta);
+        aqui(casam[i], `a marcada como certa (${p.opcoes[i].tex}) não vale ${alvo}`);
+        if (dom.natural) aqui(p.opcoes.every((o) => v.pedido === 'extremo-valor' || dentro(dom, numTex(o.tex))), 'abcissa candidata fora do domínio');
+      } else {
+        const R = contradominio(f, dom, xs);
+        const casam = p.opcoes.map((o) => {
+          try {
+            const S = parseIntervalo(o.tex);
+            const lo = S.lo === -Infinity ? (R.inf === -Infinity && !S.loC) : (mesmoLimite(S.lo, R.inf) && S.loC === R.infC);
+            const hi = S.hi === Infinity ? (R.sup === Infinity && !S.hiC) : (mesmoLimite(S.hi, R.sup) && S.hiC === R.supC);
+            return lo && hi;
+          } catch (e) { aqui(false, `conjunto ilegível ${o.tex}: ${e.message}`); return false; }
+        });
+        aqui(casam.filter(Boolean).length === 1, `${casam.filter(Boolean).length} opções são o contradomínio (estimado ${R.infC ? '[' : ']'}${R.inf},${R.sup}${R.supC ? ']' : '['})`);
+        const i = p.opcoes.findIndex((o) => o.correta);
+        aqui(casam[i], `a marcada como certa (${p.opcoes[i].tex}) não é o contradomínio estimado ${R.infC ? '[' : ']'}${R.inf},${R.sup}${R.supC ? ']' : '['}`);
+        aqui(new Set(p.opcoes.map((o) => { const I = parseIntervalo(o.tex); return `${I.lo}|${I.loC}|${I.hi}|${I.hiC}`; })).size === 4, 'conjuntos repetidos');
+      }
+      const j = p.opcoes.findIndex((o) => o.correta);
+      aqui(p.explicacao.includes(p.opcoes[j].tex), 'a explicação não traz a resposta certa');
+    }
+  });
+  await teste('monotonia-contradominio: todos os pedidos e muitas famílias aparecem', (ok) => {
+    for (const pd of ['monotonia', 'extremo-valor', 'extremo-abcissa', 'contradominio']) ok((pedidos[pd] || 0) >= Math.min(50, SEMENTES / 20), `pedido ${pd}: ${pedidos[pd] || 0}`);
+    ok(familias.size >= 20, 'famílias: ' + familias.size + ' ' + [...familias].join(','));
+  });
+}
+
+function dentro(dom, x) {
+  return (x > dom.lo || (dom.loC && x === dom.lo)) && (x < dom.hi || (dom.hiC && x === dom.hi));
+}
+
+
+// ---------- integração: o treino mostra e corrige estes tipos ----------
+
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+async function ate(cond, tentativas = 200) {
+  for (let i = 0; i < tentativas; i++) {
+    if (cond()) return true;
+    await espera(25);
+  }
+  return false;
+}
+
+await teste('treino.js monta cada tipo de análise sozinho e corrige 10 perguntas', async (ok) => {
+  const treino = await import('../widgets/treino.js');
+  for (const tipo of TIPOS_ANALISE) {
+    const el = document.createElement('div');
+    document.body.append(el);
+    await treino.montar(el, {}, { tipos: [tipo], semente: 7 });
+    el.querySelector('.tre-comecar').click();
+    for (let q = 0; q < 10; q++) {
+      const enun = el.querySelector('.tre-enunciado');
+      ok(enun !== null && enun.querySelector('.katex') !== null, `${tipo.id} pergunta ${q + 1}: enunciado sem fórmulas`);
+      const botoes = [...el.querySelectorAll('.tre-opcao')];
+      ok(botoes.length === 4 && botoes.every((b) => b.querySelector('.katex') !== null), `${tipo.id} pergunta ${q + 1}: opções sem fórmulas`);
+      botoes[q % 4].click();
+      ok(el.querySelector('.tre-explicacao__texto .katex') !== null, `${tipo.id} pergunta ${q + 1}: explicação sem fórmulas`);
+      ok(el.querySelector('.katex-error') === null, `${tipo.id} pergunta ${q + 1}: erro de KaTeX`);
+      el.querySelector('.tre-seguinte').click();
+    }
+    ok(el.querySelector('.tre-fim') !== null, `${tipo.id}: não chegou ao resultado`);
+    el.remove();
+  }
+});
+
+await teste('treino.html (página real): os tipos de análise aparecem e geram perguntas', async (ok) => {
+  const fr = document.createElement('iframe');
+  fr.src = '../treino.html';
+  fr.style.cssText = 'width:390px;height:900px;border:0';
+  document.body.append(fr);
+  await new Promise((r) => fr.addEventListener('load', r));
+  const doc = fr.contentDocument;
+  ok(await ate(() => doc.querySelectorAll('.tre-chips .chip').length > 1), 'o treino não montou os botões');
+  ok(doc.querySelector('.tre .aviso-erro') === null && !/não está disponível/.test(doc.body.textContent), 'o treino mostra aviso de erro');
+  const botoes = () => [...doc.querySelectorAll('.tre-chips .chip')];
+  for (const tipo of TIPOS_ANALISE) {
+    const b = botoes().find((x) => x.textContent.trim() === tipo.nome);
+    ok(b !== undefined, `falta o botão «${tipo.nome}» no treino`);
+    if (!b) continue;
+    b.click();
+    doc.querySelector('.tre-comecar').click();
+    for (let q = 0; q < 10; q++) {
+      ok(doc.querySelectorAll('.tre-opcao').length === 4, `${tipo.id} pergunta ${q + 1}: opções`);
+      ok(doc.querySelector('.tre-etiqueta').textContent.includes(tipo.nome), `${tipo.id}: etiqueta da pergunta`);
+      doc.querySelectorAll('.tre-opcao')[q % 4].click();
+      ok(doc.querySelector('.tre-explicacao') !== null, `${tipo.id} pergunta ${q + 1}: sem explicação`);
+      ok(doc.querySelector('.katex-error') === null, `${tipo.id} pergunta ${q + 1}: erro de KaTeX`);
+      doc.querySelector('.tre-seguinte').click();
+    }
+    ok(doc.querySelector('.tre-fim') !== null, `${tipo.id}: não chegou ao resultado`);
+    doc.querySelector('.tre-acoes--fim .botao--suave:last-child').click(); // «Escolher outro treino»
+    ok(await ate(() => doc.querySelectorAll('.tre-chips .chip').length > 1, 40), 'não voltou ao início do treino');
+  }
+  fr.remove();
+});
+
+// A 390 px de largura, uma opção não deve precisar de deslizar na horizontal nem o texto da pergunta sair da caixa.
+await teste('treino.html a 390 px: as opções e o enunciado cabem na largura (250 perguntas por tipo e todas as opções distintas de 1000 sementes)', async (ok) => {
+  const fr = document.createElement('iframe');
+  fr.src = '../treino.html';
+  fr.style.cssText = 'width:390px;height:900px;border:0';
+  document.body.append(fr);
+  await new Promise((r) => fr.addEventListener('load', r));
+  const doc = fr.contentDocument;
+  await ate(() => doc.querySelectorAll('.tre-chips .chip').length > 1);
+  const largos = [];
+  for (const tipo of TIPOS_ANALISE) {
+    for (let sessao = 0; sessao < 25; sessao++) {
+      const b = [...doc.querySelectorAll('.tre-chips .chip')].find((x) => x.textContent.trim() === tipo.nome);
+      b.click();
+      doc.querySelector('.tre-comecar').click();
+      for (let q = 0; q < 10; q++) {
+        for (const t of doc.querySelectorAll('.tre-opcao__tex')) {
+          if (t.scrollWidth > t.clientWidth + 1) largos.push(`${tipo.id}: ${t.textContent.slice(0, 60)} (${t.scrollWidth} > ${t.clientWidth})`);
+        }
+        const en = doc.querySelector('.tre-enunciado');
+        if (en.scrollWidth > en.clientWidth + 1) largos.push(`${tipo.id} enunciado: ${en.textContent.slice(0, 60)} (${en.scrollWidth} > ${en.clientWidth})`);
+        doc.querySelectorAll('.tre-opcao')[q % 4].click();
+        const ex = doc.querySelector('.tre-explicacao__texto');
+        if (ex && ex.scrollWidth > ex.clientWidth + 1) largos.push(`${tipo.id} explicação: ${ex.textContent.slice(0, 60)} (${ex.scrollWidth} > ${ex.clientWidth})`);
+        doc.querySelector('.tre-seguinte').click();
+      }
+      doc.querySelector('.tre-acoes--fim .botao--suave:last-child').click();
+      await ate(() => doc.querySelectorAll('.tre-chips .chip').length > 1, 40);
+    }
+  }
+  // largura natural de todas as opções distintas (até 1000 sementes por tipo), com a mesma caixa das opções reais
+  {
+    const b = [...doc.querySelectorAll('.tre-chips .chip')].find((x) => x.textContent.trim() === TIPOS_ANALISE[0].nome);
+    b.click();
+    doc.querySelector('.tre-comecar').click();
+    const lista = doc.querySelector('.tre-opcoes');
+    const caixa = doc.createElement('button');
+    caixa.className = 'tre-opcao';
+    caixa.innerHTML = '<span class="tre-opcao__num">1</span><span class="tre-opcao__tex"></span>';
+    lista.append(caixa);
+    const alvo = caixa.querySelector('.tre-opcao__tex');
+    const largura = caixa.querySelector('.tre-opcao__tex').clientWidth;
+    for (const tipo of TIPOS_ANALISE) {
+      const vistosTex = new Map();
+      for (let sm = 1; sm <= Math.min(SEMENTES, 1000); sm++) for (const o of tipo.gerar(M.criarRng(sm), {}).opcoes) vistosTex.set(o.tex, 0);
+      let pior = ['', 0];
+      let acima = 0;
+      for (const t of vistosTex.keys()) {
+        alvo.innerHTML = fr.contentWindow.katex.renderToString(t, { throwOnError: false });
+        const w = alvo.querySelector('.katex').getBoundingClientRect().width;
+        if (w > largura) acima++;
+        if (w > pior[1]) pior = [t, w];
+      }
+      linhas.push(`   ${tipo.id}: ${vistosTex.size} opções distintas, caixa ${largura}px, a mais larga ${Math.round(pior[1])}px`);
+      if (acima > 0) largos.push(`${tipo.id}: ${acima} opções mais largas do que a caixa de ${largura}px, por exemplo ${pior[0]} (${Math.round(pior[1])}px)`);
+    }
+  }
+  fr.remove();
+  ok(largos.length === 0, `${largos.length} casos largos: ${largos.slice(0, 6).join(' ;; ')}`);
+});
 
 linhas.push('');
 linhas.push(nFalhas === 0 ? 'TUDO OK' : `${nFalhas} TESTE(S) FALHARAM`);

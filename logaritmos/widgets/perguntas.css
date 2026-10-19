@@ -10,7 +10,9 @@
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-.per-cola { white-space: nowrap; }
+/* fórmula + pontuação que vem logo a seguir. Com nowrap uma cadeia comprida (equações com ⇔) não quebrava e passava
+   do ecrã; como inline-block vai inteira para a linha seguinte e, se for maior que a linha, quebra por dentro. */
+.per-cola { display: inline-block; max-width: 100%; }
 
 /* ---------- ecrã inicial ---------- */
 
@@ -49,10 +51,12 @@
 .per-etiqueta { margin: 0.5rem 0 0; color: var(--tinta-suave); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .per-enunciado { margin: 0.5rem 0 1rem; font-size: 1.15rem; line-height: 1.75; overflow-wrap: anywhere; }
+/* ecrãs muito estreitos (320 px): uma tabela de variação no enunciado (est-02, est-11) tem 340 px e rola dentro da caixa em vez de alargar a página */
+@media (max-width: 22em) { .per-enunciado { overflow-x: auto; overflow-y: hidden; } }
 .per-enunciado:focus { outline: none; }
 
 /* opções: letra, texto (com fórmulas) e, depois de responder, a marca */
-.per-opcoes { display: grid; gap: 0.6rem; }
+.per-opcoes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
 .per-opcao {
   display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.75rem; row-gap: 0.2rem; align-items: center;
   width: 100%; min-height: 3.5rem; padding: 0.55rem 0.85rem;
@@ -65,7 +69,8 @@
   border: 1px solid #cdbfae; border-radius: 50%; background: var(--papel); color: var(--tinta-suave);
   font-size: 0.9rem; font-weight: 700;
 }
-.per-opcao__tex { min-width: 0; padding: 0.15rem 0; overflow-x: auto; overflow-y: hidden; overflow-wrap: anywhere; }
+/* padding à direita: o KaTeX deixa o fim de uma fórmula (√, ℝ) 1 ou 2 px para lá da linha e, sem folga, a opção rolava 2 px */
+.per-opcao__tex { min-width: 0; padding: 0.15rem 0.25rem 0.15rem 0; overflow-x: auto; overflow-y: hidden; overflow-wrap: anywhere; }
 .per-opcao__marca { grid-column: 2; font-size: 0.85rem; font-weight: 700; }
 .per-opcao__marca:empty { display: none; }
 
@@ -123,7 +128,7 @@
 
 .per-janela__corpo { flex: 1 1 auto; min-height: 0; padding: 1rem 1.1rem; overflow-y: auto; overscroll-behavior: contain; }
 .per-janela__resposta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; margin: 0 0 0.9rem; font-size: 1.05rem; }
-.per-janela__tex { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 0.1rem 0; }
+.per-janela__tex { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 0.1rem 0.25rem 0.1rem 0; }
 .per-janela__expl {
   padding: 0.6rem 0.9rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0;
   background: var(--dourado-fundo); font-size: 0.98rem;
@@ -164,7 +169,7 @@
 
 @media (min-width: 40em) {
   .per { padding: 1.25rem; }
-  .per-opcoes { grid-template-columns: 1fr 1fr; }
+  .per-opcoes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .per-rodape .botao { flex: 0 1 auto; min-width: 10rem; }
   .per-acoes--fim .botao { flex: 0 1 auto; }
 }

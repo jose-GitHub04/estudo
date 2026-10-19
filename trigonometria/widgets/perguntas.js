@@ -61,6 +61,18 @@ function colarPontuacao(raiz) {
   }
 }
 
+/**
+ * Uma fórmula colada à pontuação não quebra (.per-cola). Se for mais larga do que a linha
+ * (a 390 px, uma expressão comprida), deixa-se partir como qualquer outra, senão a página
+ * ganhava scroll horizontal. Só se pode medir depois de o nó estar no ecrã.
+ */
+function soltarColas(no) {
+  for (const cola of no.querySelectorAll('.per-cola')) {
+    const caixa = cola.closest('p, li, div');
+    if (caixa && cola.getBoundingClientRect().width > caixa.clientWidth) cola.classList.add('per-cola--livre');
+  }
+}
+
 /** Texto com $...$ já convertido em fórmulas. */
 function comFormulas(tag, classe, texto) {
   const e = h(tag, { class: classe, html: seguro(texto) });
@@ -243,6 +255,7 @@ export async function montar(el, dados, extra = {}) {
     }
     jSeguinte.textContent = ultima ? 'Ver resultado' : 'Seguinte';
     mostrarJanela();
+    soltarColas(jExpl);
     jCorpo.scrollTop = 0;
     jSeguinte.focus();
   }
@@ -251,6 +264,7 @@ export async function montar(el, dados, extra = {}) {
 
   function mostrar(no, foco) {
     raiz.replaceChildren(no);
+    soltarColas(raiz);
     if (foco) foco.focus({ preventScroll: true });
     if (raiz.getBoundingClientRect().top < 0) raiz.scrollIntoView({ block: 'start' });
   }

@@ -7,10 +7,15 @@
 // e a sua resposta; o enunciado do exercício é então só o contexto. `texto`, `resposta`, `dica` e `erroComum` levam
 // HTML e fórmulas $...$ / $$...$$. O campo `verifica` é só do verificador e não é usado aqui.
 // `figura` de um passo segue o esquema comum do tema ({ tipo: 'grafico', x, y, curvas, retas, retasV, retasH, pontos,
-// area, legenda, rotuloX, rotuloY }) e desenha-se com assets/motor/grafico.js. Cada reta, curva e ponto aceita ainda `cor`
-// e `tracejado` (retas e curvas) / `posRotulo` ('esq' | 'dir' | 'cima' | 'baixo', em retasH, retasV e pontos); um `rotulo` vazio
-// quer dizer sem rótulo. A figura no ecrã é a do último passo revelado que tenha
-// figura; uma figura ilegível ou que falhe é ignorada (o passo fica sem ela).
+// area, legenda, rotuloX, rotuloY, marcasX, marcasY }) e desenha-se com assets/motor/grafico.js. Cada reta, curva e ponto
+// aceita ainda `cor` e `tracejado` (retas e curvas; `false` = contínua); a curva aceita `de` e `ate` (cortam o x) e `rotulo`;
+// `posRotulo` é a posição preferida do rótulo ('esq' | 'dir' | 'cima' | 'baixo' nos pontos, 'esq' | 'dir' em retasH,
+// 'cima' | 'baixo' em retasV, 'inicio' | 'fim' nas curvas); um `rotulo` vazio quer dizer sem rótulo. `marcasX` e `marcasY`
+// (lista de números, ou `false` para nenhuma) escolhem os números dos eixos. Os rótulos não ficam onde o motor os poria:
+// rotulos.js escolhe, para cada um, a posição mais perto do que descreve onde não tape curvas, eixos, pontos, outros
+// rótulos nem números das marcas (`posRotulo` é só uma preferência) e apaga o número de uma marca que continue tapado.
+// A figura no ecrã é a do último passo revelado que tenha figura; uma figura ilegível ou que falhe é ignorada
+// (o passo fica sem ela).
 // Progresso guardado em progresso (o prefixo «log-» existe porque o armazenamento é partilhado com os outros temas):
 //   'log-exercicios'  { [chave]: 1 | 0 }   1 = «Acertei», 0 = «Não acertei» (a marca é por unidade de resolução)
 //   chave = id do exercício, ou «id/alínea» quando o exercício tem alíneas (ex.: «ex-03/b»).
@@ -22,6 +27,7 @@ import { GRUPOS } from '../grupos.js';
 import { renderizar } from '../../assets/motor/katex.js';
 import { criarGrafico, formatarNumero } from '../../assets/motor/grafico.js';
 import * as P from '../../assets/motor/progresso.js';
+import { colocarRotulos } from './rotulos.js';
 
 const CHAVE = 'log-exercicios';
 
@@ -130,33 +136,49 @@ export function desenharFigura(f) {
     if (!ehIntervalo(f.x) || !ehIntervalo(f.y)) return null;
     const legenda = txt(f.legenda) || descricao(f);
     const nomeEixo = (v) => (typeof v === 'string' ? v : undefined); // «» = sem nome; sem o campo, fica x / y
-    const g = criarGrafico({ x: f.x, y: f.y, largura: 340, altura: 250, aria: legenda, rotuloX: nomeEixo(f.rotuloX), rotuloY: nomeEixo(f.rotuloY) });
+    const marcas = (v) => (v === false || Array.isArray(v) ? v : undefined); // false = sem números; lista = só essas
+    const g = criarGrafico({
+      x: f.x, y: f.y, largura: 340, altura: 250, aria: legenda, rotuloX: '', rotuloY: '', // os nomes dos eixos põe-nos rotulos.js
+      marcasX: marcas(f.marcasX), marcasY: marcas(f.marcasY),
+    });
+    // Tudo se desenha sem rótulos; no fim, rotulos.js escolhe para cada um o sítio onde não tapa nada.
+    const pedidos = [];
+    const rotulo = (v, porOmissao) => (v === undefined || v === null ? porOmissao : txt(v)); // um rotulo vazio quer dizer sem rótulo
     if (f.area) {
       if (typeof f.area.expr !== 'string' || !ehNumero(f.area.de) || !ehNumero(f.area.ate)) throw new Error('área mal definida');
       g.area(f.area.expr, f.area.de, f.area.ate);
     }
     for (const r of emLista(f.retas)) {
       if (!r || !ehNumero(r.declive) || !ehNumero(r.ordenada)) throw new Error('reta mal definida');
-      g.reta(r.declive, r.ordenada, { rotulo: r.rotulo, cor: r.cor, tracejado: tracejado(r.tracejado) });
+      g.reta(r.declive, r.ordenada, { cor: r.cor, tracejado: tracejado(r.tracejado) });
+      pedidos.push({ tipo: 'reta', declive: r.declive, ordenada: r.ordenada, texto: rotulo(r.rotulo, ''), cor: r.cor || 'id' });
     }
     for (const r of emLista(f.retasV)) {
       const o = guia(r, 'x');
-      // a guia x = 0 cai sobre o eixo dos yy, cujo nome está em cima: o rótulo vai para baixo
-      g.retaVertical(o.x, { rotulo: o.rotulo ?? `x = ${num(o.x)}`, cor: o.cor, tracejado: tracejado(o.tracejado), posRotulo: o.posRotulo ?? (o.x === 0 ? 'baixo' : 'cima') });
+      g.retaVertical(o.x, { cor: o.cor, tracejado: tracejado(o.tracejado) });
+      // a guia x = 0 cai sobre o eixo dos yy, cujo nome está em cima: prefere-se o rótulo em baixo
+      pedidos.push({ tipo: 'retaV', x: o.x, texto: rotulo(o.rotulo, `x = ${num(o.x)}`), cor: o.cor || 'assint', pref: o.posRotulo ?? (o.x === 0 ? 'baixo' : 'cima') });
     }
     for (const r of emLista(f.retasH)) {
       const o = guia(r, 'y');
-      g.retaHorizontal(o.y, { rotulo: o.rotulo ?? `y = ${num(o.y)}`, cor: o.cor, tracejado: tracejado(o.tracejado), posRotulo: o.posRotulo });
+      g.retaHorizontal(o.y, { cor: o.cor, tracejado: tracejado(o.tracejado) });
+      pedidos.push({ tipo: 'retaH', y: o.y, texto: rotulo(o.rotulo, `y = ${num(o.y)}`), cor: o.cor || 'assint', pref: o.posRotulo });
     }
     emLista(f.curvas).forEach((c, i) => {
       if (!c || typeof c.expr !== 'string' || c.expr.trim() === '') throw new Error('curva sem expressão');
-      const item = g.curva(c.expr, { cor: c.cor || COR_DAS_CURVAS[i % COR_DAS_CURVAS.length], rotulo: c.rotulo, tracejado: tracejado(c.tracejado) });
+      const cor = c.cor || COR_DAS_CURVAS[i % COR_DAS_CURVAS.length];
+      const de = ehNumero(c.de) ? c.de : undefined; // de e ate cortam a curva (o domínio de um modelo, por exemplo)
+      const ate = ehNumero(c.ate) ? c.ate : undefined;
+      const item = g.curva(c.expr, { cor, tracejado: tracejado(c.tracejado), de, ate });
       if (item.tracos === 0) throw new Error(`curva fora da janela: ${c.expr}`); // um gráfico sem a curva enganava
+      pedidos.push({ tipo: 'curva', fn: c.expr, de, ate, texto: rotulo(c.rotulo, ''), cor, pref: c.posRotulo === 'inicio' ? 'inicio' : 'fim' });
     });
     for (const p of emLista(f.pontos)) {
       if (!p || !ehNumero(p.x) || !ehNumero(p.y)) throw new Error('ponto mal definido');
-      g.ponto(p.x, p.y, { rotulo: p.rotulo, cor: p.cor, posRotulo: p.posRotulo, oco: p.oco });
+      g.ponto(p.x, p.y, { cor: p.cor, oco: p.oco });
+      pedidos.push({ tipo: 'ponto', x: p.x, y: p.y, raio: 4.5, texto: rotulo(p.rotulo, ''), cor: p.cor, pref: p.posRotulo });
     }
+    colocarRotulos(g, pedidos, { nomesEixos: { x: nomeEixo(f.rotuloX) ?? 'x', y: nomeEixo(f.rotuloY) ?? 'y' } });
     return { svg: g.svg, legenda };
   } catch (e) {
     console.warn('exercicios: figura ignorada', e);

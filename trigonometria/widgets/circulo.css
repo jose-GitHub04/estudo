@@ -3,7 +3,7 @@
 .cir [hidden] { display: none !important; }
 
 .cir-modos { margin: 0 0 0.9rem; }
-.cir .chip { min-height: 2.5rem; }
+.cir .chip { min-height: 2.75rem; }
 
 /* uma coluna no telemóvel; figura à esquerda e leituras à direita em ecrãs largos */
 .cir-corpo { display: grid; gap: 0.2rem; }
@@ -34,7 +34,7 @@
 .cir-seta { fill: var(--c-eixo); stroke: none; }
 .cir-svg .cir-eixo-nome { font-size: 15px; font-style: italic; font-weight: 500; fill: var(--c-eixo); }
 .cir-svg .cir-num { font-size: 13px; font-weight: 500; fill: var(--c-eixo); }
-.cir-svg .cir-quad { font-size: 13px; font-weight: 500; fill: var(--c-eixo); opacity: 0.6; }
+.cir-svg .cir-quad { font-size: 13px; font-weight: 500; fill: var(--c-eixo); opacity: 0.7; }
 .cir-svg .cir-quad--ativo { opacity: 1; fill: var(--dourado-texto); font-weight: 700; }
 
 .cir-raio { stroke: var(--c-ponto); stroke-width: 2.2; }
@@ -102,7 +102,7 @@
 /* ---------- controlos ---------- */
 
 .cir-controlos { margin-top: 0.9rem; }
-.cir-campo { max-width: 12rem; min-height: 2.5rem; }
+.cir-campo { max-width: 12rem; min-height: 2.75rem; }
 .cir-iman {
   display: flex; align-items: center; gap: 0.6rem; min-height: 2.75rem;
   color: var(--tinta); font-size: 0.95rem; cursor: pointer;

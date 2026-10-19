@@ -69,3 +69,5 @@
 .li-regra .li-rotulo { color: var(--c-exp); }
 .li-texto { margin: 0; font-size: 0.97rem; }
 .li-texto .katex { font-size: 1.04em; }
+
+.li-junto { white-space: nowrap; }

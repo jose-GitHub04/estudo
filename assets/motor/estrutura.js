@@ -21,7 +21,7 @@ const PAGINAS_TRIGONOMETRIA = [
 
 const PAGINAS_PROBABILIDADES = [
   { id: 'materia', href: 'materia.html', rotulo: 'Matéria',
-    resumo: 'Tabela de distribuição, valor médio e desvio-padrão, com desenhos para mexer.' },
+    resumo: 'Tabela de distribuição, valor médio, desvio-padrão, urna e curva Normal, com desenhos para mexer.' },
   { id: 'exercicios', href: 'exercicios.html', rotulo: 'Exercícios',
     resumo: 'Quatro exercícios com resolução passo a passo e desenhos para mexer.' },
   { id: 'vf', href: 'verdadeiro-falso.html', rotulo: 'Verdadeiro ou falso',

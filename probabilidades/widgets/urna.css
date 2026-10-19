@@ -1,7 +1,7 @@
 /* urna: a urna e o jogo do saco. Classes com prefixo .urn- */
 
 .urn [hidden] { display: none !important; }
-.urn .chip { min-height: 2.5rem; min-width: 2.75rem; }
+.urn .chip { min-height: 2.75rem; min-width: 2.75rem; }
 .urn .botao { min-height: 2.75rem; }
 
 .urn-separadores { margin-top: 0; padding-bottom: 0.8rem; border-bottom: 1px solid var(--linha); }
@@ -57,7 +57,7 @@
 .urn-tabela { font-size: 0.95rem; }
 .urn-tabela .katex { font-size: 1em; }
 .urn-btn-linha {
-  min-width: 2.75rem; min-height: 2.5rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
+  min-width: 2.75rem; min-height: 2.75rem; padding: 0.2rem 0.5rem; border: 1px solid #cdbfae;
   border-radius: 0.4rem; background: var(--creme); color: var(--castanho); font: inherit; cursor: pointer;
 }
 .urn-btn-linha:hover { border-color: var(--castanho); }

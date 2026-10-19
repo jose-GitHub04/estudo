@@ -12,6 +12,7 @@ import * as M from '../../assets/motor/matematica.js';
 import { criarGrafico, arrastarNaCurva, CORES } from '../../assets/motor/grafico.js';
 import { criar } from '../../assets/motor/svg.js';
 import { tex } from '../../assets/motor/katex.js';
+import { amostrarCurva, caixaDoTexto, colocar, posicoesAoRedor, zonasDosEixos } from './colocacao.js';
 
 export const BASE_MIN = 0.2;
 export const BASE_MAX = 5;
@@ -21,6 +22,7 @@ export const X_MAX = 4;
 export const PASSO_X = 0.05; // o ponto assenta em múltiplos de 0,05, por isso x = 1 e x = 2 são alcançáveis
 export const X_TABELA = [-2, -1, 0, 1, 2, 3];
 
+const ROTULO_ASS = 'assíntota: y = 0';
 const FINO = '\u202f'; // espaço fino que separa os milhares: 10 000
 const ATALHOS = [
   { rotulo: '½', valor: 0.5 },
@@ -165,7 +167,7 @@ export async function montar(el) {
   let curvaE = null;
   let curvaConstante = false;
   let ctrl = null;
-  const optAss = { rotulo: 'assíntota: y = 0', posRotulo: 'dir', espessura: 2.6, tracejado: '7 5' };
+  const optAss = { espessura: 2.6, tracejado: '7 5' }; // o texto «assíntota: y = 0» põe-se à parte (sincronizarGrafico), onde não pise as curvas
 
   // --- estrutura ---
   const lienzo = h('div', { class: 'exp-lienzo' });
@@ -302,7 +304,6 @@ export async function montar(el) {
     const j = g.janela;
     if (j.y[0] !== y0 || j.y[1] !== y1) g.definirJanela([X_MIN, X_MAX], [y0, y1]);
 
-    optAss.posRotulo = est.a > 1 ? 'dir' : 'esq'; // do lado onde a curva está longe do eixo
     assint.desenhar();
     if (cst !== curvaConstante) {
       curvaA.remover();
@@ -316,26 +317,41 @@ export async function montar(el) {
       curvaE = null;
     }
 
-    // (0, 1) e (1, a) com rótulo, cada um do lado onde a curva não passa
+    // (0, 1) e (1, a) com rótulo, cada um do lado onde a curva não passa e longe do cursor, dos números dos eixos e do texto da assíntota
     g.limpar('pontos');
     g.limpar('texto');
     if (!cst) {
       const sep = Number.isInteger(est.a) || est.ehE ? ', ' : '; ';
       g.ponto(0, 1);
       g.ponto(1, est.a);
-      const subir = { dx: 8, dy: -12 };
-      if (est.a > 1) {
-        // com a janela alta (base 10) os números do eixo ficam juntos: o rótulo afasta-se para não lhes tocar
-        g.rotulo(0, 1, `(0${sep}1)`, { ancora: 'end', dx: y1 > 8 ? -22 : -8, dy: -12 });
-        g.rotulo(1, est.a, `(1${sep}${baseTxt(est.a, est.ehE)})`, { ancora: 'start', dx: 8, dy: 17 });
-      } else {
-        g.rotulo(0, 1, `(0${sep}1)`, { ancora: 'start', ...subir });
-        const pertoDoEixo = g.Y(0) - g.Y(est.a) < 30;
-        let pos = { ancora: 'end', dx: -8, dy: 17 }; // por baixo da curva, à esquerda (aí a curva está mais acima)
-        if (est.a > 0.8) pos = { ancora: 'start', dx: 8, dy: 17 }; // curva quase horizontal: à direita, longe dos números do eixo
-        else if (pertoDoEixo) pos = { ancora: 'start', ...subir };
-        g.rotulo(1, est.a, `(1${sep}${baseTxt(est.a, est.ehE)})`, pos);
-      }
+      const FS = 13;
+      const curvas = [amostrarCurva(g, fA)];
+      if (est.mostrarE) curvas.push(amostrarCurva(g, Math.exp));
+      const evitar = zonasDosEixos(g, FS);
+      const xBola = limitar(est.x, ...limites());
+      evitar.push({ x0: g.X(xBola) - 9, x1: g.X(xBola) + 9, y0: g.Y(fA(xBola)) - 9, y1: g.Y(fA(xBola)) + 9 });
+      const alt = posicoesAoRedor(5, FS);
+      const ordem = est.a > 1
+        ? ['baixoDir', 'cimaEsq', 'baixoEsq', 'cimaDir', 'dir', 'esq', 'baixo', 'cima']
+        : ['cimaDir', 'baixoEsq', 'cimaEsq', 'baixoDir', 'dir', 'esq', 'cima', 'baixo'];
+      const poe = (x, y, texto) => {
+        const pos = colocar(g, { texto, px: g.X(x), py: g.Y(y), tam: FS, opcoes: ordem.map((k) => alt[k]), curvas, evitar });
+        g.rotulo(x, y, texto, { ancora: pos.ancora, dx: pos.dx, dy: pos.dy });
+        evitar.push(pos.caixa);
+      };
+      poe(0, 1, `(0${sep}1)`);
+      poe(1, est.a, `(1${sep}${baseTxt(est.a, est.ehE)})`);
+      // «assíntota: y = 0» ao longo do eixo, do lado onde as curvas estão longe dele; em último caso, por baixo dos números
+      const ancorasAss = [];
+      const dxs = est.a > 1 ? [3.4, 2.4, 1.4, -3.8, -2.8, -1.8] : [-3.8, -2.8, -1.8, 3.4, 2.4, 1.4];
+      for (const xa of dxs) ancorasAss.push({ x: xa, opcoes: [{ ancora: xa > 0 ? 'end' : 'start', dx: 0, dy: -7 }] });
+      for (const xa of [-3.8, 3.4]) ancorasAss.push({ x: xa, opcoes: [{ ancora: xa > 0 ? 'end' : 'start', dx: 0, dy: FS + 22 }] });
+      let melhorAss = null;
+      ancorasAss.forEach((a, i) => {
+        const r = colocar(g, { texto: ROTULO_ASS, px: g.X(a.x), py: g.Y(0), tam: FS, opcoes: a.opcoes, curvas, evitar });
+        if (!melhorAss || r.custo + i * 0.3 < melhorAss.r.custo - 1e-9) melhorAss = { r: { ...r, custo: r.custo + i * 0.3 }, x: a.x };
+      });
+      g.rotulo(melhorAss.x, 0, ROTULO_ASS, { ancora: melhorAss.r.ancora, dx: melhorAss.r.dx, dy: melhorAss.r.dy, cor: 'assint' });
     }
 
     const [lo, hi] = limites();

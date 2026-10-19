@@ -2,7 +2,7 @@
 
 .fc-resumo { display: flex; flex-wrap: wrap; gap: 0.1rem 0.5rem; margin: 0 0 0.6rem; font-size: 0.95rem; color: var(--tinta-suave); }
 .fc-resumo strong { color: var(--tinta); }
-.fc-sep { color: var(--linha); }
+.fc-sep { color: var(--tinta-suave); }
 
 .fc-grupos, .fc-modos { margin-top: 0.5rem; }
 .fc-modos { padding-bottom: 0.9rem; border-bottom: 1px solid var(--linha); }
@@ -47,3 +47,6 @@
   .fc-frente { font-size: 1.35rem; min-height: 5rem; }
   .fc-acoes { max-width: 26rem; margin-left: auto; margin-right: auto; }
 }
+
+/* alvos de toque de pelo menos 44 px */
+.fc .chip, .fc-rodape .botao { min-height: 2.75rem; }

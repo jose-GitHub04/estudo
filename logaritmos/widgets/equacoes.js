@@ -7,7 +7,9 @@
 // rejeitadas (ponto oco, «rejeitada»); nas inequações sombreia o conjunto-solução. Nas
 // substituições de variável há três vistas (equação original, equação em u, voltar a x) e
 // o gráfico muda sozinho para a do passo em curso. Duas predefinidas têm um slider de
-// parâmetro (2^x = k e log2(x+1) = c): a solução anda sobre a curva.
+// parâmetro (2^x = k e log2(x+1) = c): a solução anda sobre a curva. Os rótulos do gráfico (nomes dos eixos, pontos,
+// retas, zonas) não ficam onde o motor os poria: ./rotulos.js escolhe, em cada estado do gráfico, o sítio onde nenhum
+// tapa uma curva, um eixo, um ponto, outro rótulo ou um número das marcas (o campo `pos` dos pontos é só uma preferência).
 //
 // Contrato: export async function montar(el, dados). `dados` não é usado: o widget lê os
 // seus dados. O formato do JSON está descrito (e é conferido, linha a linha) em
@@ -19,6 +21,7 @@ import { criarGrafico } from '../../assets/motor/grafico.js';
 import { criarFuncao } from '../../assets/motor/matematica.js';
 import { criar } from '../../assets/motor/svg.js';
 import { tex } from '../../assets/motor/katex.js';
+import { colocarRotulos } from './rotulos.js';
 
 const LARGURA = 330;
 const FASES = [['dominio', 'Domínio'], ['resolver', 'Resolver'], ['verificar', 'Verificar']];
@@ -44,7 +47,9 @@ function h(tag, props = {}, ...filhos) {
 
 function carregar() {
   if (!promessaDados) {
-    promessaDados = fetch(new URL('../dados/equacoes.json', import.meta.url)).then((r) => {
+    const url = new URL('../dados/equacoes.json', import.meta.url);
+    // uma segunda tentativa se a ligação falhar (rede fraca, servidor ocupado)
+    promessaDados = fetch(url).catch(() => new Promise((r) => setTimeout(r, 400)).then(() => fetch(url))).then((r) => {
       if (!r.ok) throw new Error(`equacoes.json: ${r.status}`);
       return r.json();
     });
@@ -166,11 +171,12 @@ function desenharVista(pred, V, n, valor) {
   const [x0, x1] = V.x;
   const [y0, y1] = V.y;
   const g = criarGrafico({
-    x: V.x, y: V.y, largura: LARGURA, rotuloX: V.rotuloX ?? nomeVar, rotuloY: V.rotuloY ?? 'y', aria: V.aria,
+    x: V.x, y: V.y, largura: LARGURA, rotuloX: '', rotuloY: '', aria: V.aria, // os nomes dos eixos põe-nos rotulos.js
   });
   const risca = juntarRiscas(g);
   const legenda = [];
   const falas = [];
+  const pedidos = []; // os rótulos desenham-se no fim, por rotulos.js, onde não tapem nada
 
   // zonas proibidas (fora do domínio) e as suas assíntotas
   for (const z of V.zonas || []) {
@@ -179,16 +185,24 @@ function desenharVista(pred, V, n, valor) {
     const hi = z.eixo === 'x' ? z.ate ?? x1 : z.ate ?? y1;
     if (z.eixo === 'x') g.area(() => y1, lo, hi, { entre: y0, cor: risca });
     else g.area(() => hi, x0, x1, { entre: lo, cor: risca });
-    if (z.assintota && z.ate != null) g.retaVertical(z.ate, { rotulo: z.assintota });
-    (z.rotulo || []).forEach((linha, k) => {
+    if (z.assintota && z.ate != null) {
+      g.retaVertical(z.ate);
+      pedidos.push({ tipo: 'retaV', x: z.ate, texto: z.assintota, cor: 'assint', pref: 'cima' });
+    }
+    if ((z.rotulo || []).length) {
+      // o texto da zona (uma ou duas linhas), num dos sítios dentro dela, por ordem de preferência
+      const candidatos = [];
       if (z.eixo === 'x') {
-        g.rotulo((Math.max(lo, x0) + Math.min(hi, x1)) / 2, y1 - (y1 - y0) * 0.1, linha, { ancora: 'middle', dx: 0, dy: 14 * k, cor: 'assint' });
+        const a = Math.max(lo, x0);
+        const b = Math.min(hi, x1);
+        for (const f of [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]) for (const gx of [0.5, 0.25, 0.75]) candidatos.push({ x: a + (b - a) * gx, y: y1 - (y1 - y0) * f, ancora: 'middle', dy: 4 });
       } else {
         const a = Math.max(lo, y0);
         const b = Math.min(hi, y1);
-        g.rotulo((x0 + x1) / 2, a + (b - a) * 0.3, linha, { ancora: 'middle', dx: 0, dy: 14 * k, cor: 'assint' });
+        for (const f of [0.3, 0.5, 0.7, 0.15, 0.85]) for (const gx of [0.5, 0.25, 0.75]) candidatos.push({ x: x0 + (x1 - x0) * gx, y: a + (b - a) * f, ancora: 'middle', dy: 4 });
       }
-    });
+      pedidos.push({ tipo: 'livre', texto: z.rotulo, cor: 'assint', candidatos });
+    }
     if (z.legenda) legenda.push({ tipo: 'zona', risca, texto: z.legenda });
   }
 
@@ -201,7 +215,10 @@ function desenharVista(pred, V, n, valor) {
       g.segmento(a, 0, b, 0, { cor: 'tg', espessura: 6 });
       if (iv.de != null) g.ponto(iv.de, 0, { cor: 'tg', oco: iv.abertoDe, raio: 5.5 });
       if (iv.ate != null) g.ponto(iv.ate, 0, { cor: 'tg', oco: iv.abertoAte, raio: 5.5 });
-      g.rotulo((Math.max(a, x0) + Math.min(b, x1)) / 2, 0, 'solução', { ancora: 'middle', dx: 0, dy: -12, cor: 'tg' });
+      const cx = (Math.max(a, x0) + Math.min(b, x1)) / 2;
+      const candidatos = [];
+      for (const dy of [-12, -26, -40, -54]) for (const gx of [0, -0.18, 0.18]) candidatos.push({ x: cx + gx * (Math.min(b, x1) - Math.max(a, x0)), y: 0, ancora: 'middle', dy });
+      pedidos.push({ tipo: 'livre', texto: 'solução', cor: 'tg', candidatos });
     }
     legenda.push({ tipo: 'conjunto', texto: V.conjunto.legenda || 'solução' });
   }
@@ -210,7 +227,8 @@ function desenharVista(pred, V, n, valor) {
   for (const r of V.retasH || []) {
     if (!visivel(r, n)) continue;
     const rej = r.estado === 'rejeitada';
-    g.retaHorizontal(r.y, { cor: rej ? COR_REJEITADA : 'log', tracejado: rej, rotulo: r.rotulo, posRotulo: 'esq', espessura: 1.8 });
+    g.retaHorizontal(r.y, { cor: rej ? COR_REJEITADA : 'log', tracejado: rej, espessura: 1.8 });
+    if (r.rotulo) pedidos.push({ tipo: 'retaH', y: r.y, texto: r.rotulo, cor: rej ? COR_REJEITADA : 'log', pref: 'esq' });
   }
 
   // curvas
@@ -246,9 +264,10 @@ function desenharVista(pred, V, n, valor) {
     const estado = decidido ? p.estado : 'candidata';
     let oco = estado !== 'aceite';
     if (estado === 'fronteira') oco = M.conjunto[p.fim[0]][p.fim[1] === 'de' ? 'abertoDe' : 'abertoAte'];
-    let rotulo = rotuloValor(nomeVar, x);
-    if (estado === 'rejeitada') rotulo += ' (rejeitada)';
-    g.ponto(x, y, { cor: COR_PONTO[estado], oco, raio: 5.5, rotulo, posRotulo: p.pos || 'auto' });
+    // a rejeitada leva uma segunda linha: «x = −1» e «(rejeitada)» ocupam menos largura que uma linha só
+    const rotulo = estado === 'rejeitada' ? [rotuloValor(nomeVar, x), '(rejeitada)'] : rotuloValor(nomeVar, x);
+    g.ponto(x, y, { cor: COR_PONTO[estado], oco, raio: 5.5 });
+    pedidos.push({ tipo: 'ponto', x, y, raio: 5.5, texto: rotulo, cor: COR_PONTO[estado], pref: p.pos && p.pos !== 'auto' ? p.pos : undefined });
     vistos.add(estado);
     const fala = { aceite: 'solução aceite', rejeitada: 'solução rejeitada', candidata: 'candidata', fronteira: 'extremo do intervalo' }[estado];
     falas.push(`${fala} em ${rotuloValor(nomeVar, x)}`);
@@ -258,6 +277,7 @@ function desenharVista(pred, V, n, valor) {
   if (vistos.has('candidata')) legenda.push({ tipo: 'ponto', cor: COR_PONTO.candidata, oco: true, texto: 'candidata, ainda por verificar' });
   if (vistos.has('fronteira')) legenda.push({ tipo: 'ponto', cor: COR_PONTO.fronteira, oco: true, texto: 'extremo (não incluído)' });
 
+  colocarRotulos(g, pedidos, { nomesEixos: { x: V.rotuloX ?? nomeVar, y: V.rotuloY ?? 'y' } });
   g.definirAria(falas.length ? `${V.aria} Pontos marcados: ${falas.join('; ')}.` : V.aria);
   return { g, legenda };
 }
@@ -289,7 +309,7 @@ function itemLegenda(item) {
     f.innerHTML = tex(item.tex);
     texto.append(f);
   } else {
-    texto.append(item.texto);
+    misto(texto, item.texto); // as legendas das zonas levam fórmulas, como $2^x$
   }
   return h('li', { class: 'eq-legenda__item' }, amostra(item), texto);
 }

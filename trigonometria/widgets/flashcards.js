@@ -202,7 +202,7 @@ export async function montar(el, dados) {
     raiz.innerHTML = `
       ${cabecalho()}
       ${emCurso ? palcoCartao() : concluida ? palcoFim() : palcoInicio()}
-      <p class="aviso-erro fc-aviso" hidden>Não consegui guardar o progresso neste dispositivo (modo privado ou dados do site bloqueados). Continua a funcionar, mas não fica guardado.</p>
+      <p class="aviso-erro fc-aviso"${avisouStorage ? '' : ' hidden'}>Não consegui guardar o progresso neste dispositivo (modo privado ou dados do site bloqueados). Continua a funcionar, mas não fica guardado.</p>
       <p class="fc-rodape">
         <button type="button" class="botao botao--suave botao--mini" data-acao="apagar">Apagar o progresso dos cartões</button>
       </p>`;

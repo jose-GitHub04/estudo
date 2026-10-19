@@ -44,6 +44,7 @@ import { GRUPOS } from '../grupos.js';
 import * as P from '../../assets/motor/progresso.js';
 import { renderizar } from '../../assets/motor/katex.js';
 import * as ex from '../widgets/exercicios.js';
+import { analisarFora, descrever } from './etiquetas.js';
 
 const params = new URLSearchParams(location.search);
 const palco = document.getElementById('palco');
@@ -427,34 +428,43 @@ async function testes() {
     ok(f && f.svg.getAttribute('aria-label').length > 10, 'sem legenda gera uma descrição: ' + (f && f.svg.getAttribute('aria-label')));
   });
 
-  await teste('figura: tracejado, cor, posRotulo, rótulo vazio e nomes dos eixos chegam ao gráfico', async (ok) => {
+  await teste('figura: tracejado, cor, rótulos (posRotulo é só preferência), rótulo vazio, expoentes e nomes dos eixos chegam ao gráfico', async (ok) => {
     const f = ex.desenharFigura({
       tipo: 'grafico', x: [-3, 40], y: [0, 100], rotuloX: 't (min)', rotuloY: 'T (°C)', legenda: 'teste',
-      curvas: [{ expr: '20+70*exp(-0.08*x)', rotulo: 'T', cor: 'exp' }],
+      curvas: [{ expr: '20+70*exp(-0.08*x)', rotulo: 'T', cor: 'exp', de: 0 }],
       retas: [{ declive: -1, ordenada: 90, rotulo: 'oblíqua', cor: 'assint', tracejado: true }, { declive: 0.5, ordenada: 10, rotulo: '' }],
       retasH: [{ y: 20, rotulo: 'y = 20', posRotulo: 'esq' }, { y: 50, rotulo: 'y = 50', posRotulo: 'dir', cor: 'log' }],
       retasV: [{ x: 10, rotulo: 'x = 10', posRotulo: 'baixo', tracejado: false }],
-      pontos: [{ x: 10, y: 51.4, rotulo: 'P', posRotulo: 'cima', cor: 'tg' }],
+      pontos: [{ x: 10, y: 51.4, rotulo: 'P', posRotulo: 'cima', cor: 'tg' }, { x: 5, y: 60, rotulo: '2^x' }],
     });
     ok(!!f, 'a figura desenha-se');
     const svg = f.svg;
-    const textos = qa(svg, 'text').map((t) => t.textContent);
+    const rotulos = qa(svg, '[data-camada="texto"] text');
+    const textos = rotulos.map((t) => t.textContent);
     ok(textos.includes('t (min)') && textos.includes('T (°C)'), 'nomes dos eixos: ' + textos.join('|'));
-    ok(!textos.includes('x') || textos.filter((t) => t === 'x').length === 0, 'o eixo já não se chama x');
+    ok(!qa(svg, 'text').some((t) => t.textContent === 'x' || t.textContent === 'y'), 'o eixo já não se chama x nem y');
+    for (const esperado of ['T', 'oblíqua', 'y = 20', 'y = 50', 'x = 10', 'P']) ok(textos.includes(esperado), `falta o rótulo «${esperado}»: ${textos.join('|')}`);
+    ok(rotulos.length === 9, `rótulos a mais ou a menos (rótulo vazio = sem texto): ${rotulos.length}: ${textos.join('|')}`);
+    const expo = rotulos.find((t) => t.querySelector('tspan'));
+    ok(expo && expo.textContent === '2x' && expo.querySelectorAll('tspan').length === 2 && expo.querySelector('tspan[dy]'), 'o «^» escreve um expoente em <tspan>');
     const retas = qa(svg, '[data-camada="retas"] > g');
     const traco = (g) => g.querySelector('path').getAttribute('stroke-dasharray');
-    const porTexto = (t) => retas.find((g) => g.textContent === t);
-    ok(porTexto('oblíqua') && /\d/.test(traco(porTexto('oblíqua'))) && traco(porTexto('oblíqua')) !== 'none', 'reta com tracejado: ' + (porTexto('oblíqua') && traco(porTexto('oblíqua'))));
-    ok(retas.some((g) => g.textContent === '' && !/\d/.test(traco(g) || '')), 'reta sem rótulo e sem tracejado (rotulo vazio = sem texto)');
-    ok(!/\d/.test(traco(porTexto('x = 10')) || ''), 'tracejado: false numa guia vertical');
-    ok(/var\(--c-log/.test(porTexto('y = 50').querySelector('path').getAttribute('style')), 'cor da guia horizontal');
-    const y20 = porTexto('y = 20').querySelector('text');
-    const y50 = porTexto('y = 50').querySelector('text');
-    ok(y20.getAttribute('text-anchor') === 'start' && y50.getAttribute('text-anchor') === 'end', 'posRotulo esq/dir: ' + y20.getAttribute('text-anchor') + '/' + y50.getAttribute('text-anchor'));
-    const ponto = qa(svg, '[data-camada="pontos"] text')[0];
-    ok(ponto && ponto.getAttribute('text-anchor') === 'middle' && /var\(--c-tg/.test(ponto.getAttribute('style')), 'ponto com posRotulo cima e cor');
+    ok(retas.length === 5, 'retas: ' + retas.length);
+    ok(/\d/.test(traco(retas[0])) && traco(retas[0]) !== 'none', 'reta com tracejado: ' + traco(retas[0]));
+    ok(!/\d/.test(traco(retas[1]) || ''), 'a reta sem tracejado fica contínua');
+    ok(!/\d/.test(traco(retas[2]) || ''), 'tracejado: false numa guia vertical');
+    ok(/var\(--c-log/.test(retas[4].querySelector('path').getAttribute('style')), 'cor da guia horizontal (a de y = 50)');
+    const cor = (rot) => rotulos.find((t) => t.textContent === rot).getAttribute('style');
+    ok(/var\(--c-log/.test(cor('y = 50')) && /var\(--c-tg/.test(cor('P')) && /var\(--c-assint/.test(cor('oblíqua')), 'os rótulos têm a cor da linha ou do ponto');
+    // o rótulo de um ponto fica perto dele
+    const circ = qa(svg, '[data-camada="pontos"] circle').filter((c) => c.getAttribute('r') === '4.5')[0];
+    const p = rotulos.find((t) => t.textContent === 'P');
+    ok(circ && Math.hypot(+p.getAttribute('x') - +circ.getAttribute('cx'), +p.getAttribute('y') - +circ.getAttribute('cy')) < 40, 'o rótulo P fica junto do ponto');
     const g2 = ex.desenharFigura({ tipo: 'grafico', x: [0, 5], y: [0, 5], rotuloX: '', rotuloY: '', curvas: [{ expr: 'x' }], legenda: 'a' });
     ok(g2 && !qa(g2.svg, 'text').some((t) => t.textContent === 'x' || t.textContent === 'y'), 'rotuloX/rotuloY vazios tiram o nome dos eixos');
+    const g3 = ex.desenharFigura({ tipo: 'grafico', x: [0, 5], y: [0, 5], marcasX: false, marcasY: [2, 4], curvas: [{ expr: 'x', rotulo: 'f' }], legenda: 'a' });
+    const base = qa(g3.svg, '[data-camada="base"] text').map((t) => t.textContent);
+    ok(g3 && !base.includes('1') && base.includes('2') && base.includes('4'), 'marcasX: false e marcasY em lista: ' + base.join('|'));
   });
 
   await teste('marcar «Acertei» / «Não acertei»: guarda em log-exercicios, atualiza resumo, selo e índice', async (ok) => {
@@ -726,6 +736,10 @@ async function dadosReais() {
     // dica de contrato: 3 a 6 passos por unidade (só informação)
     for (const e of lista) for (const u of e.unidades) if (u.passos.length < 3 || u.passos.length > 6) avisos.push(`${u.chave}: ${u.passos.length} passos (o contrato diz 3 a 6)`);
   });
+  await teste('figuras dos dados reais: nenhuma etiqueta tapada por curvas, eixos, pontos ou outras etiquetas, nem fora do desenho', async (ok) => {
+    const maus = etiquetasMaus(ex.normalizar(json));
+    ok(maus.length === 0, `${maus.length} problema(s): ` + maus.slice(0, 6).join(' | '));
+  });
   await teste('a página real (exercicios.html) monta e a ligação #id salta para o exercício (iframe de 390 x 700)', async (ok) => {
     const alvo = String((json.exercicios[json.exercicios.length - 1] || {}).id);
     const f = document.createElement('iframe');
@@ -751,8 +765,67 @@ async function dadosReais() {
 
 const txt = (v) => (typeof v === 'string' ? v.trim() : '');
 
-if (cenario === 'semstorage') cenarioSemStorage();
-else if (params.get('demo')) demo().catch((e) => { saida.textContent = 'demo falhou: ' + e.message; document.documentElement.dataset.demo = 'erro'; });
+/** Todas as figuras dos exercícios, uma a uma, com a lista de etiquetas mal postas (texto de uma linha cada). */
+function etiquetasMaus(lista) {
+  const maus = [];
+  for (const e of lista) {
+    for (const u of e.unidades) {
+      u.passos.forEach((p, i) => {
+        if (!p.figura) return;
+        const r = ex.desenharFigura(p.figura);
+        if (!r) return;
+        for (const d of descrever(analisarFora(r.svg))) maus.push(`${u.chave}, passo ${i + 1}: ${d}`);
+      });
+    }
+  }
+  return maus;
+}
+
+/** ?etiquetas=1: escreve a lista completa de problemas de etiquetas (para as corrigir). */
+async function modoEtiquetas() {
+  const r = await fetch('../dados/exercicios.json');
+  const maus = etiquetasMaus(ex.normalizar(await r.json()));
+  document.body.dataset.modo = 'testes';
+  saida.textContent = maus.length ? maus.join(String.fromCharCode(10)) : 'Sem problemas de etiquetas.';
+  document.documentElement.dataset.testes = maus.length ? 'falhou' : 'ok';
+}
+
+/**
+ * Na página real a 390 px, com todas as resoluções abertas: fórmulas display mais largas que a coluna e fórmulas em
+ * linha partidas em duas linhas (o KaTeX parte depois de «=» e de «+»). Devolve uma lista de textos.
+ */
+async function medirFormulas(largura = 390) {
+  const f = document.createElement('iframe');
+  f.style.cssText = 'position:absolute; left:-9999px; top:0; width:' + largura + 'px; height:700px; border:0';
+  f.src = '../exercicios.html';
+  document.body.append(f);
+  const d = await esperarIframe(f, 'pronto');
+  const maus = [];
+  if (!d || d.documentElement.dataset.pronto !== 'sim') return ['a página real não montou'];
+  d.querySelectorAll('[data-acao="tudo"]').forEach((b) => b.click());
+  await esperar(300);
+  for (const k of d.querySelectorAll('.ex-cartao .katex-display')) {
+    const caixa = k.parentElement;
+    if (k.scrollWidth > k.clientWidth + 1) maus.push(`display de ${k.scrollWidth} px numa coluna de ${k.clientWidth} (${caixa.closest('.ex-cartao').id}): ${k.textContent.slice(0, 50)}`);
+  }
+  for (const k of d.querySelectorAll('.ex-cartao .katex')) {
+    if (k.closest('.katex-display')) continue;
+    const tops = new Set([...k.querySelectorAll('.katex-html > .base')].map((b) => Math.round(b.getBoundingClientRect().top)));
+    if (tops.size > 1) maus.push(`fórmula em linha partida (${k.closest('.ex-cartao').id}): ${k.textContent.slice(0, 50)}`);
+  }
+  f.remove();
+  return maus;
+}
+
+if (params.get('medir')) {
+  medirFormulas(Number(params.get('medir')) > 1 ? Number(params.get('medir')) : 390).then((m) => {
+    document.body.dataset.modo = 'testes';
+    saida.textContent = m.length ? m.join(String.fromCharCode(10)) : 'Sem fórmulas partidas nem largas demais.';
+    document.documentElement.dataset.testes = m.length ? 'falhou' : 'ok';
+  });
+} else if (cenario === 'semstorage') cenarioSemStorage();
+else if (params.get('etiquetas')) modoEtiquetas().catch((e) => { saida.textContent = 'ERRO: ' + (e && e.stack || e); });
+else if (params.get('demo')) demo().catch((e) => { saida.textContent = 'demo falhou: ' + (e && e.stack || e.message); document.documentElement.dataset.demo = 'erro'; });
 else testes().catch((e) => { saida.textContent = 'ERRO: ' + (e && e.stack || e); document.documentElement.dataset.testes = 'falhou'; });
 </script>
 </body>

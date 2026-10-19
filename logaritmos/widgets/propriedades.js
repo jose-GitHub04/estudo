@@ -632,7 +632,7 @@ function desenharCadeia(svg, r, uid) {
     guias.append(linhaV('pro-guia', fim, yFila(ultima) + ALT / 2));
     if (Math.abs(fim - r.total.v) >= 1e-9) {
       guias.append(linhaV('pro-guia pro-guia--total', r.total.v, Y_B + ALT / 2));
-      const ya = 120;
+      const ya = 122;
       const xa = X(fim);
       const xb = X(r.total.v);
       const sentido = xb > xa ? 1 : -1;
@@ -640,7 +640,7 @@ function desenharCadeia(svg, r, uid) {
       guias.append(
         criar('line', { class: 'pro-folga', x1: n2(xa), x2: n2(xb), y1: ya, y2: ya }),
         ponta(xb, sentido), ponta(xa, -sentido),
-        texto('pro-t-folga', (xa + xb) / 2, ya - 6, `diferença ${num(Math.abs(fim - r.total.v), 3)}`));
+        texto('pro-t-folga', (xa + xb) / 2, ya - 5, `diferença ${num(Math.abs(fim - r.total.v), 3)}`));
     }
   }
   // um termo que recuou fica noutra fila: liga-se ao anterior no ponto onde este acaba
@@ -780,7 +780,7 @@ const LEGENDAS = {
   cuidado: 'Os comprimentos não acabam no mesmo ponto: as duas expressões são diferentes.',
 };
 // as riscas e a seta para a esquerda assinalam os comprimentos negativos (não depende só da cor)
-const SETAS = 'Às riscas e a apontar para a esquerda: comprimento negativo (o número é menor que 1). Cada marca da régua vale 1 unidade.';
+const SETAS = 'Às riscas e a apontar para a esquerda: comprimento negativo (por exemplo, o logaritmo de um número menor que 1). Cada marca da régua vale 1 unidade.';
 const SETAS_MUDANCA = 'Cada marca vale 1 unidade da respetiva base. Se x é menor que 1, o segmento aponta para a esquerda e leva riscas.';
 
 const SELOS = {

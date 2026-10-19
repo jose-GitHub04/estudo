@@ -151,8 +151,11 @@ function figNormal(f) {
   const svg = nova(`Curvas Normais com ${descr}. Todas têm área total 1.`);
   svg.append(s('line', { x1: ESQ, y1: BASE, x2: DIR, y2: BASE, class: 'vf-fig__eixo' }));
   const px = (x) => ESQ + ((x - xmin) / (xmax - xmin)) * (DIR - ESQ);
+  const marcados = new Set(); // com o mesmo μ nas duas curvas, a marca e o rótulo do eixo desenham-se uma vez só
   curvas.forEach((c, i) => {
     svg.append(s('path', { d: caminhoCurva(c.mu, c.sg, xmin, xmax, ymax), class: `vf-fig__curva vf-fig__curva--${i % 2}` }));
+    if (marcados.has(c.mu)) return;
+    marcados.add(c.mu);
     svg.append(s('line', { x1: px(c.mu), y1: BASE, x2: px(c.mu), y2: BASE + 5, class: 'vf-fig__eixo' }));
     svg.append(s('text', { x: px(c.mu), y: BASE + 18, class: 'vf-fig__txt vf-fig__txt--eixo', 'text-anchor': 'middle' }, `μ = ${virgula(c.mu)}`));
   });

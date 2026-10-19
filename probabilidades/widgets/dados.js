@@ -363,7 +363,7 @@ export async function montar(el, opcoes = {}) {
 
     definirTexto(q('.dad-b1'), n === 1 ? 'Lançar o dado' : `Lançar os ${n} dados`);
     definirTexto(q('.dad-nlanc'), String(est.total));
-    definirTexto(q('.dad-rot-obs'), media ? 'Média observada média' : 'Soma observada média');
+    definirTexto(q('.dad-rot-obs'), media ? 'Média das médias observadas' : 'Média das somas observadas');
     const obs = est.total ? est.somaObs / est.total : null;
     definirTexto(q('.dad-obs-media'), obs === null ? 'sem dados' : num(media ? obs / n : obs, 2));
     if (est.ultimo) {

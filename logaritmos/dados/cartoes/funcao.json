@@ -4,15 +4,15 @@
   {
    "id": "fun-definicao",
    "grupo": "funcao",
-   "frente": "O que é a função logarítmica de base $a$ e como se relaciona com $a^x$?",
-   "verso": "$f(x)=\\log_a x$, com $a\\in\\mathbb{R}^+\\setminus\\{1\\}$. É a <strong>inversa</strong> da exponencial: $y=\\log_a x\\Leftrightarrow a^y=x$.",
+   "frente": "O que é a função logarítmica de base $a$?",
+   "verso": "$f(x)=\\log_a x$, com $a\\in\\mathbb{R}^+\\setminus\\{1\\}$. É a <strong>inversa</strong> da função exponencial $a^x$: $y=\\log_a x\\Leftrightarrow a^y=x$.",
    "porque": "Cada $x>0$ tem um único expoente $y$ tal que $a^y=x$. Esse expoente é $\\log_a x$, por isso a função logarítmica desfaz a exponencial.",
    "verifica": ["ig(a**logb(a, x), x)"]
   },
   {
    "id": "fun-dominio",
    "grupo": "funcao",
-   "frente": "Qual é o domínio e qual é o contradomínio de $f(x)=\\log_a x$?",
+   "frente": "Quais são o domínio e o contradomínio de $f(x)=\\log_a x$?",
    "verso": "Domínio $\\mathbb{R}^+=]0,+\\infty[$ e contradomínio $\\mathbb{R}$.",
    "porque": "É o contrário da exponencial $a^x$, que tem domínio $\\mathbb{R}$ e contradomínio $\\mathbb{R}^+$. Numa função inversa, o domínio e o contradomínio trocam de papel.",
    "verifica": ["ig(logb(a, a**t), t)"]
@@ -20,7 +20,7 @@
   {
    "id": "fun-zero-sinal",
    "grupo": "funcao",
-   "frente": "Qual é o zero de $\\log_a x$ e qual é o seu sinal em cada caso de base?",
+   "frente": "Qual é o sinal de $\\log_a x$, consoante $a>1$ ou $0<a<1$?",
    "verso": "Zero em $x=1$. Se $a>1$: negativa em $]0,1[$ e positiva em $]1,+\\infty[$. Se $0<a<1$: positiva em $]0,1[$ e negativa em $]1,+\\infty[$.",
    "porque": "$\\log_a 1=0$ porque $a^0=1$. Depois do zero, o sinal depende da monotonia: com $a>1$ a função cresce e passa de negativa a positiva; com $0<a<1$ decresce e faz o contrário.",
    "verifica": ["(logb(a, x)>0) == ((x>1) == (a>1))"]
@@ -36,15 +36,15 @@
   {
    "id": "fun-limites",
    "grupo": "funcao",
-   "frente": "Que limites tem $\\log_a x$ quando $x\\to0^+$ e quando $x\\to+\\infty$? Que assíntota resulta daí?",
-   "verso": "Se $a>1$: $\\lim_{x\\to0^+}\\log_a x=-\\infty$ e $\\lim_{x\\to+\\infty}\\log_a x=+\\infty$. Se $0<a<1$, os sinais trocam. Assíntota vertical: $x=0$. Não há assíntota horizontal.",
-   "porque": "Perto de $0$ o expoente que dá $x$ é enorme em valor absoluto, e o gráfico cola-se ao eixo $Oy$ sem o tocar, porque $0$ não pertence ao domínio. Quando $x\\to+\\infty$ a função cresce (ou decresce) sem parar, por isso não se aproxima de nenhum valor.",
-   "verifica": ["(logb(a, 1e-9)<-5) == (a>1)", "(logb(a, 1e9)>5) == (a>1)"]
+   "frente": "Que limites tem $\\log_a x$ quando $x\\to0^+$ e quando $x\\to+\\infty$?",
+   "verso": "Se $a>1$: $\\lim_{x\\to0^+}\\log_a x=-\\infty$ e $\\lim_{x\\to+\\infty}\\log_a x=+\\infty$.<br>Se $0<a<1$: $\\lim_{x\\to0^+}\\log_a x=+\\infty$ e $\\lim_{x\\to+\\infty}\\log_a x=-\\infty$.<br>Daqui sai a assíntota vertical $x=0$; não há assíntota horizontal. A função é contínua em todo o seu domínio, $\\mathbb{R}^+$.",
+   "porque": "Perto de $0$ o expoente que dá $x$ é enorme em valor absoluto, e o gráfico cola-se ao eixo $Oy$ sem o tocar, porque $0$ não pertence ao domínio. Quando $x\\to+\\infty$ a função cresce (ou decresce) sem parar, por isso não se aproxima de nenhum valor. A continuidade quer dizer que, em cada $p>0$, o limite é o valor da função, $\\lim_{x\\to p}\\log_a x=\\log_a p$: não há saltos nem buracos.",
+   "verifica": ["(logb(a, 1e-9)<-5) == (a>1)", "(logb(a, 1e9)>5) == (a>1)", "ig(lim(lambda s: logb(a, s), x), logb(a, x))"]
   },
   {
    "id": "fun-simetria",
    "grupo": "funcao",
-   "frente": "Como são os gráficos de $a^x$ e de $\\log_a x$ um em relação ao outro? E o domínio e o contradomínio?",
+   "frente": "Como são os gráficos de $a^x$ e de $\\log_a x$ um em relação ao outro?",
    "verso": "São simétricos em relação à reta $y=x$. Se $(p,q)$ pertence ao gráfico de $a^x$, então $(q,p)$ pertence ao de $\\log_a x$. O domínio de uma é o contradomínio da outra.",
    "porque": "$q=a^p\\Leftrightarrow p=\\log_a q$. Trocar as coordenadas de um ponto é refleti-lo na reta $y=x$.",
    "verifica": ["ig(logb(a, a**t), t)", "ig(a**logb(a, x), x)"]
@@ -60,26 +60,26 @@
   {
    "id": "fun-argumento",
    "grupo": "funcao",
-   "frente": "Que transformações do gráfico de $\\ln x$ dão $\\ln(x-c)$ e $\\ln(-x)$? Onde fica a assíntota?",
-   "verso": "$\\ln(x-c)$: translação de $c$ unidades na horizontal (para a direita se $c>0$), com assíntota $x=c$ e domínio $]c,+\\infty[$. $\\ln(-x)$: reflexão no eixo $Oy$, com assíntota $x=0$ e domínio $]-\\infty,0[$.",
-   "porque": "O que está dentro do logaritmo mexe nos $x$, e parece ir ao contrário do que o sinal sugere: o argumento tem de ser positivo, e $x-c>0\\Leftrightarrow x>c$.",
+   "frente": "Que transformações do gráfico de $\\ln x$ dão $\\ln(x-c)$ e $\\ln(-x)$?",
+   "verso": "$\\ln(x-c)$: translação horizontal de $c$ unidades (para a direita se $c>0$, para a esquerda se $c<0$), com assíntota vertical $x=c$ e domínio $]c,+\\infty[$.<br>$\\ln(-x)$: reflexão no eixo $Oy$, com assíntota vertical $x=0$ e domínio $]-\\infty,0[$.",
+   "porque": "O que está dentro do logaritmo mexe nos $x$ e vai ao contrário do que o sinal sugere: em $\\ln(x-c)$, com $c>0$, o gráfico anda para a direita. Vês porquê pelo domínio: o argumento tem de ser positivo, e $x-c>0\\Leftrightarrow x>c$.",
    "verifica": ["ig(ln(-(-x)), ln(x))", "(t-1>0) == (t>1)"]
   },
   {
    "id": "fun-fora",
    "grupo": "funcao",
-   "frente": "O que fazem $a$ e $b$ ao gráfico de $\\ln x$ em $f(x)=a+b\\ln x$?",
+   "frente": "O que fazem $a$ e $b$ (com $b\\neq0$) ao gráfico de $\\ln x$ em $f(x)=a+b\\ln x$?",
    "verso": "$b$ estica ou comprime o gráfico na vertical (se $b<0$, reflete-o no eixo $Ox$ e passa a ser decrescente) e $a$ sobe ou desce o gráfico. A assíntota continua a ser $x=0$ e o domínio continua a ser $\\mathbb{R}^+$.",
-   "porque": "O que está fora do logaritmo mexe nos $y$. Como o argumento continua a ser $x$, o domínio e a assíntota vertical não mudam.",
-   "verifica": ["(2-3*ln(x)>2-3*ln(y)) == (x<y)"]
+   "porque": "O que está fora do logaritmo mexe nos $y$. Como o argumento continua a ser $x$, o domínio e a assíntota vertical não mudam. Com $b=0$ não há nada disto: $f$ seria a função constante $a$.",
+   "verifica": ["(2-3*ln(x)>2-3*ln(y)) == (x<y)", "(a+t*ln(x)<a+t*ln(y)) == ((x<y) == (t>0))"]
   },
   {
    "id": "fun-inversa",
    "grupo": "funcao",
-   "frente": "Como obténs a inversa de $f(x)=a+b\\ln(x-c)$? E qual é o domínio dessa inversa?",
-   "verso": "Com $b\\neq0$, escreves $y=a+b\\ln(x-c)$, trocas $x$ com $y$ e isolas $y$: $f^{-1}(x)=c+e^{\\frac{x-a}{b}}$. O domínio de $f^{-1}$ é o contradomínio de $f$ (aqui $\\mathbb{R}$) e o contradomínio de $f^{-1}$ é o domínio de $f$ (aqui $]c,+\\infty[$).",
+   "frente": "Qual é a função inversa de $f(x)=a+b\\ln(x-c)$, com $b\\neq0$?",
+   "verso": "Escreves $y=a+b\\ln(x-c)$, trocas $x$ com $y$ e isolas $y$: $f^{-1}(x)=c+e^{\\frac{x-a}{b}}$.<br>O domínio de $f^{-1}$ é o contradomínio de $f$ (aqui $\\mathbb{R}$) e o contradomínio de $f^{-1}$ é o domínio de $f$ (aqui $]c,+\\infty[$).",
    "porque": "A inversa desfaz o que $f$ fez, por isso os papéis trocam: o que era entrada passa a saída. O domínio da inversa esquece-se com facilidade, porque a expressão sozinha não o mostra.",
-   "verifica": ["ig(y+exp(((a+b*ln(x))-a)/b), y+x)"]
+   "verifica": ["ig(y+exp(((a+b*ln(x))-a)/b), y+x)", "ig(z+exp(((a+b*ln(y))-a)/b), z+y)"]
   }
  ]
 }

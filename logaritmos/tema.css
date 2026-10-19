@@ -17,3 +17,7 @@
 .leitura--log .leitura__rotulo { color: var(--c-log); }
 .leitura--tg .leitura__rotulo { color: var(--c-tg); }
 .leitura--der .leitura__rotulo { color: var(--c-der); }
+
+/* pontos arrastáveis dos gráficos: o círculo invisível que apanha o toque do motor tem 44 unidades do desenho, que
+   num ecrã estreito (o desenho encolhe um pouco) ficam em 41 a 43 px; com r = 25 ficam sempre acima de 44 px */
+.figura [role="slider"] > circle[pointer-events="all"] { r: 25px; }

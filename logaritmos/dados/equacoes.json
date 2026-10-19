@@ -52,7 +52,7 @@
     {
      "titulo": "Mesma base nos dois lados",
      "fase": "resolver",
-     "texto": "Passa tudo para a base 2. A base $\\frac12$ é $2^{-1}$, e $\\sqrt8=8^{1/2}=(2^3)^{1/2}$.",
+     "texto": "Passa tudo para a base 2. A base $\\frac12$ é $2^{-1}$, e ${\\sqrt8=8^{1/2}=(2^3)^{1/2}}$.",
      "linhas": [
       {"tex": "\\left(\\frac{1}{2}\\right)^{x+1}=\\left(2^{-1}\\right)^{x+1}=2^{-x-1}"},
       {"tex": "\\sqrt{8}=8^{\\frac{1}{2}}=\\left(2^{3}\\right)^{\\frac{1}{2}}=2^{\\frac{3}{2}}"}
@@ -77,7 +77,7 @@
     {
      "titulo": "Verificar",
      "fase": "verificar",
-     "texto": "Substitui no enunciado. Com $x=-\\frac52$ o expoente é $x+1=-\\frac32$. A solução pertence ao domínio, que é $\\mathbb{R}$.",
+     "texto": "Substitui no enunciado. Com ${x=-\\frac52}$ o expoente é ${x+1=-\\frac32}$. A solução pertence ao domínio, que é $\\mathbb{R}$.",
      "linhas": [
       {"tex": "\\left(\\frac{1}{2}\\right)^{-\\frac{3}{2}}=2^{\\frac{3}{2}}=\\sqrt{8}"}
      ]
@@ -131,7 +131,7 @@
        "ate": 0,
        "desde": 0,
        "rotulo": ["2^x nunca chega aqui"],
-       "legenda": "valores que 2^x nunca toma"
+       "legenda": "valores que $2^x$ nunca toma"
       }
      ],
      "pontos": [
@@ -143,7 +143,7 @@
     {
      "titulo": "Quando é que tem solução?",
      "fase": "dominio",
-     "texto": "Uma potência de base 2 é sempre positiva: $2^x>0$ para todo o $x$. No gráfico, a curva nunca entra na zona riscada. Por isso $2^x=k$ só tem solução se $k>0$. Experimenta $k$ negativo no slider.",
+     "texto": "Uma potência de base 2 é sempre positiva: $2^x>0$ para todo o $x$. No gráfico, a curva nunca entra na zona riscada. Por isso ${2^x=k}$ só tem solução se $k>0$. Experimenta $k$ negativo no slider.",
      "linhas": [
       {"tex": "2^{x}>0"}
      ]
@@ -151,7 +151,7 @@
     {
      "titulo": "Da exponencial ao logaritmo",
      "fase": "resolver",
-     "texto": "$2^x=k$ diz que $x$ é o expoente a que se eleva 2 para obter $k$. É a definição de logaritmo de base 2.",
+     "texto": "${2^x=k}$ diz que $x$ é o expoente a que se eleva 2 para obter $k$. É a definição de logaritmo de base 2.",
      "linhas": [
       {"tex": "2^{x}=k\\Leftrightarrow x=\\log_2 k"}
      ]
@@ -159,7 +159,7 @@
     {
      "titulo": "Calcular com a calculadora",
      "fase": "resolver",
-     "texto": "A calculadora só tem $\\ln$ e $\\log$ (base 10). Usa a mudança de base e arredonda só no fim.",
+     "texto": "Se a tua calculadora só tiver $\\ln$ e $\\log$ (base 10), usa a mudança de base. Arredonda só no fim.",
      "linhas": [
       {"tex": "\\log_2 k=\\frac{\\ln k}{\\ln 2}"}
      ]
@@ -223,7 +223,7 @@
     {
      "titulo": "Pôr $e^x$ em evidência",
      "fase": "resolver",
-     "texto": "Os dois termos têm o fator $e^x$, porque $e^{x+1}=e^x\\times e$. Põe-no em evidência.",
+     "texto": "Os dois termos têm o fator $e^x$, porque ${e^{x+1}=e^x\\times e}$. Põe-no em evidência.",
      "linhas": [
       {"tex": "e^{x+1}-e^{x}=e^{x}\\cdot e-e^{x}=e^{x}(e-1)"}
      ]
@@ -231,7 +231,7 @@
     {
      "titulo": "Isolar a exponencial",
      "fase": "resolver",
-     "texto": "Divide os dois membros por $e-1$, que é positivo porque $e\\approx2{,}718$.",
+     "texto": "Divide os dois membros por $e-1$, que é positivo porque ${e\\approx2{,}718}$.",
      "linhas": [
       {"tex": "e^{x}(e-1)=6\\Leftrightarrow e^{x}=\\frac{6}{e-1}"}
      ]
@@ -239,7 +239,7 @@
     {
      "titulo": "Aplicar o logaritmo neperiano",
      "fase": "resolver",
-     "texto": "$e^x=a\\Leftrightarrow x=\\ln a$, com $a>0$. Aqui $a=\\frac{6}{e-1}$ é positivo. No gráfico, é onde a curva chega à altura 6.",
+     "texto": "${e^x=a\\Leftrightarrow x=\\ln a}$, com $a>0$. Aqui ${a=\\frac{6}{e-1}}$ é positivo. No gráfico, é onde a curva chega à altura 6.",
      "linhas": [
       {"tex": "e^{x}=\\frac{6}{e-1}\\Leftrightarrow x=\\ln\\left(\\frac{6}{e-1}\\right)"}
      ]
@@ -335,7 +335,7 @@
       }
      ],
      "zonas": [
-      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: 2^x nunca toma estes valores"}
+      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: $2^x$ nunca toma estes valores"}
      ],
      "pontos": [
       {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3, "decide": 4, "pos": "baixo"},
@@ -356,7 +356,7 @@
       {"y": 4, "rotulo": "u = 4"}
      ],
      "zonas": [
-      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["2^x > 0"], "legenda": "2^x nunca toma estes valores"}
+      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["2^x > 0"], "legenda": "$2^x$ nunca toma estes valores"}
      ],
      "pontos": [
       {"x": 1, "y": 2, "em": "pot", "estado": "aceite", "pos": "baixo"},
@@ -376,7 +376,7 @@
     {
      "titulo": "Tudo em potências de $2^x$",
      "fase": "resolver",
-     "texto": "Como $4=2^2$, tem-se $4^x=(2^2)^x=(2^x)^2$. Assim, a equação só tem a potência $2^x$.",
+     "texto": "Como ${4=2^2}$, tem-se ${4^x=(2^2)^x=(2^x)^2}$. Assim, a equação só tem a potência $2^x$.",
      "linhas": [
       {"tex": "4^{x}=\\left(2^{2}\\right)^{x}=\\left(2^{x}\\right)^{2}"}
      ]
@@ -384,7 +384,7 @@
     {
      "titulo": "Mudança de variável",
      "fase": "resolver",
-     "texto": "Faz $u=2^x$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-6u+8$.",
+     "texto": "Faz ${u=2^x}$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-6u+8$.",
      "vista": "u",
      "linhas": [
       {"tex": "u=2^{x}", "v": "txt"},
@@ -404,7 +404,7 @@
     {
      "titulo": "Só servem valores $u>0$",
      "fase": "verificar",
-     "texto": "Como $u=2^x$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. Aqui $2>0$ e $4>0$: as duas raízes servem. A zona riscada é onde $u\\le0$.",
+     "texto": "Como ${u=2^x}$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. Aqui $2>0$ e $4>0$: as duas raízes servem. A zona riscada é onde $u\\le0$.",
      "var": "u",
      "linhas": [
       {"tex": "2>0\\land4>0"}
@@ -413,7 +413,7 @@
     {
      "titulo": "Voltar a $x$",
      "fase": "resolver",
-     "texto": "Cada valor de $u$ dá uma equação exponencial simples, $2^x=u$. No gráfico, cada reta horizontal corta a curva uma só vez.",
+     "texto": "Cada valor de $u$ dá uma equação exponencial simples, ${2^x=u}$. No gráfico, cada reta horizontal corta a curva uma só vez.",
      "vista": "ponte",
      "linhas": [
       {"tex": "2^{x}=2\\Leftrightarrow x=1"},
@@ -498,7 +498,7 @@
       {"id": "esq", "papel": "esq", "expr": "u^2-u-6", "legenda": "Equação em u (o membro direito é 0)", "tex": "u^{2}-u-6"}
      ],
      "zonas": [
-      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: 3^x nunca toma estes valores"}
+      {"eixo": "x", "de": null, "ate": 0, "desde": 4, "rotulo": ["u ≤ 0"], "legenda": "u ≤ 0: $3^x$ nunca toma estes valores"}
      ],
      "pontos": [
       {"sol": 0, "em": "esq", "estado": "aceite", "desde": 3, "decide": 4, "pos": "dir"},
@@ -519,7 +519,7 @@
       {"y": -2, "rotulo": "u = −2", "estado": "rejeitada"}
      ],
      "zonas": [
-      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["3^x > 0"], "legenda": "3^x nunca toma estes valores"}
+      {"eixo": "y", "de": null, "ate": 0, "rotulo": ["3^x > 0"], "legenda": "$3^x$ nunca toma estes valores"}
      ],
      "pontos": [
       {"x": 1, "y": 3, "em": "pot", "estado": "aceite", "pos": "baixo"}
@@ -538,7 +538,7 @@
     {
      "titulo": "Tudo em potências de $3^x$",
      "fase": "resolver",
-     "texto": "Como $9=3^2$, tem-se $9^x=(3^2)^x=(3^x)^2$. Assim, a equação só tem a potência $3^x$.",
+     "texto": "Como ${9=3^2}$, tem-se ${9^x=(3^2)^x=(3^x)^2}$. Assim, a equação só tem a potência $3^x$.",
      "linhas": [
       {"tex": "9^{x}=\\left(3^{2}\\right)^{x}=\\left(3^{x}\\right)^{2}"}
      ]
@@ -546,7 +546,7 @@
     {
      "titulo": "Mudança de variável",
      "fase": "resolver",
-     "texto": "Faz $u=3^x$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-u-6$.",
+     "texto": "Faz ${u=3^x}$. A equação passa a ser do 2.º grau em $u$, e o gráfico passa a ser o de $u^2-u-6$.",
      "vista": "u",
      "linhas": [
       {"tex": "u=3^{x}", "v": "txt"},
@@ -566,7 +566,7 @@
     {
      "titulo": "Só servem valores $u>0$",
      "fase": "verificar",
-     "texto": "Como $u=3^x$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. $u=3$ serve. $u=-2$ é rejeitada: está na zona riscada, onde $3^x$ nunca chega.",
+     "texto": "Como ${u=3^x}$ e uma potência de base positiva é sempre positiva, só servem valores $u>0$. ${u=3}$ serve. ${u=-2}$ é rejeitada: está na zona riscada, onde $3^x$ nunca chega.",
      "var": "u",
      "linhas": [
       {"tex": "3>0"},
@@ -576,7 +576,7 @@
     {
      "titulo": "Voltar a $x$",
      "fase": "resolver",
-     "texto": "$3^x=3$ dá $x=1$. Já $3^x=-2$ é impossível: a reta $u=-2$ nunca toca a curva, porque $3^x>0$ para todo o $x$.",
+     "texto": "${3^x=3}$ dá ${x=1}$. Já ${3^x=-2}$ é impossível: a reta ${u=-2}$ nunca toca a curva, porque $3^x>0$ para todo o $x$.",
      "vista": "ponte",
      "linhas": [
       {"tex": "3^{x}=3\\Leftrightarrow x=1"}
@@ -585,7 +585,7 @@
     {
      "titulo": "Verificar na equação original",
      "fase": "verificar",
-     "texto": "Substitui $x=1$ no enunciado. É a única solução, e o ponto está no eixo dos xx, na curva do primeiro membro.",
+     "texto": "Substitui ${x=1}$ no enunciado. É a única solução, e o ponto está no eixo dos xx, na curva do primeiro membro.",
      "vista": "x",
      "linhas": [
       {"tex": "9^{1}-3^{1}-6=9-3-6=0"}
@@ -599,7 +599,7 @@
    "grupo": "log",
    "chip": "Logaritmo simples",
    "tipo": "equacao",
-   "enunciado": "Resolve em $\\mathbb{R}$ a equação seguinte. Começa com $c=3$ e mexe no slider para ver a solução mover-se.",
+   "enunciado": "Resolve em $\\mathbb{R}$ a equação seguinte. Começa com ${c=3}$ e mexe no slider para ver a solução mover-se.",
    "modelo": {
     "tex": "\\log_2(x+1)=c",
     "variavel": "x",
@@ -645,7 +645,7 @@
     {
      "titulo": "Domínio primeiro",
      "fase": "dominio",
-     "texto": "O argumento de um logaritmo tem de ser positivo. A zona riscada é onde $x\\le-1$, e $x=-1$ é uma assíntota vertical: a curva nunca lá chega.",
+     "texto": "O argumento de um logaritmo tem de ser positivo. A zona riscada é onde ${x\\le-1}$, e ${x=-1}$ é uma assíntota vertical: a curva nunca lá chega.",
      "linhas": [
       {"tex": "x+1>0\\Leftrightarrow x>-1"},
       {"tex": "D=\\left]-1,+\\infty\\right[", "v": "txt"}
@@ -654,7 +654,7 @@
     {
      "titulo": "Da forma logarítmica à exponencial",
      "fase": "resolver",
-     "texto": "$\\log_2(x+1)=c$ quer dizer que $c$ é o expoente a que se eleva 2 para obter $x+1$.",
+     "texto": "${\\log_2(x+1)=c}$ quer dizer que $c$ é o expoente a que se eleva 2 para obter $x+1$.",
      "linhas": [
       {"tex": "\\log_2(x+1)=c\\Leftrightarrow x+1=2^{c}"}
      ]
@@ -662,7 +662,7 @@
     {
      "titulo": "Resolver",
      "fase": "resolver",
-     "texto": "Isola $x$. Com $c=3$ fica $x=2^3-1=7$. Mexe no slider para ver outros valores.",
+     "texto": "Isola $x$. Com ${c=3}$ fica ${x=2^3-1=7}$. Mexe no slider para ver outros valores.",
      "linhas": [
       {"tex": "x+1=2^{c}\\Leftrightarrow x=2^{c}-1"}
      ]
@@ -670,7 +670,7 @@
     {
      "titulo": "Verificar no domínio",
      "fase": "verificar",
-     "texto": "Como $2^c>0$, tem-se $x=2^c-1>-1$: a solução está sempre no domínio, seja qual for $c$. No gráfico, a reta $y=c$ corta a curva num só ponto, à direita da assíntota.",
+     "texto": "Como $2^c>0$, tem-se ${x=2^c-1>-1}$: a solução está sempre no domínio, seja qual for $c$. No gráfico, a reta ${y=c}$ corta a curva num só ponto, à direita da assíntota.",
      "linhas": [
       {"tex": "2^{c}-1>-1"}
      ]
@@ -753,7 +753,7 @@
     {
      "titulo": "Juntar num só logaritmo",
      "fase": "resolver",
-     "texto": "A soma de logaritmos com a mesma base é o logaritmo do produto: $\\ln a+\\ln b=\\ln(ab)$, para $a,b>0$. A curva a tracejado coincide com a original para $x>3$, mas também existe para $x<0$.",
+     "texto": "A soma de logaritmos com a mesma base é o logaritmo do produto: ${\\ln a+\\ln b=\\ln(ab)}$, para $a,b>0$. A curva a tracejado coincide com a original para $x>3$, mas também existe para $x<0$.",
      "linhas": [
       {"tex": "\\ln x+\\ln(x-3)=\\ln\\left(x(x-3)\\right)"}
      ]
@@ -761,7 +761,7 @@
     {
      "titulo": "Igualar os argumentos",
      "fase": "resolver",
-     "texto": "O logaritmo é injetivo: $\\ln a=\\ln b\\Leftrightarrow a=b$, com $a,b>0$.",
+     "texto": "O logaritmo é injetivo: ${\\ln a=\\ln b\\Leftrightarrow a=b}$, com $a,b>0$.",
      "linhas": [
       {"tex": "\\ln\\left(x(x-3)\\right)=\\ln 4\\Leftrightarrow x(x-3)=4"}
      ]
@@ -777,7 +777,7 @@
     {
      "titulo": "Verificar no domínio",
      "fase": "verificar",
-     "texto": "O domínio é $x>3$. $x=4$ pertence-lhe: serve. $x=-1$ não: $\\ln(-1)$ e $\\ln(-4)$ não existem, por isso é rejeitada. No gráfico, o ponto oco está na zona riscada.",
+     "texto": "O domínio é $x>3$. ${x=4}$ pertence-lhe: serve. ${x=-1}$ não: $\\ln(-1)$ e $\\ln(-4)$ não existem, por isso é rejeitada. No gráfico, o ponto oco está na zona riscada.",
      "linhas": [
       {"tex": "4>3"},
       {"tex": "-1<3"},
@@ -853,7 +853,7 @@
     {
      "titulo": "Passar tudo para a base 2",
      "fase": "resolver",
-     "texto": "Usa a mudança de base, $\\log_b a=\\frac{\\log_c a}{\\log_c b}$. Como $\\log_2 4=2$, o logaritmo de base 4 passa a ter denominador 2.",
+     "texto": "Usa a mudança de base, $\\log_b a=\\frac{\\log_c a}{\\log_c b}$. Como ${\\log_2 4=2}$, o logaritmo de base 4 passa a ter denominador 2.",
      "linhas": [
       {"tex": "\\log_4(x+6)=\\frac{\\log_2(x+6)}{\\log_2 4}=\\frac{\\log_2(x+6)}{2}"}
      ]
@@ -886,7 +886,7 @@
     {
      "titulo": "Verificar no domínio",
      "fase": "verificar",
-     "texto": "O domínio é $x>0$. $x=3$ serve. $x=-2$ é rejeitada: $\\log_2(-2)$ não existe, mesmo que o membro direito exista, $\\log_4 4=1$. No gráfico, a curva vermelha existe em $x=-2$ mas a azul não.",
+     "texto": "O domínio é $x>0$. ${x=3}$ serve. ${x=-2}$ é rejeitada: $\\log_2(-2)$ não existe, mesmo que o membro direito exista, ${\\log_4 4=1}$. No gráfico, a curva de $\\log_4(x+6)$ (vermelha) existe em ${x=-2}$, mas a de $\\log_2 x$ (azul) não.",
      "linhas": [
       {"tex": "3>0"},
       {"tex": "-2<0"},
@@ -972,7 +972,7 @@
     {
      "titulo": "Valor aproximado",
      "fase": "resolver",
-     "texto": "Com a calculadora, e só no fim: usa a mudança de base.",
+     "texto": "Com a calculadora, e só no fim. Se só tiveres $\\ln$ e $\\log$, usa a mudança de base.",
      "linhas": [
       {"tex": "\\log_2 5=\\frac{\\ln 5}{\\ln 2}\\approx2{,}32"}
      ]
@@ -1060,7 +1060,7 @@
     {
      "titulo": "Testar com valores",
      "fase": "verificar",
-     "texto": "Escolhe um valor de cada lado de $-2$. Se tivesses mantido o sentido, obtinhas $x>-2$, e $x=0$ devia servir: mas falha.",
+     "texto": "Escolhe um valor de cada lado de $-2$. Se tivesses mantido o sentido, obtinhas $x>-2$, e ${x=0}$ devia servir: mas falha.",
      "linhas": [
       {"tex": "\\left(\\frac{1}{2}\\right)^{-3}=8>4"},
       {"tex": "\\left(\\frac{1}{2}\\right)^{0}=1<4"}
@@ -1116,7 +1116,7 @@
     {
      "titulo": "Domínio primeiro",
      "fase": "dominio",
-     "texto": "O argumento do logaritmo tem de ser positivo. A zona riscada é onde $x\\le1$, e $x=1$ é uma assíntota vertical.",
+     "texto": "O argumento do logaritmo tem de ser positivo. A zona riscada é onde $x\\le1$, e ${x=1}$ é uma assíntota vertical.",
      "linhas": [
       {"tex": "x-1>0\\Leftrightarrow x>1"},
       {"tex": "D=\\left]1,+\\infty\\right[", "v": "txt"}
@@ -1125,7 +1125,7 @@
     {
      "titulo": "Escrever 3 como logaritmo de base 2",
      "fase": "resolver",
-     "texto": "O logaritmo é um expoente: como $2^3=8$, tem-se $3=\\log_2 8$.",
+     "texto": "O logaritmo é um expoente: como ${2^3=8}$, tem-se ${3=\\log_2 8}$.",
      "linhas": [
       {"tex": "3=\\log_2\\left(2^{3}\\right)=\\log_2 8"}
      ]
@@ -1150,7 +1150,7 @@
     {
      "titulo": "Testar com valores",
      "fase": "verificar",
-     "texto": "Em $x=5$ serve. Em $x=9$ dá igualdade, por isso fica de fora (a inequação é estrita). Em $x=0$ nem existe: $\\log_2(-1)$ não está definido.",
+     "texto": "Em ${x=5}$ serve. Em ${x=9}$ dá igualdade, por isso fica de fora (a inequação é estrita). Em ${x=0}$ nem existe: $\\log_2(-1)$ não está definido.",
      "linhas": [
       {"tex": "\\log_2(5-1)=\\log_2 4=2<3"},
       {"tex": "\\log_2(9-1)=\\log_2 8=3"}

@@ -25,13 +25,14 @@
 .es-ponto:hover:not(:disabled) { border-color: var(--castanho); }
 .es-ponto--feito { background: var(--dourado-fundo); border-color: var(--dourado); }
 .es-ponto[aria-current="step"] { border-color: var(--castanho-escuro); background: var(--castanho); color: var(--claro); }
-.es-ponto:disabled { opacity: 0.45; cursor: not-allowed; }
+.es-ponto:disabled { border-color: var(--linha); background: transparent; color: var(--tinta-suave); cursor: not-allowed; }
 .es-estado { margin: 0.6rem 0 0.5rem; color: var(--tinta-suave); font-size: 0.92rem; }
 .es-botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .es-botao { flex: 1 1 0; min-width: 0; min-height: 2.75rem; padding: 0.5rem 0.6rem; font-size: 0.95rem; }
 .es-botao--seguinte { flex: 1 1 100%; }
-.es-botao--desligado { opacity: 0.5; cursor: default; }
-.es-botao--desligado:hover { background: inherit; }
+.es-botao--desligado, .es-botao--desligado:hover {
+  border-color: var(--linha); background: transparent; box-shadow: none; color: var(--tinta-suave); cursor: default;
+}
 
 /* gráfico, legenda e leituras do cursor */
 .es-bloco-fig { min-width: 0; }
@@ -52,8 +53,8 @@
 .es-dica { margin: 0.5rem 0 0; font-size: 0.82rem; }
 
 /* passos revelados */
-.es-passos { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-.es-passo { border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--papel); }
+.es-passos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.es-passo { min-width: 0; border: 1px solid var(--linha); border-radius: 0.5rem; background: var(--papel); }
 .es-passo--aberto { border-color: var(--dourado); box-shadow: 0 1px 4px rgba(36, 23, 16, 0.08); }
 .es-passo__titulo { margin: 0; font-size: 1rem; }
 .es-passo__cab {
@@ -78,6 +79,7 @@
 .es-passo__texto p { margin: 0 0 0.7rem; }
 .es-passo__texto .katex-display, .es-tabela-caixa + .es-passo__texto .katex-display { margin: 0.7em 0; overflow-x: auto; overflow-y: hidden; padding: 0.1em 0; }
 .es-passo__depois { margin-top: 0.8rem; }
+.es-cola { white-space: nowrap; }
 .es-cuidado {
   margin: 0.8rem 0 0; padding: 0.55rem 0.8rem; border-left: 3px solid var(--dourado); border-radius: 0 0.4rem 0.4rem 0;
   background: var(--dourado-fundo); font-size: 0.92rem;

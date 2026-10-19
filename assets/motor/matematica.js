@@ -458,7 +458,10 @@ export function corrigir(resposta, esperado) {
   const escala = Math.max(1, Math.abs(alvo.valor));
   const dif = Math.abs(r.valor - alvo.valor);
   if (r.dec) {
-    if (Number.isInteger(alvo.valor) && dif <= 1e-9) return { estado: 'certo', valor: r.valor };
+    // alvo inteiro: ou é exatamente esse inteiro, ou está errado (4,01 não é «certo, mas escreve exato»)
+    if (Number.isInteger(alvo.valor)) return { estado: dif <= 1e-9 ? 'certo' : 'errado', valor: r.valor };
+    // alvo racional (só números e operações, p. ex. 1/2): um decimal exato como 0,5 está certo
+    if (/^[\d\s.,+\-*/()^]*$/.test(String(esperado.expr)) && dif <= 1e-9 * escala) return { estado: 'certo', valor: r.valor };
     return { estado: dif <= 0.006 * escala ? 'decimal' : 'errado', valor: r.valor };
   }
   if (dif <= 1e-9 * escala) {

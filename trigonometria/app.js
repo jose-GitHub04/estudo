@@ -35,6 +35,29 @@ async function carregarPerguntas() {
   return { perguntas: partes.flat() };
 }
 
+/**
+ * No texto corrido da matéria, cola a pontuação que vem logo a seguir a uma fórmula, para
+ * não ficar sozinha no início da linha seguinte. Fórmulas mais largas do que a linha ficam
+ * como estão (senão não podiam partir-se).
+ */
+function colarPontuacao(raiz) {
+  for (const k of raiz.querySelectorAll('.resumo p .katex')) {
+    const par = k.parentElement;
+    const nodo = par.tagName === 'SPAN' && !par.className && par.childNodes.length === 1 ? par : k;
+    const prox = nodo.nextSibling;
+    if (!prox || prox.nodeType !== 3) continue;
+    const m = /^[.,;:!?)]+/.exec(prox.data);
+    if (!m) continue;
+    const cola = document.createElement('span');
+    cola.style.whiteSpace = 'nowrap';
+    nodo.replaceWith(cola);
+    cola.append(nodo, document.createTextNode(m[0]));
+    prox.data = prox.data.slice(m[0].length);
+    const caixa = cola.closest('p');
+    if (cola.getBoundingClientRect().width > caixa.clientWidth) cola.style.whiteSpace = '';
+  }
+}
+
 async function iniciar() {
   montarEstrutura(document.body.dataset.pagina);
 
@@ -64,6 +87,7 @@ async function iniciar() {
   }));
 
   renderizar(document.body);
+  colarPontuacao(document.body);
   document.documentElement.dataset.pronto = 'sim'; // para os testes automáticos
 }
 

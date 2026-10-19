@@ -44,6 +44,7 @@
 .tre-enunciado { margin: 0.5rem 0 1rem; font-size: 1.15rem; line-height: 1.75; overflow-wrap: anywhere; }
 .tre-enunciado:focus { outline: none; }
 .tre-cola { white-space: nowrap; }
+.tre-cola--livre { white-space: normal; }
 
 /* opções */
 .tre-opcoes { display: grid; gap: 0.6rem; }
@@ -62,7 +63,7 @@
 .tre-opcao__marca { flex: 0 0 auto; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
 
 .tre-opcao:disabled { color: var(--tinta); cursor: default; }
-.tre-opcao:disabled:not(.tre-opcao--certa):not(.tre-opcao--errada) { opacity: 0.6; }
+.tre-opcao:disabled:not(.tre-opcao--certa):not(.tre-opcao--errada) { color: var(--tinta-suave); background: var(--papel); border-color: var(--linha); }
 .tre-opcao--certa { border-color: var(--certo); background: var(--certo-fundo); }
 .tre-opcao--certa .tre-opcao__marca { color: var(--certo); }
 .tre-opcao--errada { border-color: var(--erro); background: var(--erro-fundo); }
@@ -86,7 +87,7 @@
   border-radius: 0 0.4rem 0.4rem 0; background: var(--dourado-fundo); font-size: 0.98rem;
 }
 .tre-explicacao__titulo { margin: 0 0 0.25rem; color: var(--dourado-texto); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.tre-explicacao__texto { margin: 0; overflow-wrap: anywhere; }
+.tre-explicacao__texto { margin: 0; line-height: 1.8; overflow-wrap: anywhere; }
 .tre-rodape { margin-top: 1rem; }
 
 /* fim */

@@ -6,11 +6,13 @@
 //   'log-flashcards-temas'  [idGrupo, ...]   temas escolhidos
 // O prefixo «log-» existe porque o armazenamento é partilhado com os outros temas do site.
 // Cartão novo = sem entrada. «Sabia» sobe uma caixa; «Não sabia» volta à caixa 1 e repete no fim da sessão.
+// Os textos passam por intervalos.js (]a,b[ com o espaçamento certo) antes de o KaTeX os ler.
 
 import { GRUPOS } from '../grupos.js';
 import { renderizar } from '../../assets/motor/katex.js';
 import { baralhar, criarRng } from '../../assets/motor/matematica.js';
 import * as P from '../../assets/motor/progresso.js';
+import { intervalosNoTexto } from './intervalos.js';
 
 const INTERVALOS = [0, 1, 3, 7, 14]; // dias de espera, caixas 1 a 5
 const POR_SESSAO = 15;
@@ -34,7 +36,7 @@ function html(texto) {
 // não HTML («$0<a<1$» seria lido como a etiqueta <a>), por isso escapam-se só aí.
 const FORMULA = /\$\$[\s\S]+?\$\$|\$[^$]+?\$/g;
 function seguro(texto) {
-  return String(texto === undefined || texto === null ? '' : texto).replace(FORMULA, (m) => m
+  return intervalosNoTexto(texto).replace(FORMULA, (m) => m
     .replace(/&(?![a-zA-Z]+;|#\d+;)/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;'));
@@ -93,13 +95,9 @@ export async function montar(el, dados) {
     return modo === 'hoje' ? ordenados.slice(0, POR_SESSAO) : ordenados;
   }
 
+  /** Guarda o estado. Se o armazenamento falhar, o aviso aparece no próximo desenho e fica até recarregar a página. */
   function guardar() {
-    const ok = P.guardar('log-flashcards', estado);
-    if (!ok && !avisouStorage) {
-      avisouStorage = true;
-      const aviso = raiz.querySelector('.fc-aviso');
-      if (aviso) aviso.hidden = false;
-    }
+    if (!P.guardar('log-flashcards', estado)) avisouStorage = true;
   }
 
   function responder(sabia) {
@@ -217,7 +215,7 @@ export async function montar(el, dados) {
     raiz.innerHTML = `
       ${cabecalho()}
       ${emCurso ? palcoCartao() : concluida ? palcoFim() : palcoInicio()}
-      <p class="aviso-erro fc-aviso" hidden>Não consegui guardar o progresso neste dispositivo (modo privado ou dados do site bloqueados). Continua a funcionar, mas não fica guardado.</p>
+      ${avisouStorage ? '<p class="aviso-erro fc-aviso" role="status">Não consegui guardar o progresso neste dispositivo (modo privado ou dados do site bloqueados). Continua a funcionar, mas não fica guardado.</p>' : ''}
       <p class="fc-rodape">
         <button type="button" class="botao botao--suave botao--mini" data-acao="apagar">Apagar o progresso dos cartões</button>
       </p>`;
@@ -266,7 +264,7 @@ export async function montar(el, dados) {
       } else if (acao === 'apagar') {
         if (window.confirm('Apagar o progresso dos cartões neste dispositivo? Não dá para desfazer.')) {
           estado = {};
-          P.guardar('log-flashcards', estado);
+          guardar();
           sessao = null;
           desenhar();
         }
